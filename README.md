@@ -7,6 +7,8 @@ version:  0.0.1
 
 language: en
 
+logo:     logo.png
+
 narrator: US English Female
 
 comment:  This document provides a collection of LiaScript macros that can be
