@@ -1,0 +1,29 @@
+{
+  "name": "lia-abcjs",
+  "version": "1.0.0",
+  "description": "Web component for abcjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx parcel build src/index.ts",
+    "watch": "npx parcel serve src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "LiaScript",
+    "abcjs",
+    "music",
+    "OER",
+    "web-component"
+  ],
+  "author": "André Dietrich",
+  "license": "ISC",
+  "devDependencies": {
+    "@parcel/transformer-js": "^2.6.0",
+    "abcjs": "^6.0.2",
+    "caniuse-lite": "^1.0.30001350",
+    "parcel": "^2.6.0"
+  },
+  "dependencies": {
+    "@swc/helpers": "^0.3.17"
+  }
+}
