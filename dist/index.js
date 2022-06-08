@@ -51354,13 +51354,13 @@ customElements.define("lia-abcjs", class extends HTMLElement {
             mode: "open"
         });
         this.container.appendChild(template.content.cloneNode(true));
-        this.abc_ = this.getAttribute($882b6d93070905b3$var$ABC, undefined) || this.innerHTML || undefined;
+        this.abc_ = this.getAttribute($882b6d93070905b3$var$ABC) || this.innerHTML || undefined;
         this.audio_ = this.getAttributeBoolean($882b6d93070905b3$var$AUDIO, true);
         this.autoplay_ = this.getAttributeBoolean($882b6d93070905b3$var$AUTOPLAY, false);
-        this.channel_ = this.getAttributeNumber($882b6d93070905b3$var$CHANNEL, undefined);
+        this.channel_ = this.getAttributeNumber($882b6d93070905b3$var$CHANNEL) || undefined;
         this.debug_ = this.getAttributeBoolean($882b6d93070905b3$var$DEBUG, false);
         this.notes_ = this.getAttributeBoolean($882b6d93070905b3$var$NOTES, true);
-        this.program_ = this.getAttributeNumber($882b6d93070905b3$var$PROGRAM, undefined);
+        this.program_ = this.getAttributeNumber($882b6d93070905b3$var$PROGRAM) || undefined;
         this.responsive_ = this.getAttributeBoolean($882b6d93070905b3$var$RESPONSIVE, true);
         try {
             this.tablature_ = JSON.parse(this.getAttribute($882b6d93070905b3$var$TABLATURE));
@@ -51380,7 +51380,7 @@ customElements.define("lia-abcjs", class extends HTMLElement {
     }
     getAttributeBoolean(name, defaultValue) {
         try {
-            return JSON.parse(this.getAttribute(name)) ? true : false;
+            if (this.getAttribute(name) !== null) return JSON.parse(this.getAttribute(name)) ? true : false;
         } catch (e) {
             console.warn("lia-abcjs: could note parse", name);
         }

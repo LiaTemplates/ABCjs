@@ -325,13 +325,13 @@ customElements.define(
       this.container = this.attachShadow({ mode: 'open' })
       this.container.appendChild(template.content.cloneNode(true))
 
-      this.abc_ = this.getAttribute(ABC, undefined) || this.innerHTML || undefined
+      this.abc_ = this.getAttribute(ABC) || this.innerHTML || undefined
       this.audio_ = this.getAttributeBoolean(AUDIO, true)
       this.autoplay_ = this.getAttributeBoolean(AUTOPLAY, false)
-      this.channel_ = this.getAttributeNumber(CHANNEL, undefined)
+      this.channel_ = this.getAttributeNumber(CHANNEL) || undefined
       this.debug_ = this.getAttributeBoolean(DEBUG, false)
       this.notes_ = this.getAttributeBoolean(NOTES, true)
-      this.program_ = this.getAttributeNumber(PROGRAM, undefined)
+      this.program_ = this.getAttributeNumber(PROGRAM) || undefined
       this.responsive_ = this.getAttributeBoolean(RESPONSIVE, true)
 
       try {
@@ -356,7 +356,9 @@ customElements.define(
 
     getAttributeBoolean(name: string, defaultValue: any) {
       try {
-        return JSON.parse(this.getAttribute(name)) ? true : false
+        if (this.getAttribute(name) !== null) {
+          return JSON.parse(this.getAttribute(name)) ? true : false
+        }
       } catch (e) {
         console.warn('lia-abcjs: could note parse', name)
       }

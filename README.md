@@ -3,7 +3,7 @@ author:   André Dietrich
 
 email:    LiaScript@web.de
 
-version:  0.0.1
+version:  0.0.2
 
 language: en
 
@@ -15,9 +15,9 @@ comment:  This document provides a collection of LiaScript macros that can be
           to write beautiful music notes with the ABC notation and also to
           play this music aloud.
 
-script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@0.0.1/dist/index.js
+script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@0.0.2/dist/index.js
 
-@ABCJS.render: @ABCJS.renderWith(responsive="true",```@0```)
+@ABCJS.render: @ABCJS.renderWith( ,```@0```)
 
 @ABCJS.renderWith
 <lia-keep>
@@ -25,7 +25,7 @@ script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@0.0.1/dist/index.js
 </lia-keep>
 @end
 
-@ABCJS.eval: @ABCJS.evalWith(responsive="true" audio="true",@0)
+@ABCJS.eval: @ABCJS.evalWith( ,@0)
 
 @ABCJS.evalWith
 <script>
@@ -70,7 +70,7 @@ and change it, as you wish.
 
    or use this specific version and you course will be stable:
 
-   `import: https://raw.githubusercontent.com/LiaTemplates/ABCjs/0.0.1/README.md`
+   `import: https://raw.githubusercontent.com/LiaTemplates/ABCjs/0.0.2/README.md`
 
 2. Copy the definitions into your Project
 
@@ -219,7 +219,7 @@ K: Emin
 |:gf|"Em"eB B2 efge|eB B2 gedB|"D"A2 FA DAFA|A2 FA defg|
 "Em"eB B2 eBgB|eB B2 defg|"D"afe^c dBAF|"Em"DEFD E2:|
 ```
-@ABCJS.evalWith(autoplay="true")
+@ABCJS.evalWith(autoplay="true" debug="true")
 
 ## Options
 
@@ -259,9 +259,9 @@ Additionally, it might be helpful to have a look at the following videos:
 ## Implementation
 
 ``` html
-script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@0.0.1/dist/index.js
+script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@0.0.2/dist/index.js
 
-@ABCJS.render: @ABCJS.renderWith(responsive="true",```@0```)
+@ABCJS.render: @ABCJS.renderWith( ,```@0```)
 
 @ABCJS.renderWith
 <lia-keep>
@@ -269,7 +269,7 @@ script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@0.0.1/dist/index.js
 </lia-keep>
 @end
 
-@ABCJS.eval: @ABCJS.evalWith(responsive="true" audio="true",@0)
+@ABCJS.eval: @ABCJS.evalWith( ,@0)
 
 @ABCJS.evalWith
 <script>
