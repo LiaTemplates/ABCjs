@@ -18,6 +18,8 @@ const VOICES_OFF = 'voicesOff'
 const CHORDS_OFF = 'chordsOff'
 const STEREO = 'stereo'
 
+const STAFFWIDTH = 'staffwidth'
+
 const TEMPLATE = `<style>
 .abcjs-inline-audio {
 	height: 26px;
@@ -291,6 +293,8 @@ customElements.define(
     private responsive_: boolean = true
     private tablature_: any
 
+    private staffwidth_?: number
+
     private voicesOff_: boolean = false
     private chordsOff_: boolean = false
     private stereo_: boolean = false
@@ -311,6 +315,7 @@ customElements.define(
         CHORDS_OFF,
         STEREO,
         WARNING,
+        STAFFWIDTH,
       ]
     }
 
@@ -329,6 +334,7 @@ customElements.define(
       this.audio_ = this.getAttributeBoolean(AUDIO, true)
       this.autoplay_ = this.getAttributeBoolean(AUTOPLAY, false)
       this.channel_ = this.getAttributeNumber(CHANNEL) || undefined
+      this.staffwidth_ = this.getAttributeNumber(STAFFWIDTH) || undefined
       this.debug_ = this.getAttributeBoolean(DEBUG, false)
       this.notes_ = this.getAttributeBoolean(NOTES, true)
       this.program_ = this.getAttributeNumber(PROGRAM) || undefined
@@ -388,7 +394,10 @@ customElements.define(
           try {
             this.audio_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: audio requires boolean you gave this ->')
+            console.warn(
+              'lia-abcjs: audio requires boolean you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -399,7 +408,8 @@ customElements.define(
             this.autoplay_ = JSON.parse(newValue)
           } catch (e) {
             console.warn(
-              'lia-abcjs: autoplay requires boolean you gave this ->'
+              'lia-abcjs: autoplay requires boolean you gave this ->',
+              newValue
             )
           }
           this.update()
@@ -410,9 +420,25 @@ customElements.define(
           try {
             this.channel_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: channel requires integer you gave this ->')
+            console.warn(
+              'lia-abcjs: channel requires integer you gave this ->',
+              newValue
+            )
           }
           this.update()
+          break
+        }
+
+        case STAFFWIDTH: {
+          try {
+            this.staffwidth_ = JSON.parse(newValue)
+          } catch (e) {
+            console.warn(
+              'lia-abcjs: staffwidth requires integer you gave this ->',
+              newValue
+            )
+          }
+
           break
         }
 
@@ -420,7 +446,10 @@ customElements.define(
           try {
             this.debug_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: debug requires boolean you gave this ->')
+            console.warn(
+              'lia-abcjs: debug requires boolean you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -430,7 +459,10 @@ customElements.define(
           try {
             this.notes_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: notes requires boolean you gave this ->')
+            console.warn(
+              'lia-abcjs: notes requires boolean you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -440,7 +472,10 @@ customElements.define(
           try {
             this.program_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: program requires integer you gave this ->')
+            console.warn(
+              'lia-abcjs: program requires integer you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -451,7 +486,8 @@ customElements.define(
             this.responsive_ = JSON.parse(newValue)
           } catch (e) {
             console.warn(
-              'lia-abcjs: responsive requires boolean you gave this ->'
+              'lia-abcjs: responsive requires boolean you gave this ->',
+              newValue
             )
           }
           this.update()
@@ -462,7 +498,10 @@ customElements.define(
           try {
             this.tablature_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: tablature requires json you gave this ->')
+            console.warn(
+              'lia-abcjs: tablature requires json you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -473,7 +512,8 @@ customElements.define(
             this.voicesOff_ = JSON.parse(newValue)
           } catch (e) {
             console.warn(
-              'lia-abcjs: voicesOff requires boolean you gave this ->'
+              'lia-abcjs: voicesOff requires boolean you gave this ->',
+              newValue
             )
           }
           this.update()
@@ -485,7 +525,8 @@ customElements.define(
             this.chordsOff_ = JSON.parse(newValue)
           } catch (e) {
             console.warn(
-              'lia-abcjs: chordsOff requires boolean you gave this ->'
+              'lia-abcjs: chordsOff requires boolean you gave this ->',
+              newValue
             )
           }
           this.update()
@@ -496,7 +537,10 @@ customElements.define(
           try {
             this.stereo_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: stereo requires boolean you gave this ->')
+            console.warn(
+              'lia-abcjs: stereo requires boolean you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -506,7 +550,10 @@ customElements.define(
           try {
             this.warning_ = JSON.parse(newValue)
           } catch (e) {
-            console.warn('lia-abcjs: warning requires boolean you gave this ->')
+            console.warn(
+              'lia-abcjs: warning requires boolean you gave this ->',
+              newValue
+            )
           }
           this.update()
           break
@@ -523,6 +570,7 @@ customElements.define(
         const audio__ = this.match(AUDIO, '(true|false)', this.audio_)
         const autoplay__ = this.match(AUTOPLAY, '(true|false)', this.autoplay_)
         const channel__ = this.match(CHANNEL, '\\d+', this.channel_)
+        const staffwidth__ = this.match(STAFFWIDTH, '\\d+', this.staffwidth_)
         const debug__ = this.match(DEBUG, '(true|false)', this.debug_)
         const notes__ = this.match(NOTES, '(true|false)', this.notes_)
         const program__ = this.match(PROGRAM, '\\d+', this.program_)
@@ -556,6 +604,7 @@ customElements.define(
             showDebug: debug__ ? ['grid', 'box'] : [],
             clickListener: clickListener,
             tablature: tablature__,
+            staffwidth: staffwidth__,
           }
         )
 
