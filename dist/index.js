@@ -1,20 +1,19 @@
+
+function $parcel$export(e, n, v, s) {
+  Object.defineProperty(e, n, {get: v, set: s, enumerable: true, configurable: true});
+}
+
 function $parcel$interopDefault(a) {
   return a && a.__esModule ? a.default : a;
 }
-var $parcel$global =
-typeof globalThis !== 'undefined'
-  ? globalThis
-  : typeof self !== 'undefined'
-  ? self
-  : typeof window !== 'undefined'
-  ? window
-  : typeof global !== 'undefined'
-  ? global
-  : {};
+
+      var $parcel$global = globalThis;
+    
 var $parcel$modules = {};
 var $parcel$inits = {};
 
 var parcelRequire = $parcel$global["parcelRequire7b51"];
+
 if (parcelRequire == null) {
   parcelRequire = function(id) {
     if (id in $parcel$modules) {
@@ -39,7 +38,9 @@ if (parcelRequire == null) {
 
   $parcel$global["parcelRequire7b51"] = parcelRequire;
 }
-parcelRequire.register("3OWKM", function(module, exports) {
+
+var parcelRegister = parcelRequire.register;
+parcelRegister("3OWKM", function(module, exports) {
 var $2c839dd29399673f$var$TimingCallbacks = function(target, params) {
     var self = this;
     if (!params) params = {};
@@ -57,7 +58,7 @@ var $2c839dd29399673f$var$TimingCallbacks = function(target, params) {
     self.joggerTimer = null;
     self.replaceTarget = function(newTarget) {
         self.noteTimings = newTarget.setTiming(self.qpm, self.extraMeasuresAtBeginning);
-        if (newTarget.noteTimings.length === 0) newTarget.setTiming(0, 0);
+        if (newTarget.noteTimings.length === 0) self.noteTimings = newTarget.setTiming(0, 0);
         if (self.lineEndCallback) self.lineEndTimings = $2c839dd29399673f$var$getLineEndTimings(newTarget.noteTimings, self.lineEndAnticipation);
         self.startTime = null;
         self.currentBeat = 0;
@@ -148,7 +149,7 @@ var $2c839dd29399673f$var$TimingCallbacks = function(target, params) {
             var ev;
             if (next < self.noteTimings.length) {
                 endMs = self.noteTimings[next].milliseconds;
-                next = self.currentEvent - 1;
+                next = Math.max(0, self.currentEvent - 1);
                 while(next >= 0 && self.noteTimings[next].left === null)next--;
                 ev = self.noteTimings[next];
             }
@@ -169,15 +170,17 @@ var $2c839dd29399673f$var$TimingCallbacks = function(target, params) {
                 var offMs = Math.max(0, timestamp - self.startTime - ev.milliseconds); // Offset in time from the last beat
                 var gapMs = endMs - ev.milliseconds; // Length of this event in time
                 var gapPx = ev.endX - ev.left; // The length in pixels
-                var offPx = offMs * gapPx / gapMs;
+                var offPx = gapMs ? offMs * gapPx / gapMs : 0;
                 position.left = ev.left + offPx;
+                // See if this is before the first event - that is the case where there are "prep beats"
+                if (self.currentEvent === 0 && ev.milliseconds > timestamp - self.startTime) position.left = undefined;
                 debugInfo = {
                     timestamp: timestamp,
                     startTime: self.startTime,
                     ev: ev,
                     endMs: endMs,
                     offMs: offMs,
-                    offPs: offPx,
+                    offPx: offPx,
                     gapMs: gapMs,
                     gapPx: gapPx
                 };
@@ -318,19 +321,16 @@ module.exports = $2c839dd29399673f$var$TimingCallbacks;
 
 });
 
-parcelRequire.register("iOvTz", function(module, exports) {
+parcelRegister("iOvTz", function(module, exports) {
 
 var $fyRj8 = parcelRequire("fyRj8");
+parcelRequire("7UhRc");
 
-var $7UhRc = parcelRequire("7UhRc");
-
-var $bMAdQ = parcelRequire("bMAdQ");
+var $7KNxt = parcelRequire("7KNxt");
 
 var $etnpu = parcelRequire("etnpu");
 
 var $gROdF = parcelRequire("gROdF");
-
-var $3fSeU = parcelRequire("3fSeU");
 // var tablatures = require('./abc_tablatures');
 var $db25a33b90d715c5$var$resizeDivs = {};
 function $db25a33b90d715c5$var$resizeOuter() {
@@ -365,7 +365,7 @@ function $db25a33b90d715c5$var$renderOne(div, tune, params, tuneNumber, lineOffs
         div.style.overflowY = "auto";
         div = div.children[0]; // The music should be rendered in the inner div.
     } else div.innerHTML = "";
-    var engraver_controller = new $bMAdQ(div, params);
+    var engraver_controller = new $7KNxt(div, params);
     engraver_controller.engraveABC(tune, tuneNumber, lineOffset);
     tune.engraver = engraver_controller;
     if (params.viewportVertical || params.viewportHorizontal) {
@@ -373,76 +373,6 @@ function $db25a33b90d715c5$var$renderOne(div, tune, params, tuneNumber, lineOffs
         var parent = div.parentNode;
         parent.style.width = div.style.width;
     }
-}
-function $db25a33b90d715c5$var$renderEachLineSeparately(div, tune1, params, tuneNumber) {
-    function initializeTuneLine(tune) {
-        var obj = new $7UhRc();
-        obj.formatting = tune.formatting;
-        obj.media = tune.media;
-        obj.version = tune.version;
-        return obj;
-    }
-    // Before rendering, chop up the returned tune into an array where each element is a line.
-    // The first element of the array gets the title and other items that go on top, the last element
-    // of the array gets the extra text that goes on bottom. Each element gets any non-music info that comes before it.
-    var tunes = [];
-    var tuneLine;
-    for(var i = 0; i < tune1.lines.length; i++){
-        var line = tune1.lines[i];
-        if (!tuneLine) tuneLine = initializeTuneLine(tune1);
-        if (i === 0) // These items go on top of the music
-        tuneLine.copyTopInfo(tune1);
-        // push the lines until we get to a music line
-        tuneLine.lines.push(line);
-        if (line.staff) {
-            tunes.push(tuneLine);
-            tuneLine = undefined;
-        }
-    }
-    // Add any extra stuff to the last line.
-    if (tuneLine) {
-        var lastLine = tunes[tunes.length - 1];
-        for(var j = 0; j < tuneLine.lines.length; j++)lastLine.lines.push(tuneLine.lines[j]);
-    }
-    // These items go below the music
-    tuneLine = tunes[tunes.length - 1];
-    tuneLine.copyBottomInfo(tune1);
-    // Now create sub-divs and render each line. Need to copy the params to change the padding for the interior slices.
-    var ep = {};
-    for(var key in params)if (params.hasOwnProperty(key)) ep[key] = params[key];
-    var origPaddingTop = ep.paddingtop;
-    var origPaddingBottom = ep.paddingbottom;
-    var currentScrollY = div.parentNode.scrollTop; // If there is scrolling it will be lost during the redraw so remember it.
-    var currentScrollX = div.parentNode.scrollLeft;
-    div.innerHTML = "";
-    var lineCount = 0;
-    for(var k = 0; k < tunes.length; k++){
-        var lineEl = document.createElement("div");
-        div.appendChild(lineEl);
-        if (k === 0) {
-            ep.paddingtop = origPaddingTop;
-            ep.paddingbottom = 0;
-        } else if (k === tunes.length - 1) {
-            ep.paddingtop = 10;
-            ep.paddingbottom = origPaddingBottom;
-        } else {
-            ep.paddingtop = 10;
-            ep.paddingbottom = 0;
-        }
-        if (k < tunes.length - 1) {
-            // If it is not the last line, force stretchlast. If it is, stretchlast might have been set by the input parameters.
-            tunes[k].formatting = $3fSeU.clone(tunes[k].formatting);
-            tunes[k].formatting.stretchlast = true;
-        }
-        $db25a33b90d715c5$var$renderOne(lineEl, tunes[k], ep, tuneNumber, lineCount);
-        lineCount += tunes[k].lines.length;
-        if (k === 0) tune1.engraver = tunes[k].engraver;
-        else {
-            if (!tune1.engraver.staffgroups) tune1.engraver.staffgroups = tunes[k].engraver.staffgroups;
-            else if (tunes[k].engraver.staffgroups.length > 0) tune1.engraver.staffgroups.push(tunes[k].engraver.staffgroups[0]);
-        }
-    }
-    if (currentScrollX || currentScrollY) div.parentNode.scrollTo(currentScrollX, currentScrollY);
 }
 // A quick way to render a tune from javascript when interactivity is not required.
 // This is used when a javascript routine has some abc text that it wants to render
@@ -488,19 +418,19 @@ var $db25a33b90d715c5$var$renderAbc = function(output, abc, parserParams, engrav
             div.setAttribute("style", "visibility: hidden;");
             document.body.appendChild(div);
         }
-        if (params.afterParsing) params.afterParsing(tune, tuneNumber, abcString);
         if (!removeDiv && params.wrap && params.staffwidth) {
             tune = $db25a33b90d715c5$var$doLineWrapping(div, tune, tuneNumber, abcString, params);
             return tune;
-        } else if (removeDiv || !params.oneSvgPerLine || tune.lines.length < 2) $db25a33b90d715c5$var$renderOne(div, tune, params, tuneNumber, 0);
-        else $db25a33b90d715c5$var$renderEachLineSeparately(div, tune, params, tuneNumber);
+        }
+        if (params.afterParsing) params.afterParsing(tune, tuneNumber, abcString);
+        $db25a33b90d715c5$var$renderOne(div, tune, params, tuneNumber, 0);
         if (removeDiv) div.parentNode.removeChild(div);
         return null;
     }
     return $fyRj8.renderEngine(callback, output, abc, params);
 };
 function $db25a33b90d715c5$var$doLineWrapping(div, tune, tuneNumber, abcString, params) {
-    var engraver_controller = new $bMAdQ(div, params);
+    var engraver_controller = new $7KNxt(div, params);
     var widths = engraver_controller.getMeasureWidths(tune);
     var ret = $gROdF.calcLineWraps(tune, widths, params);
     if (ret.reParse) {
@@ -510,15 +440,16 @@ function $db25a33b90d715c5$var$doLineWrapping(div, tune, tuneNumber, abcString, 
         var warnings = abcParser.getWarnings();
         if (warnings) tune.warnings = warnings;
     }
-    if (!params.oneSvgPerLine || tune.lines.length < 2) $db25a33b90d715c5$var$renderOne(div, tune, ret.revisedParams, tuneNumber, 0);
-    else $db25a33b90d715c5$var$renderEachLineSeparately(div, tune, ret.revisedParams, tuneNumber);
+    if (params.afterParsing) params.afterParsing(tune, tuneNumber, abcString);
+    $db25a33b90d715c5$var$renderOne(div, tune, ret.revisedParams, tuneNumber, 0);
     tune.explanation = ret.explanation;
     return tune;
 }
 module.exports = $db25a33b90d715c5$var$renderAbc;
 
 });
-parcelRequire.register("fyRj8", function(module, exports) {
+parcelRegister("fyRj8", function(module, exports) {
+//    abc_tunebook.js: splits a string representing ABC Music Notation into individual tunes.
 
 var $etnpu = parcelRequire("etnpu");
 
@@ -735,7 +666,8 @@ var $b54361c87a3c0f40$var$tunebook = {};
 module.exports = $b54361c87a3c0f40$var$tunebook;
 
 });
-parcelRequire.register("etnpu", function(module, exports) {
+parcelRegister("etnpu", function(module, exports) {
+//    abc_parse.js: parses a string representing ABC Music Notation into a usable internal structure.
 
 var $3fSeU = parcelRequire("3fSeU");
 
@@ -817,6 +749,7 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
                 type: "treble",
                 verticalPos: 0
             };
+            this.octave = 0;
             this.next_note_duration = 0;
             this.start_new_line = true;
             this.is_in_header = true;
@@ -901,15 +834,15 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
         multilineVars.warningObjects.push(warningObject);
     };
     var encode = function(str) {
-        var ret = $3fSeU.gsub(str, "\x12", " ");
-        ret = $3fSeU.gsub(ret, "&", "&amp;");
-        ret = $3fSeU.gsub(ret, "<", "&lt;");
-        return $3fSeU.gsub(ret, ">", "&gt;");
+        var ret = str.replace(/\x12/g, " ");
+        ret = ret.replace(/&/g, "&amp;");
+        ret = ret.replace(/</g, "&lt;");
+        return ret.replace(/>/g, "&gt;");
     };
     var warn = function(str, line, col_num) {
         if (!line) line = " ";
-        var bad_char = line.charAt(col_num);
-        if (bad_char === " ") bad_char = "SPACE";
+        var bad_char = line[col_num];
+        if (bad_char === " " || !bad_char) bad_char = "SPACE";
         var clean_line = encode(line.substring(col_num - 64, col_num)) + '<span style="text-decoration:underline;font-size:1.3em;font-weight:bold;">' + bad_char + "</span>" + encode(line.substring(col_num + 1).substring(0, 64));
         addWarning("Music Line:" + tokenizer.lineIndex + ":" + (col_num + 1) + ": " + str + ":  " + clean_line);
         addWarningObject({
@@ -939,17 +872,18 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
             return;
         }
         words = $3fSeU.strip(words);
-        if (words.charAt(words.length - 1) !== "-") words = words + " "; // Just makes it easier to parse below, since every word has a divider after it.
+        if (words[words.length - 1] !== "-") words = words + " "; // Just makes it easier to parse below, since every word has a divider after it.
         var word_list = [];
         // first make a list of words from the string we are passed. A word is divided on either a space or dash.
         var last_divider = 0;
         var replace = false;
         var addWord = function(i) {
             var word = $3fSeU.strip(words.substring(last_divider, i));
+            word = word.replace(/\\([-_*|~])/g, "$1");
             last_divider = i + 1;
             if (word.length > 0) {
-                if (replace) word = $3fSeU.gsub(word, "~", " ");
-                var div = words.charAt(i);
+                if (replace) word = word.replace(/~/g, " ");
+                var div = words[i];
                 if (div !== "_" && div !== "-") div = " ";
                 word_list.push({
                     syllable: tokenizer.translateString(word),
@@ -960,47 +894,57 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
             }
             return false;
         };
-        for(var i1 = 0; i1 < words.length; i1++)switch(words.charAt(i1)){
-            case " ":
-            case "\x12":
-                addWord(i1);
-                break;
-            case "-":
-                if (!addWord(i1) && word_list.length > 0) {
-                    $3fSeU.last(word_list).divider = "-";
-                    word_list.push({
-                        skip: true,
-                        to: "next"
-                    });
-                }
-                break;
-            case "_":
-                addWord(i1);
-                word_list.push({
-                    skip: true,
-                    to: "slur"
-                });
-                break;
-            case "*":
-                addWord(i1);
-                word_list.push({
-                    skip: true,
-                    to: "next"
-                });
-                break;
-            case "|":
-                addWord(i1);
-                word_list.push({
-                    skip: true,
-                    to: "bar"
-                });
-                break;
-            case "~":
-                replace = true;
-                break;
+        var escNext = false;
+        for(var i = 0; i < words.length; i++){
+            switch(words[i]){
+                case " ":
+                case "\x12":
+                    addWord(i);
+                    break;
+                case "-":
+                    if (!escNext && !addWord(i) && word_list.length > 0) {
+                        $3fSeU.last(word_list).divider = "-";
+                        word_list.push({
+                            skip: true,
+                            to: "next"
+                        });
+                    }
+                    break;
+                case "_":
+                    if (!escNext) {
+                        addWord(i);
+                        word_list.push({
+                            skip: true,
+                            to: "slur"
+                        });
+                    }
+                    break;
+                case "*":
+                    if (!escNext) {
+                        addWord(i);
+                        word_list.push({
+                            skip: true,
+                            to: "next"
+                        });
+                    }
+                    break;
+                case "|":
+                    if (!escNext) {
+                        addWord(i);
+                        word_list.push({
+                            skip: true,
+                            to: "bar"
+                        });
+                    }
+                    break;
+                case "~":
+                    if (!escNext) replace = true;
+                    break;
+            }
+            escNext = words[i] === "\\";
         }
         var inSlur = false;
-        $3fSeU.each(line, function(el) {
+        line.forEach(function(el) {
             if (word_list.length !== 0) {
                 if (word_list[0].skip) {
                     switch(word_list[0].to){
@@ -1050,7 +994,7 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
             return;
         }
         words = $3fSeU.strip(words);
-        if (words.charAt(words.length - 1) !== "-") words = words + " "; // Just makes it easier to parse below, since every word has a divider after it.
+        if (words[words.length - 1] !== "-") words = words + " "; // Just makes it easier to parse below, since every word has a divider after it.
         var word_list = [];
         // first make a list of words from the string we are passed. A word is divided on either a space or dash.
         var last_divider = 0;
@@ -1059,8 +1003,8 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
             var word = $3fSeU.strip(words.substring(last_divider, i));
             last_divider = i + 1;
             if (word.length > 0) {
-                if (replace) word = $3fSeU.gsub(word, "~", " ");
-                var div = words.charAt(i);
+                if (replace) word = word.replace(/~/g, " ");
+                var div = words[i];
                 if (div !== "_" && div !== "-") div = " ";
                 word_list.push({
                     syllable: tokenizer.translateString(word),
@@ -1071,13 +1015,13 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
             }
             return false;
         };
-        for(var i2 = 0; i2 < words.length; i2++)switch(words.charAt(i2)){
+        for(var i = 0; i < words.length; i++)switch(words[i]){
             case " ":
             case "\x12":
-                addWord(i2);
+                addWord(i);
                 break;
             case "-":
-                if (!addWord(i2) && word_list.length > 0) {
+                if (!addWord(i) && word_list.length > 0) {
                     $3fSeU.last(word_list).divider = "-";
                     word_list.push({
                         skip: true,
@@ -1086,21 +1030,21 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
                 }
                 break;
             case "_":
-                addWord(i2);
+                addWord(i);
                 word_list.push({
                     skip: true,
                     to: "slur"
                 });
                 break;
             case "*":
-                addWord(i2);
+                addWord(i);
                 word_list.push({
                     skip: true,
                     to: "next"
                 });
                 break;
             case "|":
-                addWord(i2);
+                addWord(i);
                 word_list.push({
                     skip: true,
                     to: "bar"
@@ -1111,7 +1055,7 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
                 break;
         }
         var inSlur = false;
-        $3fSeU.each(line, function(el) {
+        line.forEach(function(el) {
             if (word_list.length !== 0) {
                 if (word_list[0].skip) switch(word_list[0].to){
                     case "next":
@@ -1152,7 +1096,7 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
             addSymbols(tuneBuilder.getCurrentVoice(), line.substring(2));
             return;
         }
-        if (line.length < 2 || line.charAt(1) !== ":" || music.lineContinuation) {
+        if (line.length < 2 || line[1] !== ":" || music.lineContinuation) {
             music.parseMusic(line);
             return;
         }
@@ -1290,7 +1234,7 @@ var $a895eee4b5b4f1bc$var$Parse = function() {
 module.exports = $a895eee4b5b4f1bc$var$Parse;
 
 });
-parcelRequire.register("3fSeU", function(module, exports) {
+parcelRegister("3fSeU", function(module, exports) {
 //    abc_parse.js: parses a string representing ABC Music Notation into a usable internal structure.
 var $25ecd8a9bcf4d3ca$var$parseCommon = {};
 $25ecd8a9bcf4d3ca$var$parseCommon.clone = function(source) {
@@ -1313,9 +1257,6 @@ $25ecd8a9bcf4d3ca$var$parseCommon.cloneHashOfArrayOfHash = function(source) {
     for(var property in source)if (source.hasOwnProperty(property)) destination[property] = $25ecd8a9bcf4d3ca$var$parseCommon.cloneArray(source[property]);
     return destination;
 };
-$25ecd8a9bcf4d3ca$var$parseCommon.gsub = function(source, pattern, replacement) {
-    return source.split(pattern).join(replacement);
-};
 $25ecd8a9bcf4d3ca$var$parseCommon.strip = function(str) {
     return str.replace(/^\s+/, "").replace(/\s+$/, "");
 };
@@ -1326,55 +1267,15 @@ $25ecd8a9bcf4d3ca$var$parseCommon.endsWith = function(str, pattern) {
     var d = str.length - pattern.length;
     return d >= 0 && str.lastIndexOf(pattern) === d;
 };
-$25ecd8a9bcf4d3ca$var$parseCommon.each = function(arr, iterator, context) {
-    for(var i = 0, length = arr.length; i < length; i++)iterator.apply(context, [
-        arr[i],
-        i
-    ]);
-};
 $25ecd8a9bcf4d3ca$var$parseCommon.last = function(arr) {
     if (arr.length === 0) return null;
     return arr[arr.length - 1];
 };
-$25ecd8a9bcf4d3ca$var$parseCommon.compact = function(arr) {
-    var output = [];
-    for(var i = 0; i < arr.length; i++)if (arr[i]) output.push(arr[i]);
-    return output;
-};
-$25ecd8a9bcf4d3ca$var$parseCommon.detect = function(arr, iterator) {
-    for(var i = 0; i < arr.length; i++){
-        if (iterator(arr[i])) return true;
-    }
-    return false;
-};
-// The following is a polyfill for Object.remove for IE9, IE10, and IE11.
-// from:https://github.com/jserz/js_piece/blob/master/DOM/ChildNode/remove()/remove().md
-try {
-    (function(arr) {
-        arr.forEach(function(item) {
-            if (item.hasOwnProperty("remove")) return;
-            Object.defineProperty(item, "remove", {
-                configurable: true,
-                enumerable: true,
-                writable: true,
-                value: function remove() {
-                    if (this.parentNode !== null) this.parentNode.removeChild(this);
-                }
-            });
-        });
-    })([
-        Element.prototype,
-        CharacterData.prototype,
-        DocumentType.prototype
-    ]);
-} catch (e) {
-// if we aren't in a browser, this code will crash, but it is not needed then either.
-}
 module.exports = $25ecd8a9bcf4d3ca$var$parseCommon;
 
 });
 
-parcelRequire.register("a3Fkr", function(module, exports) {
+parcelRegister("a3Fkr", function(module, exports) {
 
 var $3fSeU = parcelRequire("3fSeU");
 var $01e3c73257bdaa42$var$parseDirective = {};
@@ -1383,13 +1284,13 @@ var $01e3c73257bdaa42$var$parseDirective = {};
     var tokenizer;
     var warn;
     var multilineVars;
-    var tune1;
+    var tune;
     var tuneBuilder;
     $01e3c73257bdaa42$var$parseDirective.initialize = function(tokenizer_, warn_, multilineVars_, tune_, tuneBuilder_) {
         tokenizer = tokenizer_;
         warn = warn_;
         multilineVars = multilineVars_;
-        tune1 = tune_;
+        tune = tune_;
         tuneBuilder = tuneBuilder_;
         initializeFonts();
     };
@@ -1472,70 +1373,70 @@ var $01e3c73257bdaa42$var$parseDirective = {};
             decoration: "none"
         };
         // These fonts are global for the entire tune.
-        tune1.formatting.composerfont = {
+        tune.formatting.composerfont = {
             face: '"Times New Roman"',
             size: 14,
             weight: "normal",
             style: "italic",
             decoration: "none"
         };
-        tune1.formatting.subtitlefont = {
+        tune.formatting.subtitlefont = {
             face: '"Times New Roman"',
             size: 16,
             weight: "normal",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.tempofont = {
+        tune.formatting.tempofont = {
             face: '"Times New Roman"',
             size: 15,
             weight: "bold",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.titlefont = {
+        tune.formatting.titlefont = {
             face: '"Times New Roman"',
             size: 20,
             weight: "normal",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.footerfont = {
+        tune.formatting.footerfont = {
             face: '"Times New Roman"',
             size: 12,
             weight: "normal",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.headerfont = {
+        tune.formatting.headerfont = {
             face: '"Times New Roman"',
             size: 12,
             weight: "normal",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.voicefont = {
+        tune.formatting.voicefont = {
             face: '"Times New Roman"',
             size: 13,
             weight: "bold",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.tablabelfont = {
+        tune.formatting.tablabelfont = {
             face: '"Trebuchet MS"',
             size: 16,
             weight: "normal",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.tabnumberfont = {
+        tune.formatting.tabnumberfont = {
             face: '"Arial"',
             size: 11,
             weight: "normal",
             style: "normal",
             decoration: "none"
         };
-        tune1.formatting.tabgracefont = {
+        tune.formatting.tabgracefont = {
             face: '"Arial"',
             size: 8,
             weight: "normal",
@@ -1543,17 +1444,17 @@ var $01e3c73257bdaa42$var$parseDirective = {};
             decoration: "none"
         };
         // these are the default fonts for these element types. In the printer, these fonts might change as the tune progresses.
-        tune1.formatting.annotationfont = multilineVars.annotationfont;
-        tune1.formatting.gchordfont = multilineVars.gchordfont;
-        tune1.formatting.historyfont = multilineVars.historyfont;
-        tune1.formatting.infofont = multilineVars.infofont;
-        tune1.formatting.measurefont = multilineVars.measurefont;
-        tune1.formatting.partsfont = multilineVars.partsfont;
-        tune1.formatting.repeatfont = multilineVars.repeatfont;
-        tune1.formatting.textfont = multilineVars.textfont;
-        tune1.formatting.tripletfont = multilineVars.tripletfont;
-        tune1.formatting.vocalfont = multilineVars.vocalfont;
-        tune1.formatting.wordsfont = multilineVars.wordsfont;
+        tune.formatting.annotationfont = multilineVars.annotationfont;
+        tune.formatting.gchordfont = multilineVars.gchordfont;
+        tune.formatting.historyfont = multilineVars.historyfont;
+        tune.formatting.infofont = multilineVars.infofont;
+        tune.formatting.measurefont = multilineVars.measurefont;
+        tune.formatting.partsfont = multilineVars.partsfont;
+        tune.formatting.repeatfont = multilineVars.repeatfont;
+        tune.formatting.textfont = multilineVars.textfont;
+        tune.formatting.tripletfont = multilineVars.tripletfont;
+        tune.formatting.vocalfont = multilineVars.vocalfont;
+        tune.formatting.wordsfont = multilineVars.wordsfont;
     }
     var fontTypeCanHaveBox = {
         gchordfont: true,
@@ -1880,7 +1781,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
         if (tokens[0].type === "number") return processNumberOnly();
         // format 3: whole definition
         var face = [];
-        var size1;
+        var size;
         var weight = "normal";
         var style = "normal";
         var decoration = "none";
@@ -1902,8 +1803,8 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                         } else face.push(currToken.token);
                     } else {
                         if (currToken.type === "number") {
-                            if (size1) warn("Font size specified twice in font definition.", str, position);
-                            else size1 = currToken.token;
+                            if (size) warn("Font size specified twice in font definition.", str, position);
+                            else size = currToken.token;
                             state = "modifier";
                         } else if (word === "bold") weight = "bold";
                         else if (word === "italic") style = "italic";
@@ -1920,8 +1821,8 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                     break;
                 case "size":
                     if (currToken.type === "number") {
-                        if (size1) warn("Font size specified twice in font definition.", str, position);
-                        else size1 = currToken.token;
+                        if (size) warn("Font size specified twice in font definition.", str, position);
+                        else size = currToken.token;
                     } else warn("Expected font size in font definition.", str, position);
                     state = "modifier";
                     break;
@@ -1940,12 +1841,12 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                     break;
             }
         }
-        if (size1 === undefined) {
+        if (size === undefined) {
             if (!currentSetting) {
                 warn("Must specify the size of the font since there is no default value.", str, position);
-                size1 = 12;
-            } else size1 = currentSetting.size;
-        } else size1 = parseFloat(size1);
+                size = 12;
+            } else size = currentSetting.size;
+        } else size = parseFloat(size);
         face = face.join(" ");
         if (face === "") {
             if (!currentSetting) {
@@ -1960,7 +1861,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
             font.weight = psFont.weight;
             font.style = psFont.style;
             font.decoration = psFont.decoration;
-            font.size = size1;
+            font.size = size;
             if (box) font.box = true;
             return font;
         }
@@ -1968,29 +1869,29 @@ var $01e3c73257bdaa42$var$parseDirective = {};
         font.weight = weight;
         font.style = style;
         font.decoration = decoration;
-        font.size = size1;
+        font.size = size;
         if (box) font.box = true;
         return font;
     };
     var getChangingFont = function(cmd, tokens, str) {
         if (tokens.length === 0) return 'Directive "' + cmd + '" requires a font as a parameter.';
         multilineVars[cmd] = getFontParameter(tokens, multilineVars[cmd], str, 0, cmd);
-        if (multilineVars.is_in_header) tune1.formatting[cmd] = multilineVars[cmd];
+        if (multilineVars.is_in_header) tune.formatting[cmd] = multilineVars[cmd];
         return null;
     };
     var getGlobalFont = function(cmd, tokens, str) {
         if (tokens.length === 0) return 'Directive "' + cmd + '" requires a font as a parameter.';
-        tune1.formatting[cmd] = getFontParameter(tokens, tune1.formatting[cmd], str, 0, cmd);
+        tune.formatting[cmd] = getFontParameter(tokens, tune.formatting[cmd], str, 0, cmd);
         return null;
     };
     var setScale = function(cmd, tokens) {
         var scratch = "";
-        $3fSeU.each(tokens, function(tok) {
+        tokens.forEach(function(tok) {
             scratch += tok.token;
         });
         var num = parseFloat(scratch);
         if (isNaN(num) || num === 0) return 'Directive "' + cmd + '" requires a number as a parameter.';
-        tune1.formatting.scale = num;
+        tune.formatting.scale = num;
     };
     // starts at 35
     var drumNames = [
@@ -2040,7 +1941,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
         "mute-cuica",
         "open-cuica",
         "mute-triangle",
-        "open-triangle", 
+        "open-triangle"
     ];
     var interpretPercMap = function(restOfString) {
         var tokens = restOfString.split(/\s+/); // Allow multiple spaces.
@@ -2073,7 +1974,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
     var oneParameterMeasurement = function(cmd, tokens) {
         var points = tokenizer.getMeasurement(tokens);
         if (points.used === 0 || tokens.length !== 0) return 'Directive "' + cmd + '" requires a measurement as a parameter.';
-        tune1.formatting[cmd] = points.value;
+        tune.formatting[cmd] = points.value;
         return null;
     };
     var addMultilineVar = function(key, cmd, tokens, min, max) {
@@ -2128,6 +2029,8 @@ var $01e3c73257bdaa42$var$parseDirective = {};
     var midiCmdParam1Integer = [
         "bassvol",
         "chordvol",
+        "bassprog",
+        "chordprog",
         "c",
         "channel",
         "beatmod",
@@ -2292,38 +2195,28 @@ var $01e3c73257bdaa42$var$parseDirective = {};
         }
     };
     $01e3c73257bdaa42$var$parseDirective.parseFontChangeLine = function(textstr) {
+        // We don't want to match two dollar signs, so change those temporarily
+        textstr = textstr.replace(/\$\$/g, "\x03");
         var textParts = textstr.split("$");
         if (textParts.length > 1 && multilineVars.setfont) {
-            var textarr = [
-                {
-                    text: textParts[0]
-                }
-            ];
-            for(var i = 1; i < textParts.length; i++){
-                if (textParts[i].charAt(0) === "0") textarr.push({
-                    text: textParts[i].substring(1)
+            var textarr = [];
+            if (textParts[0] !== "") textarr.push({
+                text: textParts[0]
+            });
+            for(var i = 1; i < textParts.length; i++)if (textParts[i][0] === "0") textarr.push({
+                text: textParts[i].substring(1).replace(/\x03/g, "$$")
+            });
+            else {
+                var whichFont = parseInt(textParts[i][0], 10);
+                if (multilineVars.setfont[whichFont]) textarr.push({
+                    font: multilineVars.setfont[whichFont],
+                    text: textParts[i].substring(1).replace(/\x03/g, "$$")
                 });
-                else if (textParts[i].charAt(0) === "1" && multilineVars.setfont[1]) textarr.push({
-                    font: multilineVars.setfont[1],
-                    text: textParts[i].substring(1)
-                });
-                else if (textParts[i].charAt(0) === "2" && multilineVars.setfont[2]) textarr.push({
-                    font: multilineVars.setfont[2],
-                    text: textParts[i].substring(1)
-                });
-                else if (textParts[i].charAt(0) === "3" && multilineVars.setfont[3]) textarr.push({
-                    font: multilineVars.setfont[3],
-                    text: textParts[i].substring(1)
-                });
-                else if (textParts[i].charAt(0) === "4" && multilineVars.setfont[4]) textarr.push({
-                    font: multilineVars.setfont[4],
-                    text: textParts[i].substring(1)
-                });
-                else textarr[textarr.length - 1].text += "$" + textParts[i];
+                else textarr[textarr.length - 1].text += "$" + textParts[i].replace(/\x03/g, "$$");
             }
-            if (textarr.length > 1) return textarr;
+            return textarr;
         }
-        return textstr;
+        return textstr.replace(/\x03/g, "$$");
     };
     var positionChoices = [
         "auto",
@@ -2368,13 +2261,19 @@ var $01e3c73257bdaa42$var$parseDirective = {};
             //					stretchstaff: { type: "boolean", optional: true },
             //					titleformat: { type: "string", optional: true },
             case "bagpipes":
-                tune1.formatting.bagpipes = true;
+                tune.formatting.bagpipes = true;
                 break;
             case "flatbeams":
-                tune1.formatting.flatbeams = true;
+                tune.formatting.flatbeams = true;
                 break;
             case "jazzchords":
-                tune1.formatting.jazzchords = true;
+                tune.formatting.jazzchords = true;
+                break;
+            case "accentAbove":
+                tune.formatting.accentAbove = true;
+                break;
+            case "germanAlphabet":
+                tune.formatting.germanAlphabet = true;
                 break;
             case "landscape":
                 multilineVars.landscape = true;
@@ -2384,23 +2283,28 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                 break;
             case "graceslurs":
                 if (tokens.length !== 1) return "Directive graceslurs requires one parameter: 0 or 1";
-                if (tokens[0].token === "0" || tokens[0].token === "false") tune1.formatting.graceSlurs = false;
-                else if (tokens[0].token === "1" || tokens[0].token === "true") tune1.formatting.graceSlurs = true;
+                if (tokens[0].token === "0" || tokens[0].token === "false") tune.formatting.graceSlurs = false;
+                else if (tokens[0].token === "1" || tokens[0].token === "true") tune.formatting.graceSlurs = true;
                 else return "Directive graceslurs requires one parameter: 0 or 1 (received " + tokens[0].token + ")";
+                break;
+            case "lineThickness":
+                var lt = parseStretchLast(tokens);
+                if (lt.value !== undefined) tune.formatting.lineThickness = lt.value;
+                if (lt.error) return lt.error;
                 break;
             case "stretchlast":
                 var sl = parseStretchLast(tokens);
-                if (sl.value !== undefined) tune1.formatting.stretchlast = sl.value;
+                if (sl.value !== undefined) tune.formatting.stretchlast = sl.value;
                 if (sl.error) return sl.error;
                 break;
             case "titlecaps":
                 multilineVars.titlecaps = true;
                 break;
             case "titleleft":
-                tune1.formatting.titleleft = true;
+                tune.formatting.titleleft = true;
                 break;
             case "measurebox":
-                tune1.formatting.measurebox = true;
+                tune.formatting.measurebox = true;
                 break;
             case "vocal":
                 return addMultilineVarOneParamChoice("vocalPosition", cmd, tokens, positionChoices);
@@ -2441,6 +2345,14 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                 if (multilineVars.currentVoice) {
                     multilineVars.currentVoice.scale = voiceScale.floatt;
                     tuneBuilder.changeVoiceScale(multilineVars.currentVoice.scale);
+                }
+                return null;
+            case "voicecolor":
+                if (tokens.length !== 1) return "voicecolor requires one string as a parameter";
+                var voiceColor = tokens.shift();
+                if (multilineVars.currentVoice) {
+                    multilineVars.currentVoice.color = voiceColor.token;
+                    tuneBuilder.changeVoiceColor(multilineVars.currentVoice.color);
                 }
                 return null;
             case "vskip":
@@ -2549,7 +2461,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                 if (sfTokens.length >= 4) {
                     if (sfTokens[0].token === "-" && sfTokens[1].type === "number") {
                         var sfNum = parseInt(sfTokens[1].token);
-                        if (sfNum >= 1 && sfNum <= 4) {
+                        if (sfNum >= 1 && sfNum <= 9) {
                             if (!multilineVars.setfont) multilineVars.setfont = [];
                             sfTokens.shift();
                             sfTokens.shift();
@@ -2617,10 +2529,10 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                 var justOpenParen = false;
                 var justOpenBracket = false;
                 var justOpenBrace = false;
-                var continueBar1 = false;
+                var continueBar = false;
                 var lastVoice;
                 var addContinueBar = function() {
-                    continueBar1 = true;
+                    continueBar = true;
                     if (lastVoice) {
                         var ty = "start";
                         if (lastVoice.staffNum > 0) {
@@ -2681,14 +2593,14 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                                 if (t.continueId) t = tokens.shift();
                                 else break;
                             }
-                            var newStaff1 = !openParen || justOpenParen;
-                            var bracket1 = justOpenBracket ? "start" : openBracket ? "continue" : undefined;
-                            var brace1 = justOpenBrace ? "start" : openBrace ? "continue" : undefined;
-                            addVoice(vc, newStaff1, bracket1, brace1, continueBar1);
+                            var newStaff = !openParen || justOpenParen;
+                            var bracket = justOpenBracket ? "start" : openBracket ? "continue" : undefined;
+                            var brace = justOpenBrace ? "start" : openBrace ? "continue" : undefined;
+                            addVoice(vc, newStaff, bracket, brace, continueBar);
                             justOpenParen = false;
                             justOpenBracket = false;
                             justOpenBrace = false;
-                            continueBar1 = false;
+                            continueBar = false;
                             lastVoice = multilineVars.voices[vc];
                             if (cmd === "staves") addContinueBar();
                             break;
@@ -2721,7 +2633,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
             case "footer":
                 var footerStr = tokenizer.getMeat(restOfString, 0, restOfString.length);
                 footerStr = restOfString.substring(footerStr.start, footerStr.end);
-                if (footerStr.charAt(0) === '"' && footerStr.charAt(footerStr.length - 1) === '"') footerStr = footerStr.substring(1, footerStr.length - 1);
+                if (footerStr[0] === '"' && footerStr[footerStr.length - 1] === '"') footerStr = footerStr.substring(1, footerStr.length - 1);
                 var footerArr = footerStr.split("	");
                 var footer = {};
                 if (footerArr.length === 1) footer = {
@@ -2749,14 +2661,14 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                 var midi = tokenizer.tokenize(restOfString, 0, restOfString.length, true);
                 if (midi.length > 0 && midi[0].token === "=") midi.shift();
                 if (midi.length === 0) warn("Expected midi command", restOfString, 0);
-                else parseMidiCommand(midi, tune1, restOfString);
+                else parseMidiCommand(midi, tune, restOfString);
                 break;
             case "percmap":
                 var percmap = interpretPercMap(restOfString);
                 if (percmap.error) warn(percmap.error, str, 8);
                 else {
-                    if (!tune1.formatting.percmap) tune1.formatting.percmap = {};
-                    tune1.formatting.percmap[percmap.key] = percmap.value;
+                    if (!tune.formatting.percmap) tune.formatting.percmap = {};
+                    tune.formatting.percmap[percmap.key] = percmap.value;
                 }
                 break;
             case "map":
@@ -2765,7 +2677,7 @@ var $01e3c73257bdaa42$var$parseDirective = {};
             case "continuous":
             case "nobarcheck":
                 // TODO-PER: Actually handle the parameters of these
-                tune1.formatting[cmd] = restOfString;
+                tune.formatting[cmd] = restOfString;
                 break;
             default:
                 return "Unknown directive: " + cmd;
@@ -2815,11 +2727,11 @@ var $01e3c73257bdaa42$var$parseDirective = {};
                     break;
                 case "fontboxpadding":
                     if (tokens.length !== 1 || tokens[0].type !== "number") warn('Directive "' + cmd + '" requires a number as a parameter.');
-                    tune1.formatting.fontboxpadding = tokens[0].floatt;
+                    tune.formatting.fontboxpadding = tokens[0].floatt;
                     break;
                 case "stretchlast":
                     var sl = parseStretchLast(tokens);
-                    if (sl.value !== undefined) tune1.formatting.stretchlast = sl.value;
+                    if (sl.value !== undefined) tune.formatting.stretchlast = sl.value;
                     if (sl.error) return sl.error;
                     break;
                 default:
@@ -2852,92 +2764,91 @@ module.exports = $01e3c73257bdaa42$var$parseDirective;
 
 });
 
-parcelRequire.register("8A8Fh", function(module, exports) {
+parcelRegister("8A8Fh", function(module, exports) {
+//    abc_parse_header.js: parses a the header fields from a string representing ABC Music Notation into a usable internal structure.
 
 var $3fSeU = parcelRequire("3fSeU");
 
 var $a3Fkr = parcelRequire("a3Fkr");
 
 var $7Au3Q = parcelRequire("7Au3Q");
-var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVars1, tune1, tuneBuilder) {
+var $63f86828716dd93d$var$ParseHeader = function(tokenizer, warn, multilineVars, tune, tuneBuilder) {
     this.reset = function(tokenizer, warn, multilineVars, tune) {
         $7Au3Q.initialize(tokenizer, warn, multilineVars, tune, tuneBuilder);
         $a3Fkr.initialize(tokenizer, warn, multilineVars, tune, tuneBuilder);
     };
-    this.reset(tokenizer1, warn1, multilineVars1, tune1);
-    this.setTitle = function(title) {
-        if (multilineVars1.hasMainTitle) tuneBuilder.addSubtitle(tokenizer1.translateString(tokenizer1.stripComment(title)), {
-            startChar: multilineVars1.iChar,
-            endChar: multilineVars1.iChar + title.length + 2
+    this.reset(tokenizer, warn, multilineVars, tune);
+    this.setTitle = function(title, origSize) {
+        if (multilineVars.hasMainTitle) tuneBuilder.addSubtitle(title, {
+            startChar: multilineVars.iChar,
+            endChar: multilineVars.iChar + origSize + 2
         }); // display secondary title
         else {
-            var titleStr = tokenizer1.translateString(tokenizer1.theReverser(tokenizer1.stripComment(title)));
-            if (multilineVars1.titlecaps) titleStr = titleStr.toUpperCase();
-            tuneBuilder.addMetaText("title", titleStr, {
-                startChar: multilineVars1.iChar,
-                endChar: multilineVars1.iChar + title.length + 2
+            tuneBuilder.addMetaText("title", title, {
+                startChar: multilineVars.iChar,
+                endChar: multilineVars.iChar + origSize + 2
             });
-            multilineVars1.hasMainTitle = true;
+            multilineVars.hasMainTitle = true;
         }
     };
     this.setMeter = function(line) {
-        line = tokenizer1.stripComment(line);
+        line = tokenizer.stripComment(line);
         if (line === "C") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return {
                 type: "common_time"
             };
         } else if (line === "C|") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return {
                 type: "cut_time"
             };
         } else if (line === "o") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return {
                 type: "tempus_perfectum"
             };
         } else if (line === "c") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return {
                 type: "tempus_imperfectum"
             };
         } else if (line === "o.") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return {
                 type: "tempus_perfectum_prolatio"
             };
         } else if (line === "c.") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return {
                 type: "tempus_imperfectum_prolatio"
             };
         } else if (line.length === 0 || line.toLowerCase() === "none") {
-            if (multilineVars1.havent_set_length === true) {
-                multilineVars1.default_length = 0.125;
-                multilineVars1.havent_set_length = false;
+            if (multilineVars.havent_set_length === true) {
+                multilineVars.default_length = 0.125;
+                multilineVars.havent_set_length = false;
             }
             return null;
         } else {
-            var tokens = tokenizer1.tokenize(line, 0, line.length);
+            var tokens = tokenizer.tokenize(line, 0, line.length);
             // the form is [open_paren] decimal [ plus|dot decimal ]... [close_paren] slash decimal [plus same_as_before]
             try {
                 var parseNum = function() {
@@ -2984,80 +2895,80 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                 };
                 var totalLength = 0;
                 while(true){
-                    var ret1 = parseFraction();
-                    totalLength += ret1.value;
+                    var ret = parseFraction();
+                    totalLength += ret.value;
                     var mv = {
-                        num: ret1.num
+                        num: ret.num
                     };
-                    if (ret1.den !== undefined) mv.den = ret1.den;
+                    if (ret.den !== undefined) mv.den = ret.den;
                     meter.value.push(mv);
                     if (tokens.length === 0) break;
                 //var tok = tokens.shift();
                 //if (tok.token !== '+') throw "Extra characters in M: line";
                 }
-                if (multilineVars1.havent_set_length === true) {
-                    multilineVars1.default_length = totalLength < 0.75 ? 0.0625 : 0.125;
-                    multilineVars1.havent_set_length = false;
+                if (multilineVars.havent_set_length === true) {
+                    multilineVars.default_length = totalLength < 0.75 ? 0.0625 : 0.125;
+                    multilineVars.havent_set_length = false;
                 }
                 return meter;
             } catch (e) {
-                warn1(e, line, 0);
+                warn(e, line, 0);
             }
         }
         return null;
     };
     this.calcTempo = function(relTempo) {
         var dur = 1 / 4;
-        if (multilineVars1.meter && multilineVars1.meter.type === "specified") dur = 1 / parseInt(multilineVars1.meter.value[0].den);
-        else if (multilineVars1.origMeter && multilineVars1.origMeter.type === "specified") dur = 1 / parseInt(multilineVars1.origMeter.value[0].den);
+        if (multilineVars.meter && multilineVars.meter.type === "specified") dur = 1 / parseInt(multilineVars.meter.value[0].den);
+        else if (multilineVars.origMeter && multilineVars.origMeter.type === "specified") dur = 1 / parseInt(multilineVars.origMeter.value[0].den);
         //var dur = multilineVars.default_length ? multilineVars.default_length : 1;
         for(var i = 0; i < relTempo.duration; i++)relTempo.duration[i] = dur * relTempo.duration[i];
         return relTempo;
     };
     this.resolveTempo = function() {
-        if (multilineVars1.tempo) {
-            this.calcTempo(multilineVars1.tempo);
-            tune1.metaText.tempo = multilineVars1.tempo;
-            delete multilineVars1.tempo;
+        if (multilineVars.tempo) {
+            this.calcTempo(multilineVars.tempo);
+            tune.metaText.tempo = multilineVars.tempo;
+            delete multilineVars.tempo;
         }
     };
     this.addUserDefinition = function(line, start, end) {
         var equals = line.indexOf("=", start);
         if (equals === -1) {
-            warn1("Need an = in a macro definition", line, start);
+            warn("Need an = in a macro definition", line, start);
             return;
         }
         var before = $3fSeU.strip(line.substring(start, equals));
         var after = $3fSeU.strip(line.substring(equals + 1));
         if (before.length !== 1) {
-            warn1("Macro definitions can only be one character", line, start);
+            warn("Macro definitions can only be one character", line, start);
             return;
         }
         var legalChars = "HIJKLMNOPQRSTUVWXYhijklmnopqrstuvw~";
         if (legalChars.indexOf(before) === -1) {
-            warn1("Macro definitions must be H-Y, h-w, or tilde", line, start);
+            warn("Macro definitions must be H-Y, h-w, or tilde", line, start);
             return;
         }
         if (after.length === 0) {
-            warn1("Missing macro definition", line, start);
+            warn("Missing macro definition", line, start);
             return;
         }
-        if (multilineVars1.macros === undefined) multilineVars1.macros = {};
-        multilineVars1.macros[before] = after;
+        if (multilineVars.macros === undefined) multilineVars.macros = {};
+        multilineVars.macros[before] = after;
     };
     this.setDefaultLength = function(line, start, end) {
-        var len = $3fSeU.gsub(line.substring(start, end), " ", "");
+        var len = line.substring(start, end).replace(/ /g, "");
         var len_arr = len.split("/");
         if (len_arr.length === 2) {
             var n = parseInt(len_arr[0]);
             var d = parseInt(len_arr[1]);
             if (d > 0) {
-                multilineVars1.default_length = n / d; // a whole note is 1
-                multilineVars1.havent_set_length = false;
+                multilineVars.default_length = n / d; // a whole note is 1
+                multilineVars.havent_set_length = false;
             }
         } else if (len_arr.length === 1 && len_arr[0] === "1") {
-            multilineVars1.default_length = 1;
-            multilineVars1.havent_set_length = false;
+            multilineVars.default_length = 1;
+            multilineVars.havent_set_length = false;
         }
     };
     var tempoString = {
@@ -3104,7 +3015,7 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
         // The temporary variables we keep are the duration and the bpm. In the first two forms, the duration is 1.
         // In addition, a quoted string may both precede and follow. If a quoted string is present, then the duration part is optional.
         try {
-            var tokens = tokenizer1.tokenize(line, start, end);
+            var tokens = tokenizer.tokenize(line, start, end);
             if (tokens.length === 0) throw "Missing parameter in Q: field";
             var tempo = {
                 startChar: iChar + start - 2,
@@ -3197,54 +3108,55 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                 }
                 if (tokens.length !== 0) throw "Unexpected string at end of Q: field";
             }
-            if (multilineVars1.printTempo === false) tempo.suppress = true;
+            if (multilineVars.printTempo === false) tempo.suppress = true;
             return {
                 type: delaySet ? "delaySet" : "immediate",
                 tempo: tempo
             };
         } catch (msg) {
-            warn1(msg, line, start);
+            warn(msg, line, start);
             return {
                 type: "none"
             };
         }
     };
     this.letter_to_inline_header = function(line, i, startLine) {
-        var ws = tokenizer1.eatWhiteSpace(line, i);
+        var ws = tokenizer.eatWhiteSpace(line, i);
         i += ws;
-        if (line.length >= i + 5 && line.charAt(i) === "[" && line.charAt(i + 2) === ":") {
+        if (line.length >= i + 5 && line[i] === "[" && line[i + 2] === ":") {
             var e = line.indexOf("]", i);
-            var startChar = multilineVars1.iChar + i;
-            var endChar = multilineVars1.iChar + e + 1;
+            var startChar = multilineVars.iChar + i;
+            var endChar = multilineVars.iChar + e + 1;
             switch(line.substring(i, i + 3)){
                 case "[I:":
                     var err = $a3Fkr.addDirective(line.substring(i + 3, e));
-                    if (err) warn1(err, line, i);
+                    if (err) warn(err, line, i);
                     return [
                         e - i + 1 + ws
                     ];
                 case "[M:":
                     var meter = this.setMeter(line.substring(i + 3, e));
                     if (tuneBuilder.hasBeginMusic() && meter) tuneBuilder.appendStartingElement("meter", startChar, endChar, meter);
-                    else multilineVars1.meter = meter;
+                    else multilineVars.meter = meter;
                     return [
                         e - i + 1 + ws
                     ];
                 case "[K:":
-                    var result = $7Au3Q.parseKey(line.substring(i + 3, e));
-                    if (result.foundClef && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("clef", startChar, endChar, multilineVars1.clef);
-                    if (result.foundKey && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("key", startChar, endChar, $7Au3Q.fixKey(multilineVars1.clef, multilineVars1.key));
+                    var result = $7Au3Q.parseKey(line.substring(i + 3, e), true);
+                    if (result.foundClef && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("clef", startChar, endChar, multilineVars.clef);
+                    if (result.foundKey && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("key", startChar, endChar, $7Au3Q.fixKey(multilineVars.clef, multilineVars.key));
                     return [
                         e - i + 1 + ws
                     ];
                 case "[P:":
-                    if (startLine || tune1.lines.length <= tune1.lineNum) multilineVars1.partForNextLine = {
-                        title: line.substring(i + 3, e),
+                    var part = $a3Fkr.parseFontChangeLine(line.substring(i + 3, e));
+                    if (startLine || tune.lines.length <= tune.lineNum) multilineVars.partForNextLine = {
+                        title: part,
                         startChar: startChar,
                         endChar: endChar
                     };
                     else tuneBuilder.appendElement("part", startChar, endChar, {
-                        title: line.substring(i + 3, e)
+                        title: part
                     });
                     return [
                         e - i + 1 + ws
@@ -3256,10 +3168,10 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                     ];
                 case "[Q:":
                     if (e > 0) {
-                        var tempo = this.setTempo(line, i + 3, e, multilineVars1.iChar);
+                        var tempo = this.setTempo(line, i + 3, e, multilineVars.iChar);
                         if (tempo.type === "delaySet") {
                             if (tuneBuilder.hasBeginMusic()) tuneBuilder.appendElement("tempo", startChar, endChar, this.calcTempo(tempo.tempo));
-                            else multilineVars1.tempoForNextLine = [
+                            else multilineVars.tempoForNextLine = [
                                 "tempo",
                                 startChar,
                                 endChar,
@@ -3267,7 +3179,7 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                             ];
                         } else if (tempo.type === "immediate") {
                             if (!startLine && tuneBuilder.hasBeginMusic()) tuneBuilder.appendElement("tempo", startChar, endChar, tempo.tempo);
-                            else multilineVars1.tempoForNextLine = [
+                            else multilineVars.tempoForNextLine = [
                                 "tempo",
                                 startChar,
                                 endChar,
@@ -3276,7 +3188,7 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                         }
                         return [
                             e - i + 1 + ws,
-                            line.charAt(i + 1),
+                            line[i + 1],
                             line.substring(i + 3, e)
                         ];
                     }
@@ -3287,11 +3199,15 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                         //startNewLine();
                         return [
                             e - i + 1 + ws,
-                            line.charAt(i + 1),
+                            line[i + 1],
                             line.substring(i + 3, e)
                         ];
                     }
                     break;
+                case "[r:":
+                    return [
+                        e - i + 1 + ws
+                    ];
                 default:
             }
         }
@@ -3303,25 +3219,25 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
         if (line.length >= i + 3) switch(line.substring(i, i + 2)){
             case "I:":
                 var err = $a3Fkr.addDirective(line.substring(i + 2));
-                if (err) warn1(err, line, i);
+                if (err) warn(err, line, i);
                 return [
                     line.length
                 ];
             case "M:":
                 var meter = this.setMeter(line.substring(i + 2));
-                if (tuneBuilder.hasBeginMusic() && meter) tuneBuilder.appendStartingElement("meter", multilineVars1.iChar + i, multilineVars1.iChar + line.length, meter);
+                if (tuneBuilder.hasBeginMusic() && meter) tuneBuilder.appendStartingElement("meter", multilineVars.iChar + i, multilineVars.iChar + line.length, meter);
                 return [
                     line.length
                 ];
             case "K:":
-                var result = $7Au3Q.parseKey(line.substring(i + 2));
-                if (result.foundClef && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("clef", multilineVars1.iChar + i, multilineVars1.iChar + line.length, multilineVars1.clef);
-                if (result.foundKey && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("key", multilineVars1.iChar + i, multilineVars1.iChar + line.length, $7Au3Q.fixKey(multilineVars1.clef, multilineVars1.key));
+                var result = $7Au3Q.parseKey(line.substring(i + 2), tuneBuilder.hasBeginMusic());
+                if (result.foundClef && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("clef", multilineVars.iChar + i, multilineVars.iChar + line.length, multilineVars.clef);
+                if (result.foundKey && tuneBuilder.hasBeginMusic()) tuneBuilder.appendStartingElement("key", multilineVars.iChar + i, multilineVars.iChar + line.length, $7Au3Q.fixKey(multilineVars.clef, multilineVars.key));
                 return [
                     line.length
                 ];
             case "P:":
-                if (tuneBuilder.hasBeginMusic()) tuneBuilder.appendElement("part", multilineVars1.iChar + i, multilineVars1.iChar + line.length, {
+                if (tuneBuilder.hasBeginMusic()) tuneBuilder.appendElement("part", multilineVars.iChar + i, multilineVars.iChar + line.length, {
                     title: line.substring(i + 2)
                 });
                 return [
@@ -3335,12 +3251,12 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
             case "Q:":
                 var e = line.indexOf("\x12", i + 2);
                 if (e === -1) e = line.length;
-                var tempo = this.setTempo(line, i + 2, e, multilineVars1.iChar);
-                if (tempo.type === "delaySet") tuneBuilder.appendElement("tempo", multilineVars1.iChar + i, multilineVars1.iChar + line.length, this.calcTempo(tempo.tempo));
-                else if (tempo.type === "immediate") tuneBuilder.appendElement("tempo", multilineVars1.iChar + i, multilineVars1.iChar + line.length, tempo.tempo);
+                var tempo = this.setTempo(line, i + 2, e, multilineVars.iChar);
+                if (tempo.type === "delaySet") tuneBuilder.appendElement("tempo", multilineVars.iChar + i, multilineVars.iChar + line.length, this.calcTempo(tempo.tempo));
+                else if (tempo.type === "immediate") tuneBuilder.appendElement("tempo", multilineVars.iChar + i, multilineVars.iChar + line.length, tempo.tempo);
                 return [
                     e,
-                    line.charAt(i),
+                    line[i],
                     $3fSeU.strip(line.substring(i + 2))
                 ];
             case "V:":
@@ -3348,7 +3264,7 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                 //						startNewLine();
                 return [
                     line.length,
-                    line.charAt(i),
+                    line[i],
                     $3fSeU.strip(line.substring(i + 2))
                 ];
             default:
@@ -3373,70 +3289,73 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
         Z: "transcription"
     };
     this.parseHeader = function(line) {
-        var field = metaTextHeaders[line.charAt(0)];
-        if (field !== undefined) {
-            if (field === "unalignedWords") tuneBuilder.addMetaTextArray(field, $a3Fkr.parseFontChangeLine(tokenizer1.translateString(tokenizer1.stripComment(line.substring(2)))), {
-                startChar: multilineVars1.iChar,
-                endChar: multilineVars1.iChar + line.length
-            });
-            else tuneBuilder.addMetaText(field, tokenizer1.translateString(tokenizer1.stripComment(line.substring(2))), {
-                startChar: multilineVars1.iChar,
-                endChar: multilineVars1.iChar + line.length
-            });
-            return {};
-        } else {
-            var startChar = multilineVars1.iChar;
+        var field = metaTextHeaders[line[0]];
+        var origSize = line.length - 2;
+        var restOfLine = tokenizer.translateString(tokenizer.stripComment(line.substring(2)));
+        if (field === "unalignedWords" || field === "notes") // These fields can be multi-line
+        tuneBuilder.addMetaTextArray(field, $a3Fkr.parseFontChangeLine(restOfLine), {
+            startChar: multilineVars.iChar,
+            endChar: multilineVars.iChar + line.length
+        });
+        else if (field !== undefined) // these fields are single line
+        tuneBuilder.addMetaText(field, $a3Fkr.parseFontChangeLine(restOfLine), {
+            startChar: multilineVars.iChar,
+            endChar: multilineVars.iChar + line.length
+        });
+        else {
+            var startChar = multilineVars.iChar;
             var endChar = startChar + line.length;
-            switch(line.charAt(0)){
+            switch(line[0]){
                 case "H":
-                    tuneBuilder.addMetaText("history", tokenizer1.translateString(tokenizer1.stripComment(line.substring(2))), {
-                        startChar: multilineVars1.iChar,
-                        endChar: multilineVars1.iChar + line.length
+                    // History is a little different because once it starts it continues until another header field is encountered
+                    tuneBuilder.addMetaTextArray("history", $a3Fkr.parseFontChangeLine(restOfLine), {
+                        startChar: multilineVars.iChar,
+                        endChar: multilineVars.iChar + line.length
                     });
-                    line = tokenizer1.peekLine();
-                    while(line && line.charAt(1) !== ":"){
-                        tokenizer1.nextLine();
-                        tuneBuilder.addMetaText("history", tokenizer1.translateString(tokenizer1.stripComment(line)), {
-                            startChar: multilineVars1.iChar,
-                            endChar: multilineVars1.iChar + line.length
+                    line = tokenizer.peekLine();
+                    while(line && line[1] !== ":"){
+                        tokenizer.nextLine();
+                        tuneBuilder.addMetaTextArray("history", $a3Fkr.parseFontChangeLine(tokenizer.translateString(tokenizer.stripComment(line))), {
+                            startChar: multilineVars.iChar,
+                            endChar: multilineVars.iChar + line.length
                         });
-                        line = tokenizer1.peekLine();
+                        line = tokenizer.peekLine();
                     }
                     break;
                 case "K":
                     // since the key is the last thing that can happen in the header, we can resolve the tempo now
                     this.resolveTempo();
-                    var result = $7Au3Q.parseKey(line.substring(2));
-                    if (!multilineVars1.is_in_header && tuneBuilder.hasBeginMusic()) {
-                        if (result.foundClef) tuneBuilder.appendStartingElement("clef", startChar, endChar, multilineVars1.clef);
-                        if (result.foundKey) tuneBuilder.appendStartingElement("key", startChar, endChar, $7Au3Q.fixKey(multilineVars1.clef, multilineVars1.key));
+                    var result = $7Au3Q.parseKey(line.substring(2), false);
+                    if (!multilineVars.is_in_header && tuneBuilder.hasBeginMusic()) {
+                        if (result.foundClef) tuneBuilder.appendStartingElement("clef", startChar, endChar, multilineVars.clef);
+                        if (result.foundKey) tuneBuilder.appendStartingElement("key", startChar, endChar, $7Au3Q.fixKey(multilineVars.clef, multilineVars.key));
                     }
-                    multilineVars1.is_in_header = false; // The first key signifies the end of the header.
+                    multilineVars.is_in_header = false; // The first key signifies the end of the header.
                     break;
                 case "L":
                     this.setDefaultLength(line, 2, line.length);
                     break;
                 case "M":
-                    multilineVars1.origMeter = multilineVars1.meter = this.setMeter(line.substring(2));
+                    multilineVars.origMeter = multilineVars.meter = this.setMeter(line.substring(2));
                     break;
                 case "P":
                     // TODO-PER: There is more to do with parts, but the writer doesn't care.
-                    if (multilineVars1.is_in_header) tuneBuilder.addMetaText("partOrder", tokenizer1.translateString(tokenizer1.stripComment(line.substring(2))), {
-                        startChar: multilineVars1.iChar,
-                        endChar: multilineVars1.iChar + line.length
+                    if (multilineVars.is_in_header) tuneBuilder.addMetaText("partOrder", $a3Fkr.parseFontChangeLine(restOfLine), {
+                        startChar: multilineVars.iChar,
+                        endChar: multilineVars.iChar + line.length
                     });
-                    else multilineVars1.partForNextLine = {
-                        title: tokenizer1.translateString(tokenizer1.stripComment(line.substring(2))),
+                    else multilineVars.partForNextLine = {
+                        title: restOfLine,
                         startChar: startChar,
                         endChar: endChar
                     };
                     break;
                 case "Q":
-                    var tempo = this.setTempo(line, 2, line.length, multilineVars1.iChar);
-                    if (tempo.type === "delaySet") multilineVars1.tempo = tempo.tempo;
+                    var tempo = this.setTempo(line, 2, line.length, multilineVars.iChar);
+                    if (tempo.type === "delaySet") multilineVars.tempo = tempo.tempo;
                     else if (tempo.type === "immediate") {
-                        if (!tune1.metaText.tempo) tune1.metaText.tempo = tempo.tempo;
-                        else multilineVars1.tempoForNextLine = [
+                        if (!tune.metaText.tempo) tune.metaText.tempo = tempo.tempo;
+                        else multilineVars.tempoForNextLine = [
                             "tempo",
                             startChar,
                             endChar,
@@ -3445,14 +3364,15 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                     }
                     break;
                 case "T":
-                    this.setTitle(line.substring(2));
+                    if (multilineVars.titlecaps) restOfLine = restOfLine.toUpperCase();
+                    this.setTitle($a3Fkr.parseFontChangeLine(tokenizer.theReverser(restOfLine)), origSize);
                     break;
                 case "U":
                     this.addUserDefinition(line, 2, line.length);
                     break;
                 case "V":
                     $7Au3Q.parseVoice(line, 2, line.length);
-                    if (!multilineVars1.is_in_header) return {
+                    if (!multilineVars.is_in_header) return {
                         newline: true
                     };
                     break;
@@ -3468,7 +3388,7 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
                     break;
                 case "E":
                 case "m":
-                    warn1("Ignored header", line, 0);
+                    warn("Ignored header", line, 0);
                     break;
                 default:
                     return {
@@ -3482,7 +3402,7 @@ var $63f86828716dd93d$var$ParseHeader = function(tokenizer1, warn1, multilineVar
 module.exports = $63f86828716dd93d$var$ParseHeader;
 
 });
-parcelRequire.register("7Au3Q", function(module, exports) {
+parcelRegister("7Au3Q", function(module, exports) {
 
 var $3fSeU = parcelRequire("3fSeU");
 
@@ -3504,691 +3424,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
         tuneBuilder = tuneBuilder_;
     };
     $586336ac1ef817a0$var$parseKeyVoice.standardKey = function(keyName, root, acc, localTranspose) {
-        var key1sharp = {
-            acc: "sharp",
-            note: "f"
-        };
-        var key2sharp = {
-            acc: "sharp",
-            note: "c"
-        };
-        var key3sharp = {
-            acc: "sharp",
-            note: "g"
-        };
-        var key4sharp = {
-            acc: "sharp",
-            note: "d"
-        };
-        var key5sharp = {
-            acc: "sharp",
-            note: "A"
-        };
-        var key6sharp = {
-            acc: "sharp",
-            note: "e"
-        };
-        var key7sharp = {
-            acc: "sharp",
-            note: "B"
-        };
-        var key1flat = {
-            acc: "flat",
-            note: "B"
-        };
-        var key2flat = {
-            acc: "flat",
-            note: "e"
-        };
-        var key3flat = {
-            acc: "flat",
-            note: "A"
-        };
-        var key4flat = {
-            acc: "flat",
-            note: "d"
-        };
-        var key5flat = {
-            acc: "flat",
-            note: "G"
-        };
-        var key6flat = {
-            acc: "flat",
-            note: "c"
-        };
-        var key7flat = {
-            acc: "flat",
-            note: "F"
-        };
-        var keys = {
-            "C#": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "A#m": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "G#Mix": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "D#Dor": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "E#Phr": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "F#Lyd": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "B#Loc": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "F#": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "D#m": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "C#Mix": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "G#Dor": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "A#Phr": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "BLyd": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "E#Loc": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp
-            ],
-            "B": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "G#m": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "F#Mix": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "C#Dor": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "D#Phr": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "ELyd": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "A#Loc": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp
-            ],
-            "E": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "C#m": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "BMix": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "F#Dor": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "G#Phr": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "ALyd": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "D#Loc": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp
-            ],
-            "A": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "F#m": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "EMix": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "BDor": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "C#Phr": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "DLyd": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "G#Loc": [
-                key1sharp,
-                key2sharp,
-                key3sharp
-            ],
-            "D": [
-                key1sharp,
-                key2sharp
-            ],
-            "Bm": [
-                key1sharp,
-                key2sharp
-            ],
-            "AMix": [
-                key1sharp,
-                key2sharp
-            ],
-            "EDor": [
-                key1sharp,
-                key2sharp
-            ],
-            "F#Phr": [
-                key1sharp,
-                key2sharp
-            ],
-            "GLyd": [
-                key1sharp,
-                key2sharp
-            ],
-            "C#Loc": [
-                key1sharp,
-                key2sharp
-            ],
-            "G": [
-                key1sharp
-            ],
-            "Em": [
-                key1sharp
-            ],
-            "DMix": [
-                key1sharp
-            ],
-            "ADor": [
-                key1sharp
-            ],
-            "BPhr": [
-                key1sharp
-            ],
-            "CLyd": [
-                key1sharp
-            ],
-            "F#Loc": [
-                key1sharp
-            ],
-            "C": [],
-            "Am": [],
-            "GMix": [],
-            "DDor": [],
-            "EPhr": [],
-            "FLyd": [],
-            "BLoc": [],
-            "F": [
-                key1flat
-            ],
-            "Dm": [
-                key1flat
-            ],
-            "CMix": [
-                key1flat
-            ],
-            "GDor": [
-                key1flat
-            ],
-            "APhr": [
-                key1flat
-            ],
-            "BbLyd": [
-                key1flat
-            ],
-            "ELoc": [
-                key1flat
-            ],
-            "Bb": [
-                key1flat,
-                key2flat
-            ],
-            "Gm": [
-                key1flat,
-                key2flat
-            ],
-            "FMix": [
-                key1flat,
-                key2flat
-            ],
-            "CDor": [
-                key1flat,
-                key2flat
-            ],
-            "DPhr": [
-                key1flat,
-                key2flat
-            ],
-            "EbLyd": [
-                key1flat,
-                key2flat
-            ],
-            "ALoc": [
-                key1flat,
-                key2flat
-            ],
-            "Eb": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "Cm": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "BbMix": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "FDor": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "GPhr": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "AbLyd": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "DLoc": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "Ab": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "Fm": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "EbMix": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "BbDor": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "CPhr": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "DbLyd": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "GLoc": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "Db": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "Bbm": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "AbMix": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "EbDor": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "FPhr": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "GbLyd": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "CLoc": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat
-            ],
-            "Gb": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "Ebm": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "DbMix": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "AbDor": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "BbPhr": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "CbLyd": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "FLoc": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat
-            ],
-            "Cb": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            "Abm": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            "GbMix": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            "DbDor": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            "EbPhr": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            "FbLyd": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            "BbLoc": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat,
-                key5flat,
-                key6flat,
-                key7flat
-            ],
-            // The following are not in the 2.0 spec, but seem normal enough.
-            // TODO-PER: These SOUND the same as what's written, but they aren't right
-            "A#": [
-                key1flat,
-                key2flat
-            ],
-            "B#": [],
-            "D#": [
-                key1flat,
-                key2flat,
-                key3flat
-            ],
-            "E#": [
-                key1flat
-            ],
-            "G#": [
-                key1flat,
-                key2flat,
-                key3flat,
-                key4flat
-            ],
-            "Gbm": [
-                key1sharp,
-                key2sharp,
-                key3sharp,
-                key4sharp,
-                key5sharp,
-                key6sharp,
-                key7sharp
-            ],
-            "none": []
-        };
-        return $cPcpK.keySignature(multilineVars, keys, keyName, root, acc, localTranspose);
+        return $cPcpK.keySignature(multilineVars, keyName, root, acc, localTranspose);
     };
     var clefLines = {
         "treble": {
@@ -4420,7 +3656,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             acc: key.acc,
             mode: key.mode
         };
-        $3fSeU.each(key.accidentals, function(k) {
+        key.accidentals.forEach(function(k) {
             ret.accidentals.push($3fSeU.clone(k));
         });
         return ret;
@@ -4445,43 +3681,43 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
         // Shift the key signature from the treble positions to whatever position is needed for the clef.
         // This may put the key signature unnaturally high or low, so if it does, then shift it.
         var mid = clef.verticalPos;
-        $3fSeU.each(key.accidentals, function(acc) {
+        key.accidentals.forEach(function(acc) {
             var pitch = pitches[acc.note];
             pitch = pitch - mid;
             acc.verticalPos = pitch;
         });
-        if (key.impliedNaturals) $3fSeU.each(key.impliedNaturals, function(acc) {
+        if (key.impliedNaturals) key.impliedNaturals.forEach(function(acc) {
             var pitch = pitches[acc.note];
             pitch = pitch - mid;
             acc.verticalPos = pitch;
         });
         if (mid < -10) {
-            $3fSeU.each(key.accidentals, function(acc) {
+            key.accidentals.forEach(function(acc) {
                 acc.verticalPos -= 7;
                 if (acc.verticalPos >= 11 || acc.verticalPos === 10 && acc.acc === "flat") acc.verticalPos -= 7;
                 if (acc.note === "A" && acc.acc === "sharp") acc.verticalPos -= 7;
                 if ((acc.note === "G" || acc.note === "F") && acc.acc === "flat") acc.verticalPos -= 7;
             });
-            if (key.impliedNaturals) $3fSeU.each(key.impliedNaturals, function(acc) {
+            if (key.impliedNaturals) key.impliedNaturals.forEach(function(acc) {
                 acc.verticalPos -= 7;
                 if (acc.verticalPos >= 11 || acc.verticalPos === 10 && acc.acc === "flat") acc.verticalPos -= 7;
                 if (acc.note === "A" && acc.acc === "sharp") acc.verticalPos -= 7;
                 if ((acc.note === "G" || acc.note === "F") && acc.acc === "flat") acc.verticalPos -= 7;
             });
         } else if (mid < -4) {
-            $3fSeU.each(key.accidentals, function(acc) {
+            key.accidentals.forEach(function(acc) {
                 acc.verticalPos -= 7;
                 if (mid === -8 && (acc.note === "f" || acc.note === "g") && acc.acc === "sharp") acc.verticalPos -= 7;
             });
-            if (key.impliedNaturals) $3fSeU.each(key.impliedNaturals, function(acc) {
+            if (key.impliedNaturals) key.impliedNaturals.forEach(function(acc) {
                 acc.verticalPos -= 7;
                 if (mid === -8 && (acc.note === "f" || acc.note === "g") && acc.acc === "sharp") acc.verticalPos -= 7;
             });
         } else if (mid >= 7) {
-            $3fSeU.each(key.accidentals, function(acc) {
+            key.accidentals.forEach(function(acc) {
                 acc.verticalPos += 7;
             });
-            if (key.impliedNaturals) $3fSeU.each(key.impliedNaturals, function(acc) {
+            if (key.impliedNaturals) key.impliedNaturals.forEach(function(acc) {
                 acc.verticalPos += 7;
             });
         }
@@ -4493,13 +3729,13 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
     };
     var parseMiddle = function(str) {
         var i = 0;
-        var p = str.charAt(i++);
-        if (p === "^" || p === "_") p = str.charAt(i++);
+        var p = str[i++];
+        if (p === "^" || p === "_") p = str[i++];
         var mid = pitches[p];
         if (mid === undefined) mid = 6; // If a legal middle note wasn't received, just ignore it.
         for(; i < str.length; i++){
-            if (str.charAt(i) === ",") mid -= 7;
-            else if (str.charAt(i) === "'") mid += 7;
+            if (str[i] === ",") mid -= 7;
+            else if (str[i] === "'") mid += 7;
             else break;
         }
         return {
@@ -4519,7 +3755,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             else if (accs[i].note === "g" && accs[i].acc === "flat") accs[i].note = "G";
         }
     };
-    $586336ac1ef817a0$var$parseKeyVoice.parseKey = function(str) {
+    $586336ac1ef817a0$var$parseKeyVoice.parseKey = function(str, isInline) {
         // returns:
         //		{ foundClef: true, foundKey: true }
         // Side effects:
@@ -4629,8 +3865,12 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
                     // We need to do a deep copy because we are going to modify it
                     var oldKey = $586336ac1ef817a0$var$parseKeyVoice.deepCopyKey(multilineVars.key);
                     //TODO-PER: HACK! To get the local transpose to work, the transposition is done for each line. This caused the global transposition variable to be factored in twice, so, instead of rewriting that right now, I'm just subtracting one of them here.
-                    var keyCompensate = multilineVars.globalTranspose ? -multilineVars.globalTranspose : 0;
+                    var keyCompensate = !isInline && multilineVars.globalTranspose ? -multilineVars.globalTranspose : 0;
+                    //console.log("parse", JSON.stringify(multilineVars), isInline)
+                    var savedOrigKey;
+                    if (isInline) savedOrigKey = multilineVars.globalTransposeOrigKeySig;
                     multilineVars.key = $586336ac1ef817a0$var$parseKeyVoice.deepCopyKey($586336ac1ef817a0$var$parseKeyVoice.standardKey(key, retPitch.token, acc, keyCompensate));
+                    if (isInline) multilineVars.globalTransposeOrigKeySig = savedOrigKey;
                     multilineVars.key.mode = mode;
                     if (oldKey) {
                         // Add natural in all places that the old key had an accidental.
@@ -4780,6 +4020,28 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
                 multilineVars.clef.staffscale = tokens[0].floatt;
                 tokens.shift();
                 break;
+            case "octave":
+                tokens.shift();
+                if (tokens.length === 0) {
+                    warn("Expected = after octave", str, 0);
+                    return ret;
+                }
+                token = tokens.shift();
+                if (token.token !== "=") {
+                    warn("Expected = after octave", str, token.start);
+                    break;
+                }
+                if (tokens.length === 0) {
+                    warn("Expected parameter after octave=", str, 0);
+                    return ret;
+                }
+                if (tokens[0].type !== "number") {
+                    warn("Expected number after octave", str, tokens[0].start);
+                    break;
+                }
+                multilineVars.octave = tokens[0].intt;
+                tokens.shift();
+                break;
             case "style":
                 tokens.shift();
                 if (tokens.length === 0) {
@@ -4897,18 +4159,18 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
         var end = ret.end;
         //The first thing on the line is the ID. It can be any non-space string and terminates at the
         //first space.
-        var id1 = tokenizer.getToken(line, start, end);
-        if (id1.length === 0) {
+        var id = tokenizer.getToken(line, start, end);
+        if (id.length === 0) {
             warn("Expected a voice id", line, start);
             return;
         }
         var isNew = false;
-        if (multilineVars.voices[id1] === undefined) {
-            multilineVars.voices[id1] = {};
+        if (multilineVars.voices[id] === undefined) {
+            multilineVars.voices[id] = {};
             isNew = true;
             if (multilineVars.score_is_present) warn("Can't have an unknown V: id when the %score directive is present", line, start);
         }
-        start += id1.length;
+        start += id.length;
         start += tokenizer.eatWhiteSpace(line, start);
         var staffInfo = {
             startStaff: isNew
@@ -4917,7 +4179,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             var attr = tokenizer.getVoiceToken(line, start, end);
             if (attr.warn !== undefined) warn("Expected value for " + name + " in voice: " + attr.warn, line, start);
             else if (attr.err !== undefined) warn("Expected value for " + name + " in voice: " + attr.err, line, start);
-            else if (attr.token.length === 0 && line.charAt(start) !== '"') warn("Expected value for " + name + " in voice", line, start);
+            else if (attr.token.length === 0 && line[start] !== '"') warn("Expected value for " + name + " in voice", line, start);
             else staffInfo[name] = attr.token;
             start += attr.len;
         };
@@ -4925,7 +4187,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             var attr = tokenizer.getVoiceToken(line, start, end);
             if (attr.warn !== undefined) warn("Expected value for " + name + " in voice: " + attr.warn, line, start);
             else if (attr.err !== undefined) warn("Expected value for " + name + " in voice: " + attr.err, line, start);
-            else if (attr.token.length === 0 && line.charAt(start) !== '"') warn("Expected value for " + name + " in voice", line, start);
+            else if (attr.token.length === 0 && line[start] !== '"') warn("Expected value for " + name + " in voice", line, start);
             else {
                 if (type === "number") attr.token = parseFloat(attr.token);
                 multilineVars.voices[id][name] = attr.token;
@@ -4936,7 +4198,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             var attr = tokenizer.getVoiceToken(line, start, end);
             if (attr.warn !== undefined) warn("Expected value for " + name + " in voice: " + attr.warn, line, start);
             else if (attr.err !== undefined) warn("Expected value for " + name + " in voice: " + attr.err, line, start);
-            else if (attr.token.length === 0 && line.charAt(start) !== '"') warn("Expected value for " + name + " in voice", line, start);
+            else if (attr.token.length === 0 && line[start] !== '"') warn("Expected value for " + name + " in voice", line, start);
             else {
                 if (type === "number") attr.token = parseFloat(attr.token);
                 return attr.token;
@@ -4952,7 +4214,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             };
             var attr = tokenizer.getVoiceToken(line, start, end);
             if (attr.warn !== undefined) warn("Expected one of (_B, _E, _b, _e) for " + name + " in voice: " + attr.warn, line, start);
-            else if (attr.token.length === 0 && line.charAt(start) !== '"') warn("Expected one of (_B, _E, _b, _e) for " + name + " in voice", line, start);
+            else if (attr.token.length === 0 && line[start] !== '"') warn("Expected one of (_B, _E, _b, _e) for " + name + " in voice", line, start);
             else {
                 var t = noteToTransposition[attr.token];
                 if (!t) warn("Expected one of (_B, _E, _b, _e) for " + name + " in voice", line, start);
@@ -4966,7 +4228,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             start += token.len;
             if (token.warn) warn("Error parsing voice: " + token.warn, line, start);
             else {
-                var attr1 = null;
+                var attr = null;
                 switch(token.token){
                     case "clef":
                     case "cl":
@@ -5020,7 +4282,7 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
                         //							}
                         staffInfo.clef = token.token.replace(/[',]/g, ""); //'//comment for emacs formatting of regexp
                         staffInfo.verticalPos = calcMiddle(staffInfo.clef, oct2);
-                        multilineVars.voices[id1].clef = token.token;
+                        multilineVars.voices[id].clef = token.token;
                         break;
                     case "staves":
                     case "stave":
@@ -5049,16 +4311,16 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
                         break;
                     case "stem":
                     case "stems":
-                        attr1 = tokenizer.getVoiceToken(line, start, end);
-                        if (attr1.warn !== undefined) warn("Expected value for stems in voice: " + attr1.warn, line, start);
-                        else if (attr1.err !== undefined) warn("Expected value for stems in voice: " + attr1.err, line, start);
-                        else if (attr1.token === "up" || attr1.token === "down") multilineVars.voices[id1].stem = attr1.token;
+                        attr = tokenizer.getVoiceToken(line, start, end);
+                        if (attr.warn !== undefined) warn("Expected value for stems in voice: " + attr.warn, line, start);
+                        else if (attr.err !== undefined) warn("Expected value for stems in voice: " + attr.err, line, start);
+                        else if (attr.token === "up" || attr.token === "down") multilineVars.voices[id].stem = attr.token;
                         else warn("Expected up or down for voice stem", line, start);
-                        start += attr1.len;
+                        start += attr.len;
                         break;
                     case "up":
                     case "down":
-                        multilineVars.voices[id1].stem = token.token;
+                        multilineVars.voices[id].stem = token.token;
                         break;
                     case "middle":
                     case "m":
@@ -5067,52 +4329,51 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
                         break;
                     case "gchords":
                     case "gch":
-                        multilineVars.voices[id1].suppressChords = true;
+                        multilineVars.voices[id].suppressChords = true;
                         // gchords can stand on its own, or it could be gchords=0.
-                        attr1 = tokenizer.getVoiceToken(line, start, end);
-                        if (attr1.token === "0") start = start + attr1.len;
+                        attr = tokenizer.getVoiceToken(line, start, end);
+                        if (attr.token === "0") start = start + attr.len;
                         break;
                     case "space":
                     case "spc":
                         addNextTokenToStaffInfo("spacing");
                         break;
                     case "scale":
-                        addNextTokenToVoiceInfo(id1, "scale", "number");
+                        addNextTokenToVoiceInfo(id, "scale", "number");
                         break;
                     case "score":
-                        addNextNoteTokenToVoiceInfo(id1, "scoreTranspose");
+                        addNextNoteTokenToVoiceInfo(id, "scoreTranspose");
                         break;
                     case "transpose":
-                        addNextTokenToVoiceInfo(id1, "transpose", "number");
+                        addNextTokenToVoiceInfo(id, "transpose", "number");
                         break;
                     case "stafflines":
-                        addNextTokenToVoiceInfo(id1, "stafflines", "number");
+                        addNextTokenToVoiceInfo(id, "stafflines", "number");
                         break;
                     case "staffscale":
                         // TODO-PER: This is passed to the engraver, but the engraver ignores it.
-                        addNextTokenToVoiceInfo(id1, "staffscale", "number");
+                        addNextTokenToVoiceInfo(id, "staffscale", "number");
                         break;
                     case "octave":
-                        // TODO-PER: This is accepted, but not implemented, yet.
-                        addNextTokenToVoiceInfo(id1, "octave", "number");
+                        addNextTokenToVoiceInfo(id, "octave", "number");
                         break;
                     case "volume":
                         // TODO-PER: This is accepted, but not implemented, yet.
-                        addNextTokenToVoiceInfo(id1, "volume", "number");
+                        addNextTokenToVoiceInfo(id, "volume", "number");
                         break;
                     case "cue":
                         // TODO-PER: This is accepted, but not implemented, yet.
                         var cue = getNextToken("cue", "string");
-                        if (cue === "on") multilineVars.voices[id1].scale = 0.6;
-                        else multilineVars.voices[id1].scale = 1;
+                        if (cue === "on") multilineVars.voices[id].scale = 0.6;
+                        else multilineVars.voices[id].scale = 1;
                         break;
                     case "style":
-                        attr1 = tokenizer.getVoiceToken(line, start, end);
-                        if (attr1.warn !== undefined) warn("Expected value for style in voice: " + attr1.warn, line, start);
-                        else if (attr1.err !== undefined) warn("Expected value for style in voice: " + attr1.err, line, start);
-                        else if (attr1.token === "normal" || attr1.token === "harmonic" || attr1.token === "rhythm" || attr1.token === "x" || attr1.token === "triangle") multilineVars.voices[id1].style = attr1.token;
+                        attr = tokenizer.getVoiceToken(line, start, end);
+                        if (attr.warn !== undefined) warn("Expected value for style in voice: " + attr.warn, line, start);
+                        else if (attr.err !== undefined) warn("Expected value for style in voice: " + attr.err, line, start);
+                        else if (attr.token === "normal" || attr.token === "harmonic" || attr.token === "rhythm" || attr.token === "x" || attr.token === "triangle") multilineVars.voices[id].style = attr.token;
                         else warn("Expected one of [normal, harmonic, rhythm, x, triangle] for voice style", line, start);
-                        start += attr1.len;
+                        start += attr.len;
                         break;
                 }
             }
@@ -5127,18 +4388,18 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
             });
             if (!multilineVars.score_is_present) multilineVars.staves[multilineVars.staves.length - 1].numVoices = 0;
         }
-        if (multilineVars.voices[id1].staffNum === undefined) {
+        if (multilineVars.voices[id].staffNum === undefined) {
             // store where to write this for quick access later.
-            multilineVars.voices[id1].staffNum = multilineVars.staves.length - 1;
+            multilineVars.voices[id].staffNum = multilineVars.staves.length - 1;
             var vi = 0;
             for(var v in multilineVars.voices){
                 if (multilineVars.voices.hasOwnProperty(v)) {
-                    if (multilineVars.voices[v].staffNum === multilineVars.voices[id1].staffNum) vi++;
+                    if (multilineVars.voices[v].staffNum === multilineVars.voices[id].staffNum) vi++;
                 }
             }
-            multilineVars.voices[id1].index = vi - 1;
+            multilineVars.voices[id].index = vi - 1;
         }
-        var s = multilineVars.staves[multilineVars.voices[id1].staffNum];
+        var s = multilineVars.staves[multilineVars.voices[id].staffNum];
         if (!multilineVars.score_is_present) s.numVoices++;
         if (staffInfo.clef) s.clef = {
             type: staffInfo.clef,
@@ -5158,14 +4419,20 @@ var $586336ac1ef817a0$var$parseKeyVoice = {};
                 staffInfo.subname
             ];
         }
-        setCurrentVoice(id1);
+        setCurrentVoice(id);
     };
 })();
 module.exports = $586336ac1ef817a0$var$parseKeyVoice;
 
 });
-parcelRequire.register("cPcpK", function(module, exports) {
+parcelRegister("cPcpK", function(module, exports) {
 //    abc_transpose.js: Handles the automatic transposition of key signatures, chord symbols, and notes.
+
+var $2y9ro = parcelRequire("2y9ro");
+
+var $7M3Qp = parcelRequire("7M3Qp");
+
+var $6CMgS = parcelRequire("6CMgS");
 var $9563e0ab63763daf$var$transpose = {};
 var $9563e0ab63763daf$var$keyIndex = {
     "C": 0,
@@ -5214,16 +4481,16 @@ var $9563e0ab63763daf$var$newKeyMinor = [
     "Bb",
     "B"
 ];
-$9563e0ab63763daf$var$transpose.keySignature = function(multilineVars, keys, keyName, root, acc, localTranspose) {
-    if (multilineVars.clef.type === "perc") return {
-        accidentals: keys[keyName],
+$9563e0ab63763daf$var$transpose.keySignature = function(multilineVars, keyName, root, acc, localTranspose) {
+    if (multilineVars.clef.type === "perc" || multilineVars.clef.type === "none") return {
+        accidentals: $6CMgS(keyName),
         root: root,
         acc: acc
     };
     if (!localTranspose) localTranspose = 0;
     multilineVars.localTransposeVerticalMovement = 0;
     multilineVars.localTransposePreferFlats = false;
-    var k = keys[keyName];
+    var k = $6CMgS(keyName);
     if (!k) return multilineVars.key; // If the key isn't in the list, it is non-standard. We won't attempt to transpose it.
     multilineVars.localTranspose = (multilineVars.globalTranspose ? multilineVars.globalTranspose : 0) + localTranspose;
     if (!multilineVars.localTranspose) return {
@@ -5245,12 +4512,20 @@ $9563e0ab63763daf$var$transpose.keySignature = function(multilineVars, keys, key
         baseKey += keyName[1];
         keyName = keyName.substr(2);
     } else keyName = keyName.substr(1);
-    var index = $9563e0ab63763daf$var$keyIndex[baseKey] + multilineVars.localTranspose;
+    var thisKeyIndex = $9563e0ab63763daf$var$keyIndex[baseKey];
+    var recognized = thisKeyIndex !== undefined;
+    if (!recognized) {
+        // Either the key sig is "none" or we don't recognize it. Either way we don't change it, and we assume key of C for the purposes of this calculation.
+        thisKeyIndex = 0;
+        baseKey = "C";
+        keyName = "";
+    }
+    var index = thisKeyIndex + multilineVars.localTranspose;
     while(index < 0)index += 12;
     if (index > 11) index = index % 12;
     var newKeyName = keyName[0] === "m" ? $9563e0ab63763daf$var$newKeyMinor[index] : $9563e0ab63763daf$var$newKey[index];
     var transposedKey = newKeyName + keyName;
-    var newKeySig = keys[transposedKey];
+    var newKeySig = $6CMgS(transposedKey);
     if (newKeySig.length > 0 && newKeySig[0].acc === "flat") multilineVars.localTransposePreferFlats = true;
     var distance = transposedKey.charCodeAt(0) - baseKey.charCodeAt(0);
     if (multilineVars.localTranspose > 0) {
@@ -5273,122 +4548,19 @@ $9563e0ab63763daf$var$transpose.keySignature = function(multilineVars, keys, key
     }
     if (multilineVars.localTranspose > 0) multilineVars.localTransposeVerticalMovement = distance + Math.floor(multilineVars.localTranspose / 12) * 7;
     else multilineVars.localTransposeVerticalMovement = distance + Math.ceil(multilineVars.localTranspose / 12) * 7;
-    return {
+    if (recognized) return {
         accidentals: newKeySig,
         root: newKeyName[0],
         acc: newKeyName.length > 1 ? newKeyName[1] : ""
     };
+    else return {
+        accidentals: [],
+        root: root,
+        acc: acc
+    };
 };
-var $9563e0ab63763daf$var$sharpChords = [
-    "C",
-    "C\u266F",
-    "D",
-    "D\u266F",
-    "E",
-    "F",
-    "F\u266F",
-    "G",
-    "G\u266F",
-    "A",
-    "A\u266F",
-    "B"
-];
-var $9563e0ab63763daf$var$flatChords = [
-    "C",
-    "D\u266D",
-    "D",
-    "E\u266D",
-    "E",
-    "F",
-    "G\u266D",
-    "G",
-    "A\u266D",
-    "A",
-    "B\u266D",
-    "B"
-];
-var $9563e0ab63763daf$var$sharpChordsFree = [
-    "C",
-    "C#",
-    "D",
-    "D#",
-    "E",
-    "F",
-    "F#",
-    "G",
-    "G#",
-    "A",
-    "A#",
-    "B"
-];
-var $9563e0ab63763daf$var$flatChordsFree = [
-    "C",
-    "Db",
-    "D",
-    "Eb",
-    "E",
-    "F",
-    "Gb",
-    "G",
-    "Ab",
-    "A",
-    "Bb",
-    "B"
-];
 $9563e0ab63763daf$var$transpose.chordName = function(multilineVars, chord) {
-    if (multilineVars.localTranspose && multilineVars.localTranspose % 12 !== 0) {
-        var transposeFactor = multilineVars.localTranspose;
-        while(transposeFactor < 0)transposeFactor += 12;
-        if (transposeFactor > 11) transposeFactor = transposeFactor % 12;
-        if (multilineVars.freegchord) {
-            chord = chord.replace(/Cb/g, "`~11`");
-            chord = chord.replace(/Db/g, "`~1`");
-            chord = chord.replace(/Eb/g, "`~3`");
-            chord = chord.replace(/Fb/g, "`~4`");
-            chord = chord.replace(/Gb/g, "`~6`");
-            chord = chord.replace(/Ab/g, "`~8`");
-            chord = chord.replace(/Bb/g, "`~10`");
-            chord = chord.replace(/C#/g, "`~1`");
-            chord = chord.replace(/D#/g, "`~3`");
-            chord = chord.replace(/E#/g, "`~5`");
-            chord = chord.replace(/F#/g, "`~6`");
-            chord = chord.replace(/G#/g, "`~8`");
-            chord = chord.replace(/A#/g, "`~10`");
-            chord = chord.replace(/B#/g, "`~0`");
-        } else {
-            chord = chord.replace(/C♭/g, "`~11`");
-            chord = chord.replace(/D♭/g, "`~1`");
-            chord = chord.replace(/E♭/g, "`~3`");
-            chord = chord.replace(/F♭/g, "`~4`");
-            chord = chord.replace(/G♭/g, "`~6`");
-            chord = chord.replace(/A♭/g, "`~8`");
-            chord = chord.replace(/B♭/g, "`~10`");
-            chord = chord.replace(/C♯/g, "`~1`");
-            chord = chord.replace(/D♯/g, "`~3`");
-            chord = chord.replace(/E♯/g, "`~5`");
-            chord = chord.replace(/F♯/g, "`~6`");
-            chord = chord.replace(/G♯/g, "`~8`");
-            chord = chord.replace(/A♯/g, "`~10`");
-            chord = chord.replace(/B♯/g, "`~0`");
-        }
-        chord = chord.replace(/C/g, "`~0`");
-        chord = chord.replace(/D/g, "`~2`");
-        chord = chord.replace(/E/g, "`~4`");
-        chord = chord.replace(/F/g, "`~5`");
-        chord = chord.replace(/G/g, "`~7`");
-        chord = chord.replace(/A/g, "`~9`");
-        chord = chord.replace(/B/g, "`~11`");
-        var arr = chord.split("`");
-        for(var i = 0; i < arr.length; i++)if (arr[i][0] === "~") {
-            var chordNum = parseInt(arr[i].substr(1), 10);
-            chordNum += transposeFactor;
-            if (chordNum > 11) chordNum -= 12;
-            if (multilineVars.freegchord) arr[i] = multilineVars.localTransposePreferFlats ? $9563e0ab63763daf$var$flatChordsFree[chordNum] : $9563e0ab63763daf$var$sharpChordsFree[chordNum];
-            else arr[i] = multilineVars.localTransposePreferFlats ? $9563e0ab63763daf$var$flatChords[chordNum] : $9563e0ab63763daf$var$sharpChords[chordNum];
-        }
-        chord = arr.join("");
-    }
-    return chord;
+    return $7M3Qp(chord, multilineVars.localTranspose, multilineVars.localTransposePreferFlats, multilineVars.freegchord);
 };
 var $9563e0ab63763daf$var$pitchToLetter = [
     "c",
@@ -5436,26 +4608,670 @@ var $9563e0ab63763daf$var$accidentals2 = {
     "1": "sharp",
     "2": "dblsharp"
 };
+var $9563e0ab63763daf$var$accidentals3 = {
+    "-2": "__",
+    "-1": "_",
+    "0": "=",
+    "1": "^",
+    "2": "^^"
+};
+//var count = 0
 $9563e0ab63763daf$var$transpose.note = function(multilineVars, el) {
-    // the "el" that is passed in has el.accidental, and el.pitch. "pitch" is the vertical position (0=middle C)
+    // the "el" that is passed in has el.name, el.accidental, and el.pitch. "pitch" is the vertical position (0=middle C)
     // localTranspose is the number of half steps
     // localTransposeVerticalMovement is the vertical distance to move.
+    //console.log(count++,multilineVars.localTranspose, el)
     if (!multilineVars.localTranspose || multilineVars.clef.type === "perc") return;
     var origPitch = el.pitch;
-    el.pitch = el.pitch + multilineVars.localTransposeVerticalMovement;
+    if (multilineVars.localTransposeVerticalMovement) {
+        el.pitch = el.pitch + multilineVars.localTransposeVerticalMovement;
+        if (el.name) {
+            var actual = el.accidental ? el.name.substring(1) : el.name;
+            var acc = el.accidental ? el.name[0] : "";
+            var p = $2y9ro.pitchIndex(actual);
+            el.name = acc + $2y9ro.noteName(p + multilineVars.localTransposeVerticalMovement);
+        }
+    }
     if (el.accidental) {
         var ret = $9563e0ab63763daf$var$accidentalChange(origPitch, el.pitch, el.accidental, multilineVars.globalTransposeOrigKeySig, multilineVars.targetKey);
         el.pitch = ret[0];
         el.accidental = $9563e0ab63763daf$var$accidentals2[ret[1]];
+        if (el.name) el.name = $9563e0ab63763daf$var$accidentals3[ret[1]] + el.name.replace(/[_^=]/g, "");
     }
 };
 module.exports = $9563e0ab63763daf$var$transpose;
 
 });
+parcelRegister("2y9ro", function(module, exports) {
+var $1db6147f64acd659$var$allNotes = {};
+const $1db6147f64acd659$var$allPitches = [
+    "C,,,",
+    "D,,,",
+    "E,,,",
+    "F,,,",
+    "G,,,",
+    "A,,,",
+    "B,,,",
+    "C,,",
+    "D,,",
+    "E,,",
+    "F,,",
+    "G,,",
+    "A,,",
+    "B,,",
+    "C,",
+    "D,",
+    "E,",
+    "F,",
+    "G,",
+    "A,",
+    "B,",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "a",
+    "b",
+    "c'",
+    "d'",
+    "e'",
+    "f'",
+    "g'",
+    "a'",
+    "b'",
+    "c''",
+    "d''",
+    "e''",
+    "f''",
+    "g''",
+    "a''",
+    "b''",
+    "c'''",
+    "d'''",
+    "e'''",
+    "f'''",
+    "g'''",
+    "a'''",
+    "b'''"
+];
+$1db6147f64acd659$var$allNotes.pitchIndex = function(noteName) {
+    return $1db6147f64acd659$var$allPitches.indexOf(noteName);
+};
+$1db6147f64acd659$var$allNotes.noteName = function(pitchIndex) {
+    return $1db6147f64acd659$var$allPitches[pitchIndex];
+};
+module.exports = $1db6147f64acd659$var$allNotes;
+
+});
+
+parcelRegister("7M3Qp", function(module, exports) {
+var $5a8fff7bb850a093$var$sharpChords = [
+    "C",
+    "C\u266F",
+    "D",
+    "D\u266F",
+    "E",
+    "F",
+    "F\u266F",
+    "G",
+    "G\u266F",
+    "A",
+    "A\u266F",
+    "B"
+];
+var $5a8fff7bb850a093$var$flatChords = [
+    "C",
+    "D\u266D",
+    "D",
+    "E\u266D",
+    "E",
+    "F",
+    "G\u266D",
+    "G",
+    "A\u266D",
+    "A",
+    "B\u266D",
+    "B"
+];
+var $5a8fff7bb850a093$var$sharpChordsFree = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B"
+];
+var $5a8fff7bb850a093$var$flatChordsFree = [
+    "C",
+    "Db",
+    "D",
+    "Eb",
+    "E",
+    "F",
+    "Gb",
+    "G",
+    "Ab",
+    "A",
+    "Bb",
+    "B"
+];
+function $5a8fff7bb850a093$var$transposeChordName(chord, steps, preferFlats, freeGCchord) {
+    if (!steps || steps % 12 === 0) return chord;
+    // There are two things in the chord that might need to be transposed:
+    // The chord will start with a letter from A-G, and might have one accidental after it.
+    // That accidental might be an actual sharp or flat char, or it might be a pound sign or lower case "b".
+    // Then there is a bunch of stuff that isn't transposed and should just be copied. That is stuff like "7" and more complicated chords.
+    // But there is one other exception: right after a slash there will be a bass note and possibly an accidental. That should also be transposed.
+    while(steps < 0)steps += 12;
+    if (steps > 11) steps = steps % 12;
+    // (chord name w/accidental) (a bunch of stuff) (/) (bass note) (anything else)
+    var match = chord.match(/^([A-G][b#♭♯]?)([^\/]+)?\/?([A-G][b#♭♯]?)?(.+)?/);
+    if (!match) return chord; // We don't recognize the format of the chord, so skip it.
+    var name = match[1];
+    var extra1 = match[2];
+    var bass = match[3];
+    var extra2 = match[4];
+    var index = $5a8fff7bb850a093$var$sharpChords.indexOf(name);
+    if (index < 0) index = $5a8fff7bb850a093$var$flatChords.indexOf(name);
+    if (index < 0) index = $5a8fff7bb850a093$var$sharpChordsFree.indexOf(name);
+    if (index < 0) index = $5a8fff7bb850a093$var$flatChordsFree.indexOf(name);
+    if (index < 0) return chord; // This should never happen, but if we can't find the chord just bail.	
+    index += steps;
+    index = index % 12;
+    if (preferFlats) {
+        if (freeGCchord) chord = $5a8fff7bb850a093$var$flatChordsFree[index];
+        else chord = $5a8fff7bb850a093$var$flatChords[index];
+    } else if (freeGCchord) chord = $5a8fff7bb850a093$var$sharpChordsFree[index];
+    else chord = $5a8fff7bb850a093$var$sharpChords[index];
+    if (extra1) chord += extra1;
+    if (bass) {
+        var index = $5a8fff7bb850a093$var$sharpChords.indexOf(bass);
+        if (index < 0) index = $5a8fff7bb850a093$var$flatChords.indexOf(bass);
+        if (index < 0) index = $5a8fff7bb850a093$var$sharpChordsFree.indexOf(bass);
+        if (index < 0) index = $5a8fff7bb850a093$var$flatChordsFree.indexOf(bass);
+        chord += "/";
+        if (index >= 0) {
+            index += steps;
+            index = index % 12;
+            if (preferFlats) {
+                if (freeGCchord) chord += $5a8fff7bb850a093$var$flatChordsFree[index];
+                else chord += $5a8fff7bb850a093$var$flatChords[index];
+            } else if (freeGCchord) chord += $5a8fff7bb850a093$var$sharpChordsFree[index];
+            else chord += $5a8fff7bb850a093$var$sharpChords[index];
+        } else chord += bass; // Don't know what to do so do nothing
+    }
+    if (extra2) chord += extra2;
+    return chord;
+}
+module.exports = $5a8fff7bb850a093$var$transposeChordName;
+
+});
+
+parcelRegister("6CMgS", function(module, exports) {
+
+var $gdibq = parcelRequire("gdibq");
+var $4d2bbc55db0294fa$require$relativeMajor = $gdibq.relativeMajor;
+var $4d2bbc55db0294fa$var$key1sharp = {
+    acc: "sharp",
+    note: "f"
+};
+var $4d2bbc55db0294fa$var$key2sharp = {
+    acc: "sharp",
+    note: "c"
+};
+var $4d2bbc55db0294fa$var$key3sharp = {
+    acc: "sharp",
+    note: "g"
+};
+var $4d2bbc55db0294fa$var$key4sharp = {
+    acc: "sharp",
+    note: "d"
+};
+var $4d2bbc55db0294fa$var$key5sharp = {
+    acc: "sharp",
+    note: "A"
+};
+var $4d2bbc55db0294fa$var$key6sharp = {
+    acc: "sharp",
+    note: "e"
+};
+var $4d2bbc55db0294fa$var$key7sharp = {
+    acc: "sharp",
+    note: "B"
+};
+var $4d2bbc55db0294fa$var$key1flat = {
+    acc: "flat",
+    note: "B"
+};
+var $4d2bbc55db0294fa$var$key2flat = {
+    acc: "flat",
+    note: "e"
+};
+var $4d2bbc55db0294fa$var$key3flat = {
+    acc: "flat",
+    note: "A"
+};
+var $4d2bbc55db0294fa$var$key4flat = {
+    acc: "flat",
+    note: "d"
+};
+var $4d2bbc55db0294fa$var$key5flat = {
+    acc: "flat",
+    note: "G"
+};
+var $4d2bbc55db0294fa$var$key6flat = {
+    acc: "flat",
+    note: "c"
+};
+var $4d2bbc55db0294fa$var$key7flat = {
+    acc: "flat",
+    note: "F"
+};
+var $4d2bbc55db0294fa$var$keys = {
+    "C#": [
+        $4d2bbc55db0294fa$var$key1sharp,
+        $4d2bbc55db0294fa$var$key2sharp,
+        $4d2bbc55db0294fa$var$key3sharp,
+        $4d2bbc55db0294fa$var$key4sharp,
+        $4d2bbc55db0294fa$var$key5sharp,
+        $4d2bbc55db0294fa$var$key6sharp,
+        $4d2bbc55db0294fa$var$key7sharp
+    ],
+    "F#": [
+        $4d2bbc55db0294fa$var$key1sharp,
+        $4d2bbc55db0294fa$var$key2sharp,
+        $4d2bbc55db0294fa$var$key3sharp,
+        $4d2bbc55db0294fa$var$key4sharp,
+        $4d2bbc55db0294fa$var$key5sharp,
+        $4d2bbc55db0294fa$var$key6sharp
+    ],
+    "B": [
+        $4d2bbc55db0294fa$var$key1sharp,
+        $4d2bbc55db0294fa$var$key2sharp,
+        $4d2bbc55db0294fa$var$key3sharp,
+        $4d2bbc55db0294fa$var$key4sharp,
+        $4d2bbc55db0294fa$var$key5sharp
+    ],
+    "E": [
+        $4d2bbc55db0294fa$var$key1sharp,
+        $4d2bbc55db0294fa$var$key2sharp,
+        $4d2bbc55db0294fa$var$key3sharp,
+        $4d2bbc55db0294fa$var$key4sharp
+    ],
+    "A": [
+        $4d2bbc55db0294fa$var$key1sharp,
+        $4d2bbc55db0294fa$var$key2sharp,
+        $4d2bbc55db0294fa$var$key3sharp
+    ],
+    "D": [
+        $4d2bbc55db0294fa$var$key1sharp,
+        $4d2bbc55db0294fa$var$key2sharp
+    ],
+    "G": [
+        $4d2bbc55db0294fa$var$key1sharp
+    ],
+    "C": [],
+    "F": [
+        $4d2bbc55db0294fa$var$key1flat
+    ],
+    "Bb": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat
+    ],
+    "Eb": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat
+    ],
+    "Cm": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat
+    ],
+    "Ab": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat,
+        $4d2bbc55db0294fa$var$key4flat
+    ],
+    "Db": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat,
+        $4d2bbc55db0294fa$var$key4flat,
+        $4d2bbc55db0294fa$var$key5flat
+    ],
+    "Gb": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat,
+        $4d2bbc55db0294fa$var$key4flat,
+        $4d2bbc55db0294fa$var$key5flat,
+        $4d2bbc55db0294fa$var$key6flat
+    ],
+    "Cb": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat,
+        $4d2bbc55db0294fa$var$key4flat,
+        $4d2bbc55db0294fa$var$key5flat,
+        $4d2bbc55db0294fa$var$key6flat,
+        $4d2bbc55db0294fa$var$key7flat
+    ],
+    // The following are not in the 2.0 spec, but seem normal enough.
+    // TODO-PER: These SOUND the same as what's written, but they aren't right
+    "A#": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat
+    ],
+    "B#": [],
+    "D#": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat
+    ],
+    "E#": [
+        $4d2bbc55db0294fa$var$key1flat
+    ],
+    "G#": [
+        $4d2bbc55db0294fa$var$key1flat,
+        $4d2bbc55db0294fa$var$key2flat,
+        $4d2bbc55db0294fa$var$key3flat,
+        $4d2bbc55db0294fa$var$key4flat
+    ],
+    "none": []
+};
+function $4d2bbc55db0294fa$var$keyAccidentals(key) {
+    var newKey = $4d2bbc55db0294fa$var$keys[$4d2bbc55db0294fa$require$relativeMajor(key)];
+    if (!newKey) return null;
+    return JSON.parse(JSON.stringify(newKey));
+}
+module.exports = $4d2bbc55db0294fa$var$keyAccidentals;
+
+});
+parcelRegister("gdibq", function(module, exports) {
+// All these keys have the same number of accidentals
+var $bcdbf70f5e2e3802$var$keys = {
+    "C": {
+        modes: [
+            "CMaj",
+            "Amin",
+            "Am",
+            "GMix",
+            "DDor",
+            "EPhr",
+            "FLyd",
+            "BLoc"
+        ],
+        stepsFromC: 0
+    },
+    "Db": {
+        modes: [
+            "DbMaj",
+            "Bbmin",
+            "Bbm",
+            "AbMix",
+            "EbDor",
+            "FPhr",
+            "GbLyd",
+            "CLoc"
+        ],
+        stepsFromC: 1
+    },
+    "D": {
+        modes: [
+            "DMaj",
+            "Bmin",
+            "Bm",
+            "AMix",
+            "EDor",
+            "F#Phr",
+            "GLyd",
+            "C#Loc"
+        ],
+        stepsFromC: 2
+    },
+    "Eb": {
+        modes: [
+            "EbMaj",
+            "Cmin",
+            "Cm",
+            "BbMix",
+            "FDor",
+            "GPhr",
+            "AbLyd",
+            "DLoc"
+        ],
+        stepsFromC: 3
+    },
+    "E": {
+        modes: [
+            "EMaj",
+            "C#min",
+            "C#m",
+            "BMix",
+            "F#Dor",
+            "G#Phr",
+            "ALyd",
+            "D#Loc"
+        ],
+        stepsFromC: 4
+    },
+    "F": {
+        modes: [
+            "FMaj",
+            "Dmin",
+            "Dm",
+            "CMix",
+            "GDor",
+            "APhr",
+            "BbLyd",
+            "ELoc"
+        ],
+        stepsFromC: 5
+    },
+    "Gb": {
+        modes: [
+            "GbMaj",
+            "Ebmin",
+            "Ebm",
+            "DbMix",
+            "AbDor",
+            "BbPhr",
+            "CbLyd",
+            "FLoc"
+        ],
+        stepsFromC: 6
+    },
+    "G": {
+        modes: [
+            "GMaj",
+            "Emin",
+            "Em",
+            "DMix",
+            "ADor",
+            "BPhr",
+            "CLyd",
+            "F#Loc"
+        ],
+        stepsFromC: 7
+    },
+    "Ab": {
+        modes: [
+            "AbMaj",
+            "Fmin",
+            "Fm",
+            "EbMix",
+            "BbDor",
+            "CPhr",
+            "DbLyd",
+            "GLoc"
+        ],
+        stepsFromC: 8
+    },
+    "A": {
+        modes: [
+            "AMaj",
+            "F#min",
+            "F#m",
+            "EMix",
+            "BDor",
+            "C#Phr",
+            "DLyd",
+            "G#Loc"
+        ],
+        stepsFromC: 9
+    },
+    "Bb": {
+        modes: [
+            "BbMaj",
+            "Gmin",
+            "Gm",
+            "FMix",
+            "CDor",
+            "DPhr",
+            "EbLyd",
+            "ALoc"
+        ],
+        stepsFromC: 10
+    },
+    "B": {
+        modes: [
+            "BMaj",
+            "G#min",
+            "G#m",
+            "F#Mix",
+            "C#Dor",
+            "D#Phr",
+            "ELyd",
+            "A#Loc"
+        ],
+        stepsFromC: 11
+    },
+    // Enharmonic keys
+    "C#": {
+        modes: [
+            "C#Maj",
+            "A#min",
+            "A#m",
+            "G#Mix",
+            "D#Dor",
+            "E#Phr",
+            "F#Lyd",
+            "B#Loc"
+        ],
+        stepsFromC: 1
+    },
+    "F#": {
+        modes: [
+            "F#Maj",
+            "D#min",
+            "D#m",
+            "C#Mix",
+            "G#Dor",
+            "A#Phr",
+            "BLyd",
+            "E#Loc"
+        ],
+        stepsFromC: 6
+    },
+    "Cb": {
+        modes: [
+            "CbMaj",
+            "Abmin",
+            "Abm",
+            "GbMix",
+            "DbDor",
+            "EbPhr",
+            "FbLyd",
+            "BbLoc"
+        ],
+        stepsFromC: 11
+    }
+};
+var $bcdbf70f5e2e3802$var$keyReverse = null;
+function $bcdbf70f5e2e3802$var$createKeyReverse() {
+    $bcdbf70f5e2e3802$var$keyReverse = {};
+    var allKeys = Object.keys($bcdbf70f5e2e3802$var$keys);
+    for(var i = 0; i < allKeys.length; i++){
+        var keyObj = $bcdbf70f5e2e3802$var$keys[allKeys[i]];
+        $bcdbf70f5e2e3802$var$keyReverse[allKeys[i].toLowerCase()] = allKeys[i];
+        for(var j = 0; j < keyObj.modes.length; j++){
+            var mode = keyObj.modes[j].toLowerCase();
+            $bcdbf70f5e2e3802$var$keyReverse[mode] = allKeys[i];
+        }
+    }
+}
+function $bcdbf70f5e2e3802$var$relativeMajor(key) {
+    // Translate a key to its relative major. If it doesn't exist, do the best we can
+    // by just returning the original key.
+    // There are alternate spellings of these - so the search needs to be case insensitive.
+    // To make this efficient, the first time this is called the "keys" object is reversed so this search is fast in the future
+    if (!$bcdbf70f5e2e3802$var$keyReverse) $bcdbf70f5e2e3802$var$createKeyReverse();
+    // get the key portion itself - there might be other stuff, like extra sharps and flats, or the mode written out.
+    var mode = key.toLowerCase().match(/([a-g][b#]?)(maj|min|mix|dor|phr|lyd|loc|m)?/);
+    if (!mode || !mode[2]) return key;
+    mode = mode[1] + mode[2];
+    var maj = $bcdbf70f5e2e3802$var$keyReverse[mode];
+    if (maj) return maj;
+    return key;
+}
+function $bcdbf70f5e2e3802$var$relativeMode(majorKey, mode) {
+    // The reverse of the relativeMajor. Translate it back to the original mode.
+    // If it isn't a recognized mode or it is already major, then just return the major key.
+    var group = $bcdbf70f5e2e3802$var$keys[majorKey];
+    if (!group) return majorKey;
+    if (mode === "") return majorKey;
+    var match = mode.toLowerCase().match(/^(maj|min|mix|dor|phr|lyd|loc|m)/);
+    if (!match) return majorKey;
+    var regMode = match[1];
+    for(var i = 0; i < group.modes.length; i++){
+        var thisMode = group.modes[i];
+        var ind = thisMode.toLowerCase().indexOf(regMode);
+        if (ind !== -1 && ind === thisMode.length - regMode.length) return thisMode.substring(0, thisMode.length - regMode.length);
+    }
+    return majorKey;
+}
+function $bcdbf70f5e2e3802$var$transposeKey(key, steps) {
+    // This takes a major key and adds the desired steps.
+    // It assigns each key a number that is the number of steps from C so that there can just be arithmetic.
+    var match = $bcdbf70f5e2e3802$var$keys[key];
+    if (!match) return key;
+    while(steps < 0)steps += 12;
+    var fromC = (match.stepsFromC + steps) % 12;
+    for(var i = 0; i < Object.keys($bcdbf70f5e2e3802$var$keys).length; i++){
+        var k = Object.keys($bcdbf70f5e2e3802$var$keys)[i];
+        if ($bcdbf70f5e2e3802$var$keys[k].stepsFromC === fromC) return k;
+    }
+    return key;
+}
+module.exports = {
+    relativeMajor: $bcdbf70f5e2e3802$var$relativeMajor,
+    relativeMode: $bcdbf70f5e2e3802$var$relativeMode,
+    transposeKey: $bcdbf70f5e2e3802$var$transposeKey
+};
+
+});
 
 
 
-parcelRequire.register("29cGK", function(module, exports) {
+
+
+parcelRegister("29cGK", function(module, exports) {
 
 var $3fSeU = parcelRequire("3fSeU");
 
@@ -5468,6 +5284,19 @@ var $190643afc7e6d067$var$multilineVars;
 var $190643afc7e6d067$var$tune;
 var $190643afc7e6d067$var$tuneBuilder;
 var $190643afc7e6d067$var$header;
+
+var $5ADsX = parcelRequire("5ADsX");
+var $190643afc7e6d067$require$legalAccents = $5ADsX.legalAccents;
+var $190643afc7e6d067$require$volumeDecorations = $5ADsX.volumeDecorations;
+var $190643afc7e6d067$require$dynamicDecorations = $5ADsX.dynamicDecorations;
+var $190643afc7e6d067$require$accentPseudonyms = $5ADsX.accentPseudonyms;
+var $190643afc7e6d067$require$accentDynamicPseudonyms = $5ADsX.accentDynamicPseudonyms;
+var $190643afc7e6d067$require$nonDecorations = $5ADsX.nonDecorations;
+var $190643afc7e6d067$require$durations = $5ADsX.durations;
+var $190643afc7e6d067$require$pitches = $5ADsX.pitches;
+var $190643afc7e6d067$require$rests = $5ADsX.rests;
+var $190643afc7e6d067$require$accMap = $5ADsX.accMap;
+var $190643afc7e6d067$require$tripletQ = $5ADsX.tripletQ;
 var $190643afc7e6d067$var$MusicParser = function(_tokenizer, _warn, _multilineVars, _tune, _tuneBuilder, _header) {
     $190643afc7e6d067$var$tokenizer = _tokenizer;
     $190643afc7e6d067$var$warn = _warn;
@@ -5530,13 +5359,12 @@ var $190643afc7e6d067$var$MusicParser = function(_tokenizer, _warn, _multilineVa
 // double-quote: chord symbol
 // less-than, greater-than, slash: duration
 // back-tick, space, tab: space
-var $190643afc7e6d067$var$nonDecorations = "ABCDEFGabcdefgxyzZ[]|^_{"; // use this to prescreen so we don't have to look for a decoration at every note.
-var $190643afc7e6d067$var$isInTie = function(multilineVars1, overlayLevel, el1) {
-    if (multilineVars1.inTie[overlayLevel] === undefined) return false;
+var $190643afc7e6d067$var$isInTie = function(multilineVars, overlayLevel, el) {
+    if (multilineVars.inTie[overlayLevel] === undefined) return false;
     // If this is single voice music then the voice index isn't set, so we use the first voice.
-    var voiceIndex = multilineVars1.currentVoice ? multilineVars1.currentVoice.index : 0;
-    if (multilineVars1.inTie[overlayLevel][voiceIndex]) {
-        if (el1.pitches !== undefined || el1.rest.type !== "spacer") return true;
+    var voiceIndex = multilineVars.currentVoice ? multilineVars.currentVoice.staffNum * 100 + multilineVars.currentVoice.index : 0;
+    if (multilineVars.inTie[overlayLevel][voiceIndex]) {
+        if (el.pitches !== undefined || el.rest.type !== "spacer") return true;
     }
     return false;
 };
@@ -5548,8 +5376,8 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
     var i = 0;
     var startOfLine = $190643afc7e6d067$var$multilineVars.iChar;
     // see if there is nothing but a comment on this line. If so, just ignore it. A full line comment is optional white space followed by %
-    while($190643afc7e6d067$var$tokenizer.isWhiteSpace(line.charAt(i)) && i < line.length)i++;
-    if (i === line.length || line.charAt(i) === "%") return;
+    while($190643afc7e6d067$var$tokenizer.isWhiteSpace(line[i]) && i < line.length)i++;
+    if (i === line.length || line[i] === "%") return;
     // Start with the standard staff, clef and key symbols on each line
     var delayStartNewLine = $190643afc7e6d067$var$multilineVars.start_new_line;
     if ($190643afc7e6d067$var$multilineVars.continueall === undefined) $190643afc7e6d067$var$multilineVars.start_new_line = true;
@@ -5567,7 +5395,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
     var overlayLevel = 0;
     while(i < line.length){
         var startI = i;
-        if (line.charAt(i) === "%") break;
+        if (line[i] === "%") break;
         var retInlineHeader = $190643afc7e6d067$var$header.letter_to_inline_header(line, i, delayStartNewLine);
         if (retInlineHeader[0] > 0) {
             i += retInlineHeader[0];
@@ -5592,7 +5420,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
             while(true){
                 ret = $190643afc7e6d067$var$tokenizer.eatWhiteSpace(line, i);
                 if (ret > 0) i += ret;
-                if (i > 0 && line.charAt(i - 1) === "\x12") {
+                if (i > 0 && line[i - 1] === "\x12") {
                     // there is one case where a line continuation isn't the same as being on the same line, and that is if the next character after it is a header.
                     ret = $190643afc7e6d067$var$header.letter_to_body_header(line, i);
                     if (ret[0] > 0) {
@@ -5632,7 +5460,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                     if (ii > 0) $190643afc7e6d067$var$el.force_end_beam_last = true;
                     i += ii;
                 } else {
-                    if ($190643afc7e6d067$var$nonDecorations.indexOf(line.charAt(i)) === -1) ret = $190643afc7e6d067$var$letter_to_accent(line, i);
+                    if ($190643afc7e6d067$require$nonDecorations.indexOf(line[i]) === -1) ret = $190643afc7e6d067$var$letter_to_accent(line, i);
                     else ret = [
                         0
                     ];
@@ -5705,7 +5533,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                         }
                     }
                     $190643afc7e6d067$var$multilineVars.addFormattingOptions($190643afc7e6d067$var$el, $190643afc7e6d067$var$tune.formatting, "bar");
-                    $190643afc7e6d067$var$tuneBuilder.appendElement("bar", startOfLine + i, startOfLine + i + ret[0], bar);
+                    $190643afc7e6d067$var$tuneBuilder.appendElement("bar", startOfLine + startI, startOfLine + i + ret[0], bar);
                     $190643afc7e6d067$var$multilineVars.measureNotEmpty = false;
                     $190643afc7e6d067$var$el = {};
                 }
@@ -5737,7 +5565,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                     i += ret.consumed;
                 }
                 // handle chords.
-                if (line.charAt(i) === "[") {
+                if (line[i] === "[") {
                     var chordStartChar = i;
                     i++;
                     var chordDuration = null;
@@ -5775,12 +5603,12 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                             if (chordNote.startTie) $190643afc7e6d067$var$multilineVars.inTieChord[$190643afc7e6d067$var$el.pitches.length] = true;
                             i = chordNote.endChar;
                             delete chordNote.endChar;
-                        } else if (line.charAt(i) === " ") {
+                        } else if (line[i] === " ") {
                             // Spaces are not allowed in chords, but we can recover from it by ignoring it.
                             $190643afc7e6d067$var$warn("Spaces are not allowed in chords", line, i);
                             i++;
                         } else {
-                            if (i < line.length && line.charAt(i) === "]") {
+                            if (i < line.length && line[i] === "]") {
                                 // consume the close bracket
                                 i++;
                                 if ($190643afc7e6d067$var$multilineVars.next_note_duration !== 0) {
@@ -5788,7 +5616,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                                     $190643afc7e6d067$var$multilineVars.next_note_duration = 0;
                                 }
                                 if ($190643afc7e6d067$var$isInTie($190643afc7e6d067$var$multilineVars, overlayLevel, $190643afc7e6d067$var$el)) {
-                                    $3fSeU.each($190643afc7e6d067$var$el.pitches, function(pitch) {
+                                    $190643afc7e6d067$var$el.pitches.forEach(function(pitch) {
                                         pitch.endTie = true;
                                     });
                                     $190643afc7e6d067$var$setIsInTie($190643afc7e6d067$var$multilineVars, overlayLevel, false);
@@ -5799,7 +5627,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                                 }
                                 var postChordDone = false;
                                 while(i < line.length && !postChordDone){
-                                    switch(line.charAt(i)){
+                                    switch(line[i]){
                                         case " ":
                                         case "	":
                                             $190643afc7e6d067$var$addEndBeam($190643afc7e6d067$var$el);
@@ -5809,7 +5637,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                                             else $190643afc7e6d067$var$el.endSlur++;
                                             break;
                                         case "-":
-                                            $3fSeU.each($190643afc7e6d067$var$el.pitches, function(pitch) {
+                                            $190643afc7e6d067$var$el.pitches.forEach(function(pitch) {
                                                 pitch.startTie = {};
                                             });
                                             $190643afc7e6d067$var$setIsInTie($190643afc7e6d067$var$multilineVars, overlayLevel, true);
@@ -5835,8 +5663,9 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                                             var fraction = $190643afc7e6d067$var$tokenizer.getFraction(line, i);
                                             chordDuration = fraction.value;
                                             i = fraction.index;
-                                            if (line.charAt(i) === " ") rememberEndBeam = true;
-                                            if (line.charAt(i) === "-" || line.charAt(i) === ")" || line.charAt(i) === " " || line.charAt(i) === "<" || line.charAt(i) === ">") i--; // Subtracting one because one is automatically added below
+                                            var ch = line[i];
+                                            if (ch === " ") rememberEndBeam = true;
+                                            if (ch === "-" || ch === ")" || ch === " " || ch === "<" || ch === ">") i--; // Subtracting one because one is automatically added below
                                             else postChordDone = true;
                                             break;
                                         default:
@@ -5916,45 +5745,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                         // Create a warning if this is not a displayable duration.
                         // The first item on a line is a regular note value, each item after that represents a dot placed after the previous note.
                         // Only durations less than a whole note are tested because whole note durations have some tricky rules.
-                        var durations = [
-                            0.5,
-                            0.75,
-                            0.875,
-                            0.9375,
-                            0.96875,
-                            0.984375,
-                            0.25,
-                            0.375,
-                            0.4375,
-                            0.46875,
-                            0.484375,
-                            0.4921875,
-                            0.125,
-                            0.1875,
-                            0.21875,
-                            0.234375,
-                            0.2421875,
-                            0.24609375,
-                            0.0625,
-                            0.09375,
-                            0.109375,
-                            0.1171875,
-                            0.12109375,
-                            0.123046875,
-                            0.03125,
-                            0.046875,
-                            0.0546875,
-                            0.05859375,
-                            0.060546875,
-                            0.0615234375,
-                            0.015625,
-                            0.0234375,
-                            0.02734375,
-                            0.029296875,
-                            0.0302734375,
-                            0.03076171875, 
-                        ];
-                        if ($190643afc7e6d067$var$el.duration < 1 && durations.indexOf($190643afc7e6d067$var$el.duration) === -1 && $190643afc7e6d067$var$el.duration !== 0) {
+                        if ($190643afc7e6d067$var$el.duration < 1 && $190643afc7e6d067$require$durations.indexOf($190643afc7e6d067$var$el.duration) === -1 && $190643afc7e6d067$var$el.duration !== 0) {
                             if (!$190643afc7e6d067$var$el.rest || $190643afc7e6d067$var$el.rest.type !== "spacer") $190643afc7e6d067$var$warn("Duration not representable: " + line.substring(startI, i), line, i);
                         }
                         $190643afc7e6d067$var$multilineVars.addFormattingOptions($190643afc7e6d067$var$el, $190643afc7e6d067$var$tune.formatting, "note");
@@ -5964,7 +5755,7 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
                     }
                 }
                 if (i === startI) {
-                    if (line.charAt(i) !== " " && line.charAt(i) !== "`") $190643afc7e6d067$var$warn("Unknown character ignored", line, i);
+                    if (line[i] !== " " && line[i] !== "`") $190643afc7e6d067$var$warn("Unknown character ignored", line, i);
                     i++;
                 }
             }
@@ -5973,32 +5764,32 @@ $190643afc7e6d067$var$MusicParser.prototype.parseMusic = function(line) {
     this.lineContinuation = line.indexOf("\x12") >= 0 || retHeader[0] > 0;
     if (!this.lineContinuation) $190643afc7e6d067$var$el = {};
 };
-var $190643afc7e6d067$var$setIsInTie = function(multilineVars2, overlayLevel, value) {
+var $190643afc7e6d067$var$setIsInTie = function(multilineVars, overlayLevel, value) {
     // If this is single voice music then the voice index isn't set, so we use the first voice.
-    var voiceIndex = multilineVars2.currentVoice ? multilineVars2.currentVoice.index : 0;
-    if (multilineVars2.inTie[overlayLevel] === undefined) multilineVars2.inTie[overlayLevel] = [];
-    multilineVars2.inTie[overlayLevel][voiceIndex] = value;
+    var voiceIndex = multilineVars.currentVoice ? multilineVars.currentVoice.staffNum * 100 + multilineVars.currentVoice.index : 0;
+    if (multilineVars.inTie[overlayLevel] === undefined) multilineVars.inTie[overlayLevel] = [];
+    multilineVars.inTie[overlayLevel][voiceIndex] = value;
 };
 var $190643afc7e6d067$var$letter_to_chord = function(line, i) {
-    if (line.charAt(i) === '"') {
+    if (line[i] === '"') {
         var chord = $190643afc7e6d067$var$tokenizer.getBrackettedSubstring(line, i, 5);
         if (!chord[2]) $190643afc7e6d067$var$warn("Missing the closing quote while parsing the chord symbol", line, i);
         // If it starts with ^, then the chord appears above.
         // If it starts with _ then the chord appears below.
         // (note that the 2.0 draft standard defines them as not chords, but annotations and also defines @.)
-        if (chord[0] > 0 && chord[1].length > 0 && chord[1].charAt(0) === "^") {
+        if (chord[0] > 0 && chord[1].length > 0 && chord[1][0] === "^") {
             chord[1] = chord[1].substring(1);
             chord[2] = "above";
-        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1].charAt(0) === "_") {
+        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1][0] === "_") {
             chord[1] = chord[1].substring(1);
             chord[2] = "below";
-        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1].charAt(0) === "<") {
+        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1][0] === "<") {
             chord[1] = chord[1].substring(1);
             chord[2] = "left";
-        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1].charAt(0) === ">") {
+        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1][0] === ">") {
             chord[1] = chord[1].substring(1);
             chord[2] = "right";
-        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1].charAt(0) === "@") {
+        } else if (chord[0] > 0 && chord[1].length > 0 && chord[1][0] === "@") {
             // @-15,5.7
             chord[1] = chord[1].substring(1);
             var x = $190643afc7e6d067$var$tokenizer.getFloat(chord[1]);
@@ -6037,7 +5828,7 @@ var $190643afc7e6d067$var$letter_to_chord = function(line, i) {
 };
 var $190643afc7e6d067$var$letter_to_grace = function(line, i) {
     // Grace notes are an array of: startslur, note, endslur, space; where note is accidental, pitch, duration
-    if (line.charAt(i) === "{") {
+    if (line[i] === "{") {
         // fetch the gracenotes string and consume that into the array
         var gra = $190643afc7e6d067$var$tokenizer.getBrackettedSubstring(line, i, 1, "}");
         if (!gra[2]) $190643afc7e6d067$var$warn("Missing the closing '}' while parsing grace note", line, i);
@@ -6051,7 +5842,7 @@ var $190643afc7e6d067$var$letter_to_grace = function(line, i) {
         var inTie = false;
         while(ii < gra[1].length){
             var acciaccatura = false;
-            if (gra[1].charAt(ii) === "/") {
+            if (gra[1][ii] === "/") {
                 acciaccatura = true;
                 ii++;
             }
@@ -6074,9 +5865,9 @@ var $190643afc7e6d067$var$letter_to_grace = function(line, i) {
                 }
             } else {
                 // We shouldn't get anything but notes or a space here, so report an error
-                if (gra[1].charAt(ii) === " ") {
+                if (gra[1][ii] === " ") {
                     if (gracenotes.length > 0) gracenotes[gracenotes.length - 1].endBeam = true;
-                } else $190643afc7e6d067$var$warn("Unknown character '" + gra[1].charAt(ii) + "' while parsing grace note", line, i);
+                } else $190643afc7e6d067$var$warn("Unknown character '" + gra[1][ii] + "' while parsing grace note", line, i);
                 ii++;
             }
         }
@@ -6090,9 +5881,9 @@ var $190643afc7e6d067$var$letter_to_grace = function(line, i) {
     ];
 };
 function $190643afc7e6d067$var$letter_to_overlay(line, i) {
-    if (line.charAt(i) === "&") {
+    if (line[i] === "&") {
         var start = i;
-        while(line.charAt(i) && line.charAt(i) !== ":" && line.charAt(i) !== "|")i++;
+        while(line[i] && line[i] !== ":" && line[i] !== "|")i++;
         return [
             i - start,
             line.substring(start + 1, i)
@@ -6102,178 +5893,43 @@ function $190643afc7e6d067$var$letter_to_overlay(line, i) {
         0
     ];
 }
-function $190643afc7e6d067$var$durationOfMeasure(multilineVars3) {
+function $190643afc7e6d067$var$durationOfMeasure(multilineVars) {
     // TODO-PER: This could be more complicated if one of the unusual measures is used.
-    var meter = multilineVars3.origMeter;
+    var meter = multilineVars.origMeter;
     if (!meter || meter.type !== "specified") return 1;
     if (!meter.value || meter.value.length === 0) return 1;
     return parseInt(meter.value[0].num, 10) / parseInt(meter.value[0].den, 10);
 }
-var $190643afc7e6d067$var$legalAccents = [
-    "trill",
-    "lowermordent",
-    "uppermordent",
-    "mordent",
-    "pralltriller",
-    "accent",
-    "fermata",
-    "invertedfermata",
-    "tenuto",
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "+",
-    "wedge",
-    "open",
-    "thumb",
-    "snap",
-    "turn",
-    "roll",
-    "breath",
-    "shortphrase",
-    "mediumphrase",
-    "longphrase",
-    "segno",
-    "coda",
-    "D.S.",
-    "D.C.",
-    "fine",
-    "beambr1",
-    "beambr2",
-    "slide",
-    "marcato",
-    "upbow",
-    "downbow",
-    "/",
-    "//",
-    "///",
-    "////",
-    "trem1",
-    "trem2",
-    "trem3",
-    "trem4",
-    "turnx",
-    "invertedturn",
-    "invertedturnx",
-    "trill(",
-    "trill)",
-    "arpeggio",
-    "xstem",
-    "mark",
-    "umarcato",
-    "style=normal",
-    "style=harmonic",
-    "style=rhythm",
-    "style=x",
-    "style=triangle"
-];
-var $190643afc7e6d067$var$volumeDecorations = [
-    "p",
-    "pp",
-    "f",
-    "ff",
-    "mf",
-    "mp",
-    "ppp",
-    "pppp",
-    "fff",
-    "ffff",
-    "sfz"
-];
-var $190643afc7e6d067$var$dynamicDecorations = [
-    "crescendo(",
-    "crescendo)",
-    "diminuendo(",
-    "diminuendo)"
-];
-var $190643afc7e6d067$var$accentPseudonyms = [
-    [
-        "<",
-        "accent"
-    ],
-    [
-        ">",
-        "accent"
-    ],
-    [
-        "tr",
-        "trill"
-    ],
-    [
-        "plus",
-        "+"
-    ],
-    [
-        "emphasis",
-        "accent"
-    ],
-    [
-        "^",
-        "umarcato"
-    ],
-    [
-        "marcato",
-        "umarcato"
-    ]
-];
-var $190643afc7e6d067$var$accentDynamicPseudonyms = [
-    [
-        "<(",
-        "crescendo("
-    ],
-    [
-        "<)",
-        "crescendo)"
-    ],
-    [
-        ">(",
-        "diminuendo("
-    ],
-    [
-        ">)",
-        "diminuendo)"
-    ]
-];
 var $190643afc7e6d067$var$letter_to_accent = function(line, i) {
-    var macro = $190643afc7e6d067$var$multilineVars.macros[line.charAt(i)];
+    var macro = $190643afc7e6d067$var$multilineVars.macros[line[i]];
     if (macro !== undefined) {
-        if (macro.charAt(0) === "!" || macro.charAt(0) === "+") macro = macro.substring(1);
-        if (macro.charAt(macro.length - 1) === "!" || macro.charAt(macro.length - 1) === "+") macro = macro.substring(0, macro.length - 1);
-        if ($3fSeU.detect($190643afc7e6d067$var$legalAccents, function(acc) {
-            return macro === acc;
-        })) return [
+        if (macro[0] === "!" || macro[0] === "+") macro = macro.substring(1);
+        if (macro[macro.length - 1] === "!" || macro[macro.length - 1] === "+") macro = macro.substring(0, macro.length - 1);
+        if ($190643afc7e6d067$require$legalAccents.includes(macro)) return [
             1,
             macro
         ];
-        else if ($3fSeU.detect($190643afc7e6d067$var$volumeDecorations, function(acc) {
-            return macro === acc;
-        })) {
+        else if ($190643afc7e6d067$require$volumeDecorations.includes(macro)) {
             if ($190643afc7e6d067$var$multilineVars.volumePosition === "hidden") macro = "";
             return [
                 1,
                 macro
             ];
-        } else if ($3fSeU.detect($190643afc7e6d067$var$dynamicDecorations, function(acc) {
+        } else if ($190643afc7e6d067$require$dynamicDecorations.includes(macro)) {
             if ($190643afc7e6d067$var$multilineVars.dynamicPosition === "hidden") macro = "";
-            return macro === acc;
-        })) return [
-            1,
-            macro
-        ];
-        else {
-            if (!$3fSeU.detect($190643afc7e6d067$var$multilineVars.ignoredDecorations, function(dec) {
-                return macro === dec;
-            })) $190643afc7e6d067$var$warn("Unknown macro: " + macro, line, i);
+            return [
+                1,
+                macro
+            ];
+        } else {
+            if (!$190643afc7e6d067$var$multilineVars.ignoredDecorations.includes(macro)) $190643afc7e6d067$var$warn("Unknown macro: " + macro, line, i);
             return [
                 1,
                 ""
             ];
         }
     }
-    switch(line.charAt(i)){
+    switch(line[i]){
         case ".":
             if (line[i + 1] === "(" || line[i + 1] === "-") break;
             return [
@@ -6299,40 +5955,34 @@ var $190643afc7e6d067$var$letter_to_accent = function(line, i) {
         case "+":
             var ret = $190643afc7e6d067$var$tokenizer.getBrackettedSubstring(line, i, 5);
             // Be sure that the accent is recognizable.
-            if (ret[1].length > 1 && (ret[1].charAt(0) === "^" || ret[1].charAt(0) === "_")) ret[1] = ret[1].substring(1); // TODO-PER: The test files have indicators forcing the ornament to the top or bottom, but that isn't in the standard. We'll just ignore them.
-            if ($3fSeU.detect($190643afc7e6d067$var$legalAccents, function(acc) {
-                return ret[1] === acc;
-            })) return ret;
-            if ($3fSeU.detect($190643afc7e6d067$var$volumeDecorations, function(acc) {
-                return ret[1] === acc;
-            })) {
+            if (ret[1].length > 1 && (ret[1][0] === "^" || ret[1][0] === "_")) ret[1] = ret[1].substring(1); // TODO-PER: The test files have indicators forcing the ornament to the top or bottom, but that isn't in the standard. We'll just ignore them.
+            if ($190643afc7e6d067$require$legalAccents.includes(ret[1])) return ret;
+            if ($190643afc7e6d067$require$volumeDecorations.includes(ret[1])) {
                 if ($190643afc7e6d067$var$multilineVars.volumePosition === "hidden") ret[1] = "";
                 return ret;
             }
-            if ($3fSeU.detect($190643afc7e6d067$var$dynamicDecorations, function(acc) {
-                return ret[1] === acc;
-            })) {
+            if ($190643afc7e6d067$require$dynamicDecorations.includes(ret[1])) {
                 if ($190643afc7e6d067$var$multilineVars.dynamicPosition === "hidden") ret[1] = "";
                 return ret;
             }
-            if ($3fSeU.detect($190643afc7e6d067$var$accentPseudonyms, function(acc) {
-                if (ret[1] === acc[0]) {
-                    ret[1] = acc[1];
-                    return true;
-                } else return false;
-            })) return ret;
-            if ($3fSeU.detect($190643afc7e6d067$var$accentDynamicPseudonyms, function(acc) {
-                if (ret[1] === acc[0]) {
-                    ret[1] = acc[1];
-                    return true;
-                } else return false;
-            })) {
+            var ind = $190643afc7e6d067$require$accentPseudonyms.findIndex(function(acc) {
+                return ret[1] === acc[0];
+            });
+            if (ind >= 0) {
+                ret[1] = $190643afc7e6d067$require$accentPseudonyms[ind][1];
+                return ret;
+            }
+            ind = $190643afc7e6d067$require$accentDynamicPseudonyms.findIndex(function(acc) {
+                return ret[1] === acc[0];
+            });
+            if (ind >= 0) {
+                ret[1] = $190643afc7e6d067$require$accentDynamicPseudonyms[ind][1];
                 if ($190643afc7e6d067$var$multilineVars.dynamicPosition === "hidden") ret[1] = "";
                 return ret;
             }
             // We didn't find the accent in the list, so consume the space, but don't return an accent.
             // Although it is possible that ! was used as a line break, so accept that.
-            if (line.charAt(i) === "!" && (ret[0] === 1 || line.charAt(i + ret[0] - 1) !== "!")) return [
+            if (line[i] === "!" && (ret[0] === 1 || line[i + ret[0] - 1] !== "!")) return [
                 1,
                 null
             ];
@@ -6392,7 +6042,7 @@ var $190643afc7e6d067$var$letter_to_accent = function(line, i) {
 };
 var $190643afc7e6d067$var$letter_to_spacer = function(line, i) {
     var start = i;
-    while($190643afc7e6d067$var$tokenizer.isWhiteSpace(line.charAt(i)))i++;
+    while($190643afc7e6d067$var$tokenizer.isWhiteSpace(line[i]))i++;
     return [
         i - start
     ];
@@ -6418,11 +6068,11 @@ var $190643afc7e6d067$var$letter_to_bar = function(line, curr_pos) {
     // A repeated ending is all of the characters 1,2,3,4,5,6,7,8,9,0,-, and comma
     // It can also optionally start with '[', which is ignored.
     // Also, it can have white space before the '['.
-    for(var ws = 0; ws < line.length; ws++)if (line.charAt(curr_pos + ret.len + ws) !== " ") break;
+    for(var ws = 0; ws < line.length; ws++)if (line[curr_pos + ret.len + ws] !== " ") break;
     var orig_bar_len = ret.len;
-    if (line.charAt(curr_pos + ret.len + ws) === "[") ret.len += ws + 1;
+    if (line[curr_pos + ret.len + ws] === "[") ret.len += ws + 1;
     // It can also be a quoted string. It is unclear whether that construct requires '[', but it seems like it would. otherwise it would be confused with a regular chord.
-    if (line.charAt(curr_pos + ret.len) === '"' && line.charAt(curr_pos + ret.len - 1) === "[") {
+    if (line[curr_pos + ret.len] === '"' && line[curr_pos + ret.len - 1] === "[") {
         var ending = $190643afc7e6d067$var$tokenizer.getBrackettedSubstring(line, curr_pos + ret.len, 5);
         return [
             ret.len + ending[0],
@@ -6441,16 +6091,6 @@ var $190643afc7e6d067$var$letter_to_bar = function(line, curr_pos) {
         retRep.token
     ];
 };
-var $190643afc7e6d067$var$tripletQ = {
-    2: 3,
-    3: 2,
-    4: 3,
-    5: 2,
-    6: 2,
-    7: 2,
-    8: 3,
-    9: 2 // TODO-PER: not handling 6/8 rhythm yet
-};
 var $190643afc7e6d067$var$letter_to_open_slurs_and_triplets = function(line, i) {
     // consume spaces, and look for all the open parens. If there is a number after the open paren,
     // that is a triplet. Otherwise that is a slur. Collect all the slurs and the first triplet.
@@ -6460,15 +6100,15 @@ var $190643afc7e6d067$var$letter_to_open_slurs_and_triplets = function(line, i) 
         ret.dottedSlur = true;
         i++;
     }
-    while(line.charAt(i) === "(" || $190643afc7e6d067$var$tokenizer.isWhiteSpace(line.charAt(i))){
-        if (line.charAt(i) === "(") {
-            if (i + 1 < line.length && line.charAt(i + 1) >= "2" && line.charAt(i + 1) <= "9") {
+    while(line[i] === "(" || $190643afc7e6d067$var$tokenizer.isWhiteSpace(line[i])){
+        if (line[i] === "(") {
+            if (i + 1 < line.length && line[i + 1] >= "2" && line[i + 1] <= "9") {
                 if (ret.triplet !== undefined) $190643afc7e6d067$var$warn("Can't nest triplets", line, i);
                 else {
-                    ret.triplet = line.charAt(i + 1) - "0";
-                    ret.tripletQ = $190643afc7e6d067$var$tripletQ[ret.triplet];
+                    ret.triplet = line[i + 1] - "0";
+                    ret.tripletQ = $190643afc7e6d067$require$tripletQ[ret.triplet];
                     ret.num_notes = ret.triplet;
-                    if (i + 2 < line.length && line.charAt(i + 2) === ":") {
+                    if (i + 2 < line.length && line[i + 2] === ":") {
                         // We are expecting "(p:q:r" or "(p:q" or "(p::r"
                         // That is: "put p notes into the time of q for the next r notes"
                         // if r is missing, then it is equal to p.
@@ -6481,17 +6121,17 @@ var $190643afc7e6d067$var$letter_to_open_slurs_and_triplets = function(line, i) 
                         // (7 notes in the time of n
                         // (8 notes in the time of 3
                         // (9 notes in the time of n
-                        if (i + 3 < line.length && line.charAt(i + 3) === ":") {
+                        if (i + 3 < line.length && line[i + 3] === ":") {
                             // The second number, 'q', is not present.
-                            if (i + 4 < line.length && line.charAt(i + 4) >= "1" && line.charAt(i + 4) <= "9") {
-                                ret.num_notes = line.charAt(i + 4) - "0";
+                            if (i + 4 < line.length && line[i + 4] >= "1" && line[i + 4] <= "9") {
+                                ret.num_notes = line[i + 4] - "0";
                                 i += 3;
                             } else $190643afc7e6d067$var$warn("expected number after the two colons after the triplet to mark the duration", line, i);
-                        } else if (i + 3 < line.length && line.charAt(i + 3) >= "1" && line.charAt(i + 3) <= "9") {
-                            ret.tripletQ = line.charAt(i + 3) - "0";
-                            if (i + 4 < line.length && line.charAt(i + 4) === ":") {
-                                if (i + 5 < line.length && line.charAt(i + 5) >= "1" && line.charAt(i + 5) <= "9") {
-                                    ret.num_notes = line.charAt(i + 5) - "0";
+                        } else if (i + 3 < line.length && line[i + 3] >= "1" && line[i + 3] <= "9") {
+                            ret.tripletQ = line[i + 3] - "0";
+                            if (i + 4 < line.length && line[i + 4] === ":") {
+                                if (i + 5 < line.length && line[i + 5] >= "1" && line[i + 5] <= "9") {
+                                    ret.num_notes = line[i + 5] - "0";
                                     i += 4;
                                 }
                             } else i += 2;
@@ -6532,7 +6172,7 @@ $190643afc7e6d067$var$MusicParser.prototype.startNewLine = function() {
     $7Au3Q.addPosToKey(params.clef, params.key);
     if ($190643afc7e6d067$var$multilineVars.meter !== null) {
         if ($190643afc7e6d067$var$multilineVars.currentVoice) {
-            $3fSeU.each($190643afc7e6d067$var$multilineVars.staves, function(st) {
+            $190643afc7e6d067$var$multilineVars.staves.forEach(function(st) {
                 st.meter = $190643afc7e6d067$var$multilineVars.meter;
             });
             params.meter = $190643afc7e6d067$var$multilineVars.staves[$190643afc7e6d067$var$multilineVars.currentVoice.staffNum].meter;
@@ -6560,6 +6200,7 @@ $190643afc7e6d067$var$MusicParser.prototype.startNewLine = function() {
         if ($190643afc7e6d067$var$multilineVars.currentVoice.stafflines) params.stafflines = $190643afc7e6d067$var$multilineVars.currentVoice.stafflines;
         if ($190643afc7e6d067$var$multilineVars.currentVoice.staffscale) params.staffscale = $190643afc7e6d067$var$multilineVars.currentVoice.staffscale;
         if ($190643afc7e6d067$var$multilineVars.currentVoice.scale) params.scale = $190643afc7e6d067$var$multilineVars.currentVoice.scale;
+        if ($190643afc7e6d067$var$multilineVars.currentVoice.color) params.color = $190643afc7e6d067$var$multilineVars.currentVoice.color;
         if ($190643afc7e6d067$var$multilineVars.currentVoice.style) params.style = $190643afc7e6d067$var$multilineVars.currentVoice.style;
         if ($190643afc7e6d067$var$multilineVars.currentVoice.transpose) params.clef.transpose = $190643afc7e6d067$var$multilineVars.currentVoice.transpose;
     }
@@ -6572,43 +6213,11 @@ $190643afc7e6d067$var$MusicParser.prototype.startNewLine = function() {
     $190643afc7e6d067$var$multilineVars.tempoForNextLine = [];
 };
 // TODO-PER: make this a method in el.
-var $190643afc7e6d067$var$addEndBeam = function(el3) {
-    if (el3.duration !== undefined && el3.duration < 0.25) el3.end_beam = true;
-    return el3;
+var $190643afc7e6d067$var$addEndBeam = function(el) {
+    if (el.duration !== undefined && el.duration < 0.25) el.end_beam = true;
+    return el;
 };
-var $190643afc7e6d067$var$pitches = {
-    A: 5,
-    B: 6,
-    C: 0,
-    D: 1,
-    E: 2,
-    F: 3,
-    G: 4,
-    a: 12,
-    b: 13,
-    c: 7,
-    d: 8,
-    e: 9,
-    f: 10,
-    g: 11
-};
-var $190643afc7e6d067$var$rests = {
-    x: "invisible",
-    X: "invisible-multimeasure",
-    y: "spacer",
-    z: "rest",
-    Z: "multimeasure"
-};
-var $190643afc7e6d067$var$accMap = {
-    "dblflat": "__",
-    "flat": "_",
-    "natural": "=",
-    "sharp": "^",
-    "dblsharp": "^^",
-    "quarterflat": "_/",
-    "quartersharp": "^/"
-};
-var $190643afc7e6d067$var$getCoreNote = function(line, index, el4, canHaveBrokenRhythm) {
+var $190643afc7e6d067$var$getCoreNote = function(line, index, el, canHaveBrokenRhythm) {
     //var el = { startChar: index };
     var isComplete = function(state) {
         return state === "octave" || state === "duration" || state === "Zduration" || state === "broken_rhythm" || state === "end_slur";
@@ -6618,56 +6227,56 @@ var $190643afc7e6d067$var$getCoreNote = function(line, index, el4, canHaveBroken
         dottedTie = true;
         index++;
     }
-    var state1 = "startSlur";
+    var state = "startSlur";
     var durationSetByPreviousNote = false;
     while(true){
-        switch(line.charAt(index)){
+        switch(line[index]){
             case "(":
-                if (state1 === "startSlur") {
-                    if (el4.startSlur === undefined) el4.startSlur = 1;
-                    else el4.startSlur++;
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (state === "startSlur") {
+                    if (el.startSlur === undefined) el.startSlur = 1;
+                    else el.startSlur++;
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case ")":
-                if (isComplete(state1)) {
-                    if (el4.endSlur === undefined) el4.endSlur = 1;
-                    else el4.endSlur++;
+                if (isComplete(state)) {
+                    if (el.endSlur === undefined) el.endSlur = 1;
+                    else el.endSlur++;
                 } else return null;
                 break;
             case "^":
-                if (state1 === "startSlur") {
-                    el4.accidental = "sharp";
-                    state1 = "sharp2";
-                } else if (state1 === "sharp2") {
-                    el4.accidental = "dblsharp";
-                    state1 = "pitch";
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (state === "startSlur") {
+                    el.accidental = "sharp";
+                    state = "sharp2";
+                } else if (state === "sharp2") {
+                    el.accidental = "dblsharp";
+                    state = "pitch";
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case "_":
-                if (state1 === "startSlur") {
-                    el4.accidental = "flat";
-                    state1 = "flat2";
-                } else if (state1 === "flat2") {
-                    el4.accidental = "dblflat";
-                    state1 = "pitch";
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (state === "startSlur") {
+                    el.accidental = "flat";
+                    state = "flat2";
+                } else if (state === "flat2") {
+                    el.accidental = "dblflat";
+                    state = "pitch";
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case "=":
-                if (state1 === "startSlur") {
-                    el4.accidental = "natural";
-                    state1 = "pitch";
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (state === "startSlur") {
+                    el.accidental = "natural";
+                    state = "pitch";
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case "A":
@@ -6684,45 +6293,46 @@ var $190643afc7e6d067$var$getCoreNote = function(line, index, el4, canHaveBroken
             case "e":
             case "f":
             case "g":
-                if (state1 === "startSlur" || state1 === "sharp2" || state1 === "flat2" || state1 === "pitch") {
-                    el4.pitch = $190643afc7e6d067$var$pitches[line.charAt(index)];
-                    el4.name = line.charAt(index);
-                    if (el4.accidental) el4.name = $190643afc7e6d067$var$accMap[el4.accidental] + el4.name;
-                    $cPcpK.note($190643afc7e6d067$var$multilineVars, el4);
-                    state1 = "octave";
+                if (state === "startSlur" || state === "sharp2" || state === "flat2" || state === "pitch") {
+                    el.pitch = $190643afc7e6d067$require$pitches[line[index]];
+                    el.pitch += 7 * ($190643afc7e6d067$var$multilineVars.currentVoice && $190643afc7e6d067$var$multilineVars.currentVoice.octave !== undefined ? $190643afc7e6d067$var$multilineVars.currentVoice.octave : $190643afc7e6d067$var$multilineVars.octave);
+                    el.name = line[index];
+                    if (el.accidental) el.name = $190643afc7e6d067$require$accMap[el.accidental] + el.name;
+                    $cPcpK.note($190643afc7e6d067$var$multilineVars, el);
+                    state = "octave";
                     // At this point we have a valid note. The rest is optional. Set the duration in case we don't get one below
                     if (canHaveBrokenRhythm && $190643afc7e6d067$var$multilineVars.next_note_duration !== 0) {
-                        el4.duration = $190643afc7e6d067$var$multilineVars.default_length * $190643afc7e6d067$var$multilineVars.next_note_duration;
+                        el.duration = $190643afc7e6d067$var$multilineVars.default_length * $190643afc7e6d067$var$multilineVars.next_note_duration;
                         $190643afc7e6d067$var$multilineVars.next_note_duration = 0;
                         durationSetByPreviousNote = true;
-                    } else el4.duration = $190643afc7e6d067$var$multilineVars.default_length;
+                    } else el.duration = $190643afc7e6d067$var$multilineVars.default_length;
                     // If the clef is percussion, there is probably some translation of the pitch to a particular drum kit item.
                     if ($190643afc7e6d067$var$multilineVars.clef && $190643afc7e6d067$var$multilineVars.clef.type === "perc" || $190643afc7e6d067$var$multilineVars.currentVoice && $190643afc7e6d067$var$multilineVars.currentVoice.clef === "perc") {
-                        var key = line.charAt(index);
-                        if (el4.accidental) key = $190643afc7e6d067$var$accMap[el4.accidental] + key;
-                        if ($190643afc7e6d067$var$tune.formatting && $190643afc7e6d067$var$tune.formatting.midi && $190643afc7e6d067$var$tune.formatting.midi.drummap) el4.midipitch = $190643afc7e6d067$var$tune.formatting.midi.drummap[key];
+                        var key = line[index];
+                        if (el.accidental) key = $190643afc7e6d067$require$accMap[el.accidental] + key;
+                        if ($190643afc7e6d067$var$tune.formatting && $190643afc7e6d067$var$tune.formatting.midi && $190643afc7e6d067$var$tune.formatting.midi.drummap) el.midipitch = $190643afc7e6d067$var$tune.formatting.midi.drummap[key];
                     }
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case ",":
-                if (state1 === "octave") {
-                    el4.pitch -= 7;
-                    el4.name += ",";
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (state === "octave") {
+                    el.pitch -= 7;
+                    el.name += ",";
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case "'":
-                if (state1 === "octave") {
-                    el4.pitch += 7;
-                    el4.name += "'";
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (state === "octave") {
+                    el.pitch += 7;
+                    el.name += "'";
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case "x":
@@ -6730,35 +6340,35 @@ var $190643afc7e6d067$var$getCoreNote = function(line, index, el4, canHaveBroken
             case "y":
             case "z":
             case "Z":
-                if (state1 === "startSlur") {
-                    el4.rest = {
-                        type: $190643afc7e6d067$var$rests[line.charAt(index)]
+                if (state === "startSlur") {
+                    el.rest = {
+                        type: $190643afc7e6d067$require$rests[line[index]]
                     };
                     // There shouldn't be some of the properties that notes have. If some sneak in due to bad syntax in the abc file,
                     // just nix them here.
-                    delete el4.accidental;
-                    delete el4.startSlur;
-                    delete el4.startTie;
-                    delete el4.endSlur;
-                    delete el4.endTie;
-                    delete el4.end_beam;
-                    delete el4.grace_notes;
+                    delete el.accidental;
+                    delete el.startSlur;
+                    delete el.startTie;
+                    delete el.endSlur;
+                    delete el.endTie;
+                    delete el.end_beam;
+                    delete el.grace_notes;
                     // At this point we have a valid note. The rest is optional. Set the duration in case we don't get one below
-                    if (el4.rest.type.indexOf("multimeasure") >= 0) {
-                        el4.duration = $190643afc7e6d067$var$tune.getBarLength();
-                        el4.rest.text = 1;
-                        state1 = "Zduration";
+                    if (el.rest.type.indexOf("multimeasure") >= 0) {
+                        el.duration = $190643afc7e6d067$var$tune.getBarLength();
+                        el.rest.text = 1;
+                        state = "Zduration";
                     } else {
                         if (canHaveBrokenRhythm && $190643afc7e6d067$var$multilineVars.next_note_duration !== 0) {
-                            el4.duration = $190643afc7e6d067$var$multilineVars.default_length * $190643afc7e6d067$var$multilineVars.next_note_duration;
+                            el.duration = $190643afc7e6d067$var$multilineVars.default_length * $190643afc7e6d067$var$multilineVars.next_note_duration;
                             $190643afc7e6d067$var$multilineVars.next_note_duration = 0;
                             durationSetByPreviousNote = true;
-                        } else el4.duration = $190643afc7e6d067$var$multilineVars.default_length;
-                        state1 = "duration";
+                        } else el.duration = $190643afc7e6d067$var$multilineVars.default_length;
+                        state = "duration";
                     }
-                } else if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                } else if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case "1":
@@ -6772,117 +6382,117 @@ var $190643afc7e6d067$var$getCoreNote = function(line, index, el4, canHaveBroken
             case "9":
             case "0":
             case "/":
-                if (state1 === "octave" || state1 === "duration") {
+                if (state === "octave" || state === "duration") {
                     var fraction = $190643afc7e6d067$var$tokenizer.getFraction(line, index);
                     //if (!durationSetByPreviousNote)
-                    el4.duration = el4.duration * fraction.value;
+                    el.duration = el.duration * fraction.value;
                     // TODO-PER: We can test the returned duration here and give a warning if it isn't the one expected.
-                    el4.endChar = fraction.index;
-                    while(fraction.index < line.length && ($190643afc7e6d067$var$tokenizer.isWhiteSpace(line.charAt(fraction.index)) || line.charAt(fraction.index) === "-")){
-                        if (line.charAt(fraction.index) === "-") el4.startTie = {};
-                        else el4 = $190643afc7e6d067$var$addEndBeam(el4);
+                    el.endChar = fraction.index;
+                    while(fraction.index < line.length && ($190643afc7e6d067$var$tokenizer.isWhiteSpace(line[fraction.index]) || line[fraction.index] === "-")){
+                        if (line[fraction.index] === "-") el.startTie = {};
+                        else el = $190643afc7e6d067$var$addEndBeam(el);
                         fraction.index++;
                     }
                     index = fraction.index - 1;
-                    state1 = "broken_rhythm";
-                } else if (state1 === "sharp2") {
-                    el4.accidental = "quartersharp";
-                    state1 = "pitch";
-                } else if (state1 === "flat2") {
-                    el4.accidental = "quarterflat";
-                    state1 = "pitch";
-                } else if (state1 === "Zduration") {
+                    state = "broken_rhythm";
+                } else if (state === "sharp2") {
+                    el.accidental = "quartersharp";
+                    state = "pitch";
+                } else if (state === "flat2") {
+                    el.accidental = "quarterflat";
+                    state = "pitch";
+                } else if (state === "Zduration") {
                     var num = $190643afc7e6d067$var$tokenizer.getNumber(line, index);
-                    el4.duration = num.num * $190643afc7e6d067$var$tune.getBarLength();
-                    el4.rest.text = num.num;
-                    el4.endChar = num.index;
-                    return el4;
+                    el.duration = num.num * $190643afc7e6d067$var$tune.getBarLength();
+                    el.rest.text = num.num;
+                    el.endChar = num.index;
+                    return el;
                 } else return null;
                 break;
             case "-":
-                if (state1 === "startSlur") {
+                if (state === "startSlur") {
                     // This is the first character, so it must have been meant for the previous note. Correct that here.
                     $190643afc7e6d067$var$tuneBuilder.addTieToLastNote(dottedTie);
-                    el4.endTie = true;
-                } else if (state1 === "octave" || state1 === "duration" || state1 === "end_slur") {
-                    el4.startTie = {};
-                    if (!durationSetByPreviousNote && canHaveBrokenRhythm) state1 = "broken_rhythm";
+                    el.endTie = true;
+                } else if (state === "octave" || state === "duration" || state === "end_slur") {
+                    el.startTie = {};
+                    if (!durationSetByPreviousNote && canHaveBrokenRhythm) state = "broken_rhythm";
                     else {
                         // Peek ahead to the next character. If it is a space, then we have an end beam.
-                        if ($190643afc7e6d067$var$tokenizer.isWhiteSpace(line.charAt(index + 1))) $190643afc7e6d067$var$addEndBeam(el4);
-                        el4.endChar = index + 1;
-                        return el4;
+                        if ($190643afc7e6d067$var$tokenizer.isWhiteSpace(line[index + 1])) $190643afc7e6d067$var$addEndBeam(el);
+                        el.endChar = index + 1;
+                        return el;
                     }
-                } else if (state1 === "broken_rhythm") {
-                    el4.endChar = index;
-                    return el4;
+                } else if (state === "broken_rhythm") {
+                    el.endChar = index;
+                    return el;
                 } else return null;
                 break;
             case " ":
             case "	":
-                if (isComplete(state1)) {
-                    el4.end_beam = true;
+                if (isComplete(state)) {
+                    el.end_beam = true;
                     // look ahead to see if there is a tie
                     dottedTie = false;
                     do {
-                        if (line.charAt(index) === "." && line.charAt(index + 1) === "-") {
+                        if (line[index] === "." && line[index + 1] === "-") {
                             dottedTie = true;
                             index++;
                         }
-                        if (line.charAt(index) === "-") {
-                            el4.startTie = {};
-                            if (dottedTie) el4.startTie.style = "dotted";
+                        if (line[index] === "-") {
+                            el.startTie = {};
+                            if (dottedTie) el.startTie.style = "dotted";
                         }
                         index++;
-                    }while (index < line.length && ($190643afc7e6d067$var$tokenizer.isWhiteSpace(line.charAt(index)) || line.charAt(index) === "-") || line.charAt(index) === "." && line.charAt(index + 1) === "-");
-                    el4.endChar = index;
-                    if (!durationSetByPreviousNote && canHaveBrokenRhythm && (line.charAt(index) === "<" || line.charAt(index) === ">")) {
+                    }while (index < line.length && ($190643afc7e6d067$var$tokenizer.isWhiteSpace(line[index]) || line[index] === "-") || line[index] === "." && line[index + 1] === "-");
+                    el.endChar = index;
+                    if (!durationSetByPreviousNote && canHaveBrokenRhythm && (line[index] === "<" || line[index] === ">")) {
                         index--;
-                        state1 = "broken_rhythm";
-                    } else return el4;
+                        state = "broken_rhythm";
+                    } else return el;
                 } else return null;
                 break;
             case ">":
             case "<":
-                if (isComplete(state1)) {
+                if (isComplete(state)) {
                     if (canHaveBrokenRhythm) {
                         var br2 = $190643afc7e6d067$var$getBrokenRhythm(line, index);
                         index += br2[0] - 1; // index gets incremented below, so we'll let that happen
                         $190643afc7e6d067$var$multilineVars.next_note_duration = br2[2];
-                        el4.duration = br2[1] * el4.duration;
-                        state1 = "end_slur";
+                        el.duration = br2[1] * el.duration;
+                        state = "end_slur";
                     } else {
-                        el4.endChar = index;
-                        return el4;
+                        el.endChar = index;
+                        return el;
                     }
                 } else return null;
                 break;
             default:
-                if (isComplete(state1)) {
-                    el4.endChar = index;
-                    return el4;
+                if (isComplete(state)) {
+                    el.endChar = index;
+                    return el;
                 }
                 return null;
         }
         index++;
         if (index === line.length) {
-            if (isComplete(state1)) {
-                el4.endChar = index;
-                return el4;
+            if (isComplete(state)) {
+                el.endChar = index;
+                return el;
             } else return null;
         }
     }
     return null;
 };
 var $190643afc7e6d067$var$getBrokenRhythm = function(line, index) {
-    switch(line.charAt(index)){
+    switch(line[index]){
         case ">":
-            if (index < line.length - 2 && line.charAt(index + 1) === ">" && line.charAt(index + 2) === ">") return [
+            if (index < line.length - 2 && line[index + 1] === ">" && line[index + 2] === ">") return [
                 3,
                 1.875,
                 0.125
             ];
-            else if (index < line.length - 1 && line.charAt(index + 1) === ">") return [
+            else if (index < line.length - 1 && line[index + 1] === ">") return [
                 2,
                 1.75,
                 0.25
@@ -6893,12 +6503,12 @@ var $190643afc7e6d067$var$getBrokenRhythm = function(line, index) {
                 0.5
             ];
         case "<":
-            if (index < line.length - 2 && line.charAt(index + 1) === "<" && line.charAt(index + 2) === "<") return [
+            if (index < line.length - 2 && line[index + 1] === "<" && line[index + 2] === "<") return [
                 3,
                 0.125,
                 1.875
             ];
-            else if (index < line.length - 1 && line.charAt(index + 1) === "<") return [
+            else if (index < line.length - 1 && line[index + 1] === "<") return [
                 2,
                 0.25,
                 1.75
@@ -6914,8 +6524,255 @@ var $190643afc7e6d067$var$getBrokenRhythm = function(line, index) {
 module.exports = $190643afc7e6d067$var$MusicParser;
 
 });
+parcelRegister("5ADsX", function(module, exports) {
 
-parcelRequire.register("75nSI", function(module, exports) {
+$parcel$export(module.exports, "legalAccents", () => $411eedaf0e478053$export$1d15cc594646e3e5, (v) => $411eedaf0e478053$export$1d15cc594646e3e5 = v);
+$parcel$export(module.exports, "volumeDecorations", () => $411eedaf0e478053$export$fea7d93d061ca24d, (v) => $411eedaf0e478053$export$fea7d93d061ca24d = v);
+$parcel$export(module.exports, "dynamicDecorations", () => $411eedaf0e478053$export$156f92183f2b52b5, (v) => $411eedaf0e478053$export$156f92183f2b52b5 = v);
+$parcel$export(module.exports, "accentPseudonyms", () => $411eedaf0e478053$export$d7637c090b3eb07, (v) => $411eedaf0e478053$export$d7637c090b3eb07 = v);
+$parcel$export(module.exports, "accentDynamicPseudonyms", () => $411eedaf0e478053$export$bd7ef2ab39243653, (v) => $411eedaf0e478053$export$bd7ef2ab39243653 = v);
+$parcel$export(module.exports, "nonDecorations", () => $411eedaf0e478053$export$b2cd54a277111f2d, (v) => $411eedaf0e478053$export$b2cd54a277111f2d = v);
+$parcel$export(module.exports, "durations", () => $411eedaf0e478053$export$38b928a7167ce124, (v) => $411eedaf0e478053$export$38b928a7167ce124 = v);
+$parcel$export(module.exports, "pitches", () => $411eedaf0e478053$export$9fb07bad095be3b5, (v) => $411eedaf0e478053$export$9fb07bad095be3b5 = v);
+$parcel$export(module.exports, "rests", () => $411eedaf0e478053$export$30ed85dbbc6eb604, (v) => $411eedaf0e478053$export$30ed85dbbc6eb604 = v);
+$parcel$export(module.exports, "accMap", () => $411eedaf0e478053$export$b272e0ca28be371e, (v) => $411eedaf0e478053$export$b272e0ca28be371e = v);
+$parcel$export(module.exports, "tripletQ", () => $411eedaf0e478053$export$8be60318518163af, (v) => $411eedaf0e478053$export$8be60318518163af = v);
+var $411eedaf0e478053$export$1d15cc594646e3e5;
+var $411eedaf0e478053$export$fea7d93d061ca24d;
+var $411eedaf0e478053$export$156f92183f2b52b5;
+var $411eedaf0e478053$export$d7637c090b3eb07;
+var $411eedaf0e478053$export$bd7ef2ab39243653;
+var $411eedaf0e478053$export$b2cd54a277111f2d;
+var $411eedaf0e478053$export$38b928a7167ce124;
+var $411eedaf0e478053$export$9fb07bad095be3b5;
+var $411eedaf0e478053$export$30ed85dbbc6eb604;
+var $411eedaf0e478053$export$b272e0ca28be371e;
+var $411eedaf0e478053$export$8be60318518163af;
+$411eedaf0e478053$export$1d15cc594646e3e5 = [
+    "trill",
+    "lowermordent",
+    "uppermordent",
+    "mordent",
+    "pralltriller",
+    "accent",
+    "fermata",
+    "invertedfermata",
+    "tenuto",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "+",
+    "wedge",
+    "open",
+    "thumb",
+    "snap",
+    "turn",
+    "roll",
+    "breath",
+    "shortphrase",
+    "mediumphrase",
+    "longphrase",
+    "segno",
+    "coda",
+    "D.S.",
+    "D.C.",
+    "fine",
+    "beambr1",
+    "beambr2",
+    "slide",
+    "marcato",
+    "upbow",
+    "downbow",
+    "/",
+    "//",
+    "///",
+    "////",
+    "trem1",
+    "trem2",
+    "trem3",
+    "trem4",
+    "turnx",
+    "invertedturn",
+    "invertedturnx",
+    "trill(",
+    "trill)",
+    "arpeggio",
+    "xstem",
+    "mark",
+    "umarcato",
+    "style=normal",
+    "style=harmonic",
+    "style=rhythm",
+    "style=x",
+    "style=triangle",
+    "D.C.alcoda",
+    "D.C.alfine",
+    "D.S.alcoda",
+    "D.S.alfine",
+    "editorial",
+    "courtesy"
+];
+$411eedaf0e478053$export$fea7d93d061ca24d = [
+    "p",
+    "pp",
+    "f",
+    "ff",
+    "mf",
+    "mp",
+    "ppp",
+    "pppp",
+    "fff",
+    "ffff",
+    "sfz"
+];
+$411eedaf0e478053$export$156f92183f2b52b5 = [
+    "crescendo(",
+    "crescendo)",
+    "diminuendo(",
+    "diminuendo)",
+    "glissando(",
+    "glissando)",
+    "~(",
+    "~)"
+];
+$411eedaf0e478053$export$d7637c090b3eb07 = [
+    [
+        "<",
+        "accent"
+    ],
+    [
+        ">",
+        "accent"
+    ],
+    [
+        "tr",
+        "trill"
+    ],
+    [
+        "plus",
+        "+"
+    ],
+    [
+        "emphasis",
+        "accent"
+    ],
+    [
+        "^",
+        "umarcato"
+    ],
+    [
+        "marcato",
+        "umarcato"
+    ]
+];
+$411eedaf0e478053$export$bd7ef2ab39243653 = [
+    [
+        "<(",
+        "crescendo("
+    ],
+    [
+        "<)",
+        "crescendo)"
+    ],
+    [
+        ">(",
+        "diminuendo("
+    ],
+    [
+        ">)",
+        "diminuendo)"
+    ]
+];
+$411eedaf0e478053$export$b2cd54a277111f2d = "ABCDEFGabcdefgxyzZ[]|^_{"; // use this to prescreen so we don't have to look for a decoration at every note.
+$411eedaf0e478053$export$38b928a7167ce124 = [
+    0.5,
+    0.75,
+    0.875,
+    0.9375,
+    0.96875,
+    0.984375,
+    0.25,
+    0.375,
+    0.4375,
+    0.46875,
+    0.484375,
+    0.4921875,
+    0.125,
+    0.1875,
+    0.21875,
+    0.234375,
+    0.2421875,
+    0.24609375,
+    0.0625,
+    0.09375,
+    0.109375,
+    0.1171875,
+    0.12109375,
+    0.123046875,
+    0.03125,
+    0.046875,
+    0.0546875,
+    0.05859375,
+    0.060546875,
+    0.0615234375,
+    0.015625,
+    0.0234375,
+    0.02734375,
+    0.029296875,
+    0.0302734375,
+    0.03076171875
+];
+$411eedaf0e478053$export$9fb07bad095be3b5 = {
+    A: 5,
+    B: 6,
+    C: 0,
+    D: 1,
+    E: 2,
+    F: 3,
+    G: 4,
+    a: 12,
+    b: 13,
+    c: 7,
+    d: 8,
+    e: 9,
+    f: 10,
+    g: 11
+};
+$411eedaf0e478053$export$30ed85dbbc6eb604 = {
+    x: "invisible",
+    X: "invisible-multimeasure",
+    y: "spacer",
+    z: "rest",
+    Z: "multimeasure"
+};
+$411eedaf0e478053$export$b272e0ca28be371e = {
+    dblflat: "__",
+    flat: "_",
+    natural: "=",
+    sharp: "^",
+    dblsharp: "^^",
+    quarterflat: "_/",
+    quartersharp: "^/"
+};
+$411eedaf0e478053$export$8be60318518163af = {
+    2: 3,
+    3: 2,
+    4: 3,
+    5: 2,
+    6: 2,
+    7: 2,
+    8: 3,
+    9: 2 // TODO-PER: not handling 6/8 rhythm yet
+};
+
+});
+
+
+parcelRegister("75nSI", function(module, exports) {
+//    abc_tokenizer.js: tokenizes an ABC Music Notation string to support abc_parse.
 
 var $3fSeU = parcelRequire("3fSeU");
 // this is a series of functions that get a particular element out of the passed stream.
@@ -6928,7 +6785,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     this.multilineVars = multilineVars;
     this.skipWhiteSpace = function(str) {
         for(var i = 0; i < str.length; i++){
-            if (!this.isWhiteSpace(str.charAt(i))) return i;
+            if (!this.isWhiteSpace(str[i])) return i;
         }
         return str.length; // It must have been all white space
     };
@@ -6937,7 +6794,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     };
     this.eatWhiteSpace = function(line, index) {
         for(var i = index; i < line.length; i++){
-            if (!this.isWhiteSpace(line.charAt(i))) return i - index;
+            if (!this.isWhiteSpace(line[i])) return i - index;
         }
         return i - index;
     };
@@ -6947,7 +6804,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
         if (finished(str, i)) return {
             len: 0
         };
-        switch(str.charAt(i)){
+        switch(str[i]){
             case "A":
                 return {
                     len: i + 1,
@@ -6993,7 +6850,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
         if (str === "bass") return {
             len: 0
         };
-        switch(str.charAt(0)){
+        switch(str[0]){
             case "#":
                 return {
                     len: 1,
@@ -7009,67 +6866,67 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
             len: 0
         };
     };
-    this.getMode = function(str1) {
+    this.getMode = function(str) {
         var skipAlpha = function(str, start) {
             // This returns the index of the next non-alphabetic char, or the entire length of the string if not found.
-            while(start < str.length && (str.charAt(start) >= "a" && str.charAt(start) <= "z" || str.charAt(start) >= "A" && str.charAt(start) <= "Z"))start++;
+            while(start < str.length && (str[start] >= "a" && str[start] <= "z" || str[start] >= "A" && str[start] <= "Z"))start++;
             return start;
         };
-        var i = this.skipWhiteSpace(str1);
-        if (finished(str1, i)) return {
+        var i = this.skipWhiteSpace(str);
+        if (finished(str, i)) return {
             len: 0
         };
-        var firstThree = str1.substring(i, i + 3).toLowerCase();
-        if (firstThree.length > 1 && firstThree.charAt(1) === " " || firstThree.charAt(1) === "^" || firstThree.charAt(1) === "_" || firstThree.charAt(1) === "=") firstThree = firstThree.charAt(0); // This will handle the case of 'm'
+        var firstThree = str.substring(i, i + 3).toLowerCase();
+        if (firstThree.length > 1 && firstThree[1] === " " || firstThree[1] === "^" || firstThree[1] === "_" || firstThree[1] === "=") firstThree = firstThree[0]; // This will handle the case of 'm'
         switch(firstThree){
             case "mix":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "Mix"
                 };
             case "dor":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "Dor"
                 };
             case "phr":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "Phr"
                 };
             case "lyd":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "Lyd"
                 };
             case "loc":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "Loc"
                 };
             case "aeo":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "m"
                 };
             case "maj":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: ""
                 };
             case "ion":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: ""
                 };
             case "min":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "m"
                 };
             case "m":
                 return {
-                    len: skipAlpha(str1, i),
+                    len: skipAlpha(str, i),
                     token: "m"
                 };
         }
@@ -7136,10 +6993,10 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     // This returns one of the legal bar lines
     // This is called alot and there is no obvious tokenable items, so this is broken apart.
     this.getBarLine = function(line, i) {
-        switch(line.charAt(i)){
+        switch(line[i]){
             case "]":
                 ++i;
-                switch(line.charAt(i)){
+                switch(line[i]){
                     case "|":
                         return {
                             len: 2,
@@ -7147,7 +7004,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                         };
                     case "[":
                         ++i;
-                        if (line.charAt(i) >= "1" && line.charAt(i) <= "9" || line.charAt(i) === '"') return {
+                        if (line[i] >= "1" && line[i] <= "9" || line[i] === '"') return {
                             len: 2,
                             token: "bar_invisible"
                         };
@@ -7164,7 +7021,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                 break;
             case ":":
                 ++i;
-                switch(line.charAt(i)){
+                switch(line[i]){
                     case ":":
                         return {
                             len: 2,
@@ -7172,13 +7029,13 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                         };
                     case "|":
                         ++i;
-                        switch(line.charAt(i)){
+                        switch(line[i]){
                             case "]":
                                 ++i;
-                                switch(line.charAt(i)){
+                                switch(line[i]){
                                     case "|":
                                         ++i;
-                                        if (line.charAt(i) === ":") return {
+                                        if (line[i] === ":") return {
                                             len: 5,
                                             token: "bar_dbl_repeat"
                                         };
@@ -7195,7 +7052,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                                 break;
                             case "|":
                                 ++i;
-                                if (line.charAt(i) === ":") return {
+                                if (line[i] === ":") return {
                                     len: 4,
                                     token: "bar_dbl_repeat"
                                 };
@@ -7219,9 +7076,9 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                 break;
             case "[":
                 ++i;
-                if (line.charAt(i) === "|") {
+                if (line[i] === "|") {
                     ++i;
-                    switch(line.charAt(i)){
+                    switch(line[i]){
                         case ":":
                             return {
                                 len: 3,
@@ -7239,7 +7096,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                             };
                     }
                 } else {
-                    if (line.charAt(i) >= "1" && line.charAt(i) <= "9" || line.charAt(i) === '"') return {
+                    if (line[i] >= "1" && line[i] <= "9" || line[i] === '"') return {
                         len: 1,
                         token: "bar_invisible"
                     };
@@ -7250,7 +7107,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                 break;
             case "|":
                 ++i;
-                switch(line.charAt(i)){
+                switch(line[i]){
                     case "]":
                         return {
                             len: 2,
@@ -7258,7 +7115,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                         };
                     case "|":
                         ++i;
-                        if (line.charAt(i) === ":") return {
+                        if (line[i] === ":") return {
                             len: 3,
                             token: "bar_left_repeat"
                         };
@@ -7268,7 +7125,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                         };
                     case ":":
                         var colons = 0;
-                        while(line.charAt(i + colons) === ":")colons++;
+                        while(line[i + colons] === ":")colons++;
                         return {
                             len: 1 + colons,
                             token: "bar_left_repeat"
@@ -7288,7 +7145,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     // this returns all the characters in the string that match one of the characters in the legalChars string
     this.getTokenOf = function(str, legalChars) {
         for(var i = 0; i < str.length; i++){
-            if (legalChars.indexOf(str.charAt(i)) < 0) return {
+            if (legalChars.indexOf(str[i]) < 0) return {
                 len: i,
                 token: str.substring(0, i)
             };
@@ -7301,7 +7158,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     this.getToken = function(str, start, end) {
         // This returns the next set of chars that doesn't contain spaces
         var i = start;
-        while(i < end && !this.isWhiteSpace(str.charAt(i)))i++;
+        while(i < end && !this.isWhiteSpace(str[i]))i++;
         return str.substring(start, i);
     };
     // This just sees if the next token is the word passed in, with possible leading spaces
@@ -7398,7 +7255,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                 accs: accs,
                 warn: "Expected note name after " + acc
             };
-            switch(tokens[0].token.charAt(0)){
+            switch(tokens[0].token[0]){
                 case "a":
                 case "b":
                 case "c":
@@ -7416,7 +7273,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                     if (accs === undefined) accs = [];
                     accs.push({
                         acc: acc,
-                        note: tokens[0].token.charAt(0)
+                        note: tokens[0].token[0]
                     });
                     if (tokens[0].token.length === 1) tokens.shift();
                     else tokens[0].token = tokens[0].token.substring(1);
@@ -7448,11 +7305,11 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
             len: 0
         };
         var acc = null;
-        switch(str.charAt(i)){
+        switch(str[i]){
             case "^":
             case "_":
             case "=":
-                acc = str.charAt(i);
+                acc = str[i];
                 break;
             default:
                 return {
@@ -7464,7 +7321,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
             len: 1,
             warn: "Expected note name after accidental"
         };
-        switch(str.charAt(i)){
+        switch(str[i]){
             case "a":
             case "b":
             case "c":
@@ -7483,19 +7340,19 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                     len: i + 1,
                     token: {
                         acc: accTranslation[acc],
-                        note: str.charAt(i)
+                        note: str[i]
                     }
                 };
             case "^":
             case "_":
             case "/":
-                acc += str.charAt(i);
+                acc += str[i];
                 i++;
                 if (finished(str, i)) return {
                     len: 2,
                     warn: "Expected note name after accidental"
                 };
-                switch(str.charAt(i)){
+                switch(str[i]){
                     case "a":
                     case "b":
                     case "c":
@@ -7514,7 +7371,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                             len: i + 1,
                             token: {
                                 acc: accTranslation[acc],
-                                note: str.charAt(i)
+                                note: str[i]
                             }
                         };
                     default:
@@ -7539,8 +7396,8 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
         // it returns just the start and end characters that contain the meat.
         var comment = line.indexOf("%", start);
         if (comment >= 0 && comment < end) end = comment;
-        while(start < end && (line.charAt(start) === " " || line.charAt(start) === "	" || line.charAt(start) === "\x12"))start++;
-        while(start < end && (line.charAt(end - 1) === " " || line.charAt(end - 1) === "	" || line.charAt(end - 1) === "\x12"))end--;
+        while(start < end && (line[start] === " " || line[start] === "	" || line[start] === "\x12"))start++;
+        while(start < end && (line[end - 1] === " " || line[end - 1] === "	" || line[end - 1] === "\x12"))end--;
         return {
             start: start,
             end: end
@@ -7565,9 +7422,9 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
         var tokens = [];
         var i;
         while(start < end){
-            if (line.charAt(start) === '"') {
+            if (line[start] === '"') {
                 i = start + 1;
-                while(i < end && line.charAt(i) !== '"')i++;
+                while(i < end && line[i] !== '"')i++;
                 tokens.push({
                     type: "quote",
                     token: line.substring(start + 1, i),
@@ -7575,42 +7432,42 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                     end: i
                 });
                 i++;
-            } else if (isLetter(line.charAt(start))) {
+            } else if (isLetter(line[start])) {
                 i = start + 1;
-                if (alphaUntilWhiteSpace) while(i < end && !this.isWhiteSpace(line.charAt(i)))i++;
-                else while(i < end && isLetter(line.charAt(i)))i++;
+                if (alphaUntilWhiteSpace) while(i < end && !this.isWhiteSpace(line[i]))i++;
+                else while(i < end && isLetter(line[i]))i++;
                 tokens.push({
                     type: "alpha",
                     token: line.substring(start, i),
-                    continueId: isNumber(line.charAt(i)),
+                    continueId: isNumber(line[i]),
                     start: start,
                     end: i
                 });
                 start = i + 1;
-            } else if (line.charAt(start) === "." && isNumber(line.charAt(i + 1))) {
+            } else if (line[start] === "." && isNumber(line[i + 1])) {
                 i = start + 1;
                 var int2 = null;
                 var float2 = null;
-                while(i < end && isNumber(line.charAt(i)))i++;
+                while(i < end && isNumber(line[i]))i++;
                 float2 = parseFloat(line.substring(start, i));
                 tokens.push({
                     type: "number",
                     token: line.substring(start, i),
                     intt: int2,
                     floatt: float2,
-                    continueId: isLetter(line.charAt(i)),
+                    continueId: isLetter(line[i]),
                     start: start,
                     end: i
                 });
                 start = i + 1;
-            } else if (isNumber(line.charAt(start)) || line.charAt(start) === "-" && isNumber(line.charAt(i + 1))) {
+            } else if (isNumber(line[start]) || line[start] === "-" && isNumber(line[i + 1])) {
                 i = start + 1;
                 var intt = null;
                 var floatt = null;
-                while(i < end && isNumber(line.charAt(i)))i++;
-                if (line.charAt(i) === "." && isNumber(line.charAt(i + 1))) {
+                while(i < end && isNumber(line[i]))i++;
+                if (line[i] === "." && isNumber(line[i + 1])) {
                     i++;
-                    while(i < end && isNumber(line.charAt(i)))i++;
+                    while(i < end && isNumber(line[i]))i++;
                 } else intt = parseInt(line.substring(start, i));
                 floatt = parseFloat(line.substring(start, i));
                 tokens.push({
@@ -7618,16 +7475,16 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                     token: line.substring(start, i),
                     intt: intt,
                     floatt: floatt,
-                    continueId: isLetter(line.charAt(i)),
+                    continueId: isLetter(line[i]),
                     start: start,
                     end: i
                 });
                 start = i + 1;
-            } else if (line.charAt(start) === " " || line.charAt(start) === "	") i = start + 1;
+            } else if (line[start] === " " || line[start] === "	") i = start + 1;
             else {
                 tokens.push({
                     type: "punct",
-                    token: line.charAt(start),
+                    token: line[start],
                     start: start,
                     end: start + 1
                 });
@@ -7640,8 +7497,8 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     this.getVoiceToken = function(line, start, end) {
         // This finds the next token. A token is delimited by a space or an equal sign. If it starts with a quote, then the portion between the quotes is returned.
         var i = start;
-        while(i < end && this.isWhiteSpace(line.charAt(i)) || line.charAt(i) === "=")i++;
-        if (line.charAt(i) === '"') {
+        while(i < end && this.isWhiteSpace(line[i]) || line[i] === "=")i++;
+        if (line[i] === '"') {
             var close = line.indexOf('"', i + 1);
             if (close === -1 || close >= end) return {
                 len: 1,
@@ -7653,7 +7510,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
             };
         } else {
             var ii = i;
-            while(ii < end && !this.isWhiteSpace(line.charAt(ii)) && line.charAt(ii) !== "=")ii++;
+            while(ii < end && !this.isWhiteSpace(line[ii]) && line[ii] !== "=")ii++;
             return {
                 len: ii - start + 1,
                 token: line.substring(i, ii)
@@ -7891,7 +7748,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
         var arr = str.split("\\");
         if (arr.length === 1) return str;
         var out = null;
-        $3fSeU.each(arr, function(s) {
+        arr.forEach(function(s) {
             if (out === null) out = s;
             else {
                 var c = charMap[s.substring(0, 2)];
@@ -7911,7 +7768,7 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     };
     this.getNumber = function(line, index) {
         var num = 0;
-        while(index < line.length)switch(line.charAt(index)){
+        while(index < line.length)switch(line[index]){
             case "0":
                 num = num * 10;
                 index++;
@@ -7966,16 +7823,16 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
     this.getFraction = function(line, index) {
         var num = 1;
         var den = 1;
-        if (line.charAt(index) !== "/") {
+        if (line[index] !== "/") {
             var ret = this.getNumber(line, index);
             num = ret.num;
             index = ret.index;
         }
-        if (line.charAt(index) === "/") {
+        if (line[index] === "/") {
             index++;
-            if (line.charAt(index) === "/") {
+            if (line[index] === "/") {
                 var div = 0.5;
-                while(line.charAt(index++) === "/")div = div / 2;
+                while(line[index++] === "/")div = div / 2;
                 return {
                     value: num * div,
                     index: index - 1
@@ -7993,9 +7850,63 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
             index: index
         };
     };
+    //
+    // MAE 10 Jan 2023 - For better handling of tunes that have tune numbers in front of them.
+    //
+    // Previous version would take:
+    // 21. Woman of the House, The
+    // and return:
+    // The 21. Woman of the House
+    // 
+    // This fix results in:
+    // 21. The Woman of the House
+    //
+    // Also added additional checks and handlers for lower case ", the" and ", a" since I found several tune collections with those tune name constructs
+    //
+    // Find an optional title number at the start of a tune title
+    function getTitleNumber(str) {
+        const regex = /^(\d+)\./;
+        // Use the exec method to search for the pattern in the string
+        const match = regex.exec(str);
+        // Check if a match is found
+        if (match) {
+            // The matched number is captured in the first group (index 1)
+            const foundNumber = match[1];
+            return foundNumber;
+        } else // Return null if no match is found
+        return null;
+    }
+    var thePatterns = [
+        {
+            match: /,\s*[Tt]he$/,
+            replace: "The "
+        },
+        {
+            match: /,\s*[Aa]$/,
+            replace: "A "
+        },
+        {
+            match: /,\s*[Aa]n$/,
+            replace: "An "
+        }
+    ];
     this.theReverser = function(str) {
-        if ($3fSeU.endsWith(str, ", The")) return "The " + str.substring(0, str.length - 5);
-        if ($3fSeU.endsWith(str, ", A")) return "A " + str.substring(0, str.length - 3);
+        for(var i = 0; i < thePatterns.length; i++){
+            var thisPattern = thePatterns[i];
+            var match = str.match(thisPattern.match);
+            if (match) {
+                var theTitleNumber = getTitleNumber(str);
+                if (theTitleNumber) {
+                    //console.log("theReverser The titlenumber:"+theTitleNumber); 
+                    str = str.replace(theTitleNumber + ".", "");
+                    str = str.trim();
+                }
+                var len = match[0].length;
+                var result = thisPattern.replace + str.substring(0, str.length - len);
+                if (theTitleNumber) result = theTitleNumber + ". " + result;
+                return result;
+            }
+        }
         return str;
     };
     this.stripComment = function(str) {
@@ -8073,6 +7984,11 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                     used: used + 1,
                     value: parseFloat(num)
                 };
+            case "px":
+                return {
+                    used: used + 1,
+                    value: parseFloat(num)
+                };
             case "cm":
                 return {
                     used: used + 1,
@@ -8090,12 +8006,10 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
                     value: parseFloat(num)
                 };
         }
-        return {
-            used: 0
-        };
     };
     var substInChord = function(str) {
-        while(str.indexOf("\\n") !== -1)str = str.replace("\\n", "\n");
+        str = str.replace(/\\n/g, "\n");
+        str = str.replace(/\\"/g, '"');
         return str;
     };
     this.getBrackettedSubstring = function(line, i, maxErrorChars, _matchChar) {
@@ -8107,10 +8021,14 @@ var $528b86620dc0c7a4$var$Tokenizer = function(lines, multilineVars) {
         // It returns the substring and the number of characters consumed.
         // The number of characters consumed is normally two more than the size of the substring,
         // but in the error case it might not be.
-        var matchChar = _matchChar || line.charAt(i);
+        var matchChar = _matchChar || line[i];
         var pos = i + 1;
-        while(pos < line.length && line.charAt(pos) !== matchChar)++pos;
-        if (line.charAt(pos) === matchChar) return [
+        var esc = false;
+        while(pos < line.length && (esc || line[pos] !== matchChar)){
+            esc = line[pos] === "\\";
+            ++pos;
+        }
+        if (line[pos] === matchChar) return [
             pos - i + 1,
             substInChord(line.substring(i + 1, pos)),
             true
@@ -8142,7 +8060,7 @@ module.exports = $528b86620dc0c7a4$var$Tokenizer;
 
 });
 
-parcelRequire.register("gROdF", function(module, exports) {
+parcelRegister("gROdF", function(module, exports) {
 //    wrap_lines.js: does line wrap on an already parsed tune.
 function $c4788d1f53d02bf0$var$wrapLines(tune, lineBreaks, barNumbers) {
     if (!lineBreaks || tune.lines.length === 0) return;
@@ -8563,11 +8481,12 @@ module.exports = {
 
 });
 
-parcelRequire.register("7UhRc", function(module, exports) {
+parcelRegister("7UhRc", function(module, exports) {
+//    abc_tune.js: a computer usable internal structure representing one tune.
 
 var $3fSeU = parcelRequire("3fSeU");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
 var $bg5L4 = parcelRequire("bg5L4");
 
@@ -8912,13 +8831,14 @@ var $85Ztm = parcelRequire("85Ztm");
             if (group && group.staffs && group.staffs.length > 0) {
                 var firstStaff = group.staffs[0];
                 var middleC = firstStaff.absoluteY;
-                var top = middleC - firstStaff.top * $f4yIj.STEP;
+                var top = middleC - firstStaff.top * $6aPnV.STEP;
                 var lastStaff = group.staffs[group.staffs.length - 1];
                 middleC = lastStaff.absoluteY;
-                var bottom = middleC - lastStaff.bottom * $f4yIj.STEP;
+                var bottom = middleC - lastStaff.bottom * $6aPnV.STEP;
                 var height = bottom - top;
                 var voices = group.voices;
                 for(var v = 0; v < voices.length; v++){
+                    if (voices[v].staff && voices[v].staff.isTabStaff) continue;
                     var noteFound = false;
                     if (!voicesArr[v]) voicesArr[v] = [];
                     if (measureNumber[v] === undefined) measureNumber[v] = 0;
@@ -9074,7 +8994,7 @@ var $85Ztm = parcelRequire("85Ztm");
         if (!this.engraver || !this.engraver.staffgroups) {
             console.log("setTiming cannot be called before the tune is drawn.");
             this.noteTimings = [];
-            return;
+            return this.noteTimings;
         }
         var tempo = this.metaText ? this.metaText.tempo : null;
         var naturalBpm = this.getBpm(tempo);
@@ -9103,7 +9023,7 @@ var $85Ztm = parcelRequire("85Ztm");
     this.setUpAudio = function(options) {
         if (!options) options = {};
         var seq = $bg5L4(this, options);
-        return $fGXqu(seq, options, this.formatting.percmap);
+        return $fGXqu(seq, options, this.formatting.percmap, this.formatting.midi);
     };
     this.deline = function(options) {
         return $85Ztm(this.lines, options);
@@ -9112,27 +9032,27 @@ var $85Ztm = parcelRequire("85Ztm");
 module.exports = $5c1b9d67195d0a51$var$Tune;
 
 });
-parcelRequire.register("f4yIj", function(module, exports) {
-var $af92282ae15972df$var$spacing = {};
-$af92282ae15972df$var$spacing.FONTEM = 360;
-$af92282ae15972df$var$spacing.FONTSIZE = 30;
-$af92282ae15972df$var$spacing.STEP = $af92282ae15972df$var$spacing.FONTSIZE * 93 / 720;
-$af92282ae15972df$var$spacing.SPACE = 10;
-$af92282ae15972df$var$spacing.TOPNOTE = 15;
-$af92282ae15972df$var$spacing.STAVEHEIGHT = 100;
-$af92282ae15972df$var$spacing.INDENT = 50;
-module.exports = $af92282ae15972df$var$spacing;
+parcelRegister("6aPnV", function(module, exports) {
+var $47eb8933e7eee0dc$var$spacing = {};
+$47eb8933e7eee0dc$var$spacing.FONTEM = 360;
+$47eb8933e7eee0dc$var$spacing.FONTSIZE = 30;
+$47eb8933e7eee0dc$var$spacing.STEP = $47eb8933e7eee0dc$var$spacing.FONTSIZE * 93 / 720;
+$47eb8933e7eee0dc$var$spacing.SPACE = 10;
+$47eb8933e7eee0dc$var$spacing.TOPNOTE = 15;
+$47eb8933e7eee0dc$var$spacing.STAVEHEIGHT = 100;
+$47eb8933e7eee0dc$var$spacing.INDENT = 50;
+module.exports = $47eb8933e7eee0dc$var$spacing;
 
 });
 
-parcelRequire.register("bg5L4", function(module, exports) {
+parcelRegister("bg5L4", function(module, exports) {
 //    abc_midi_sequencer.js: Turn parsed abc into a linear series of events.
 var $8325a7c98d8ca851$var$sequence;
 
 var $3fSeU = parcelRequire("3fSeU");
 (function() {
     "use strict";
-    var measureLength;
+    var measureLength = 1; // This should be set by the meter, but just in case that is missing, we'll take a guess.
     // The abc is provided to us line by line. It might have repeats in it. We want to re arrange the elements to
     // be an array of voices with all the repeats embedded, and no lines. Then it is trivial to go through the events
     // one at a time and turn it into midi.
@@ -9889,7 +9809,7 @@ module.exports = $8325a7c98d8ca851$var$sequence;
 
 });
 
-parcelRequire.register("fGXqu", function(module, exports) {
+parcelRegister("fGXqu", function(module, exports) {
 //    abc_midi_flattener.js: Turn a linear series of events into a series of MIDI commands.
 // We input a set of voices, but the notes are still complex. This pass changes the logical definitions
 // of the grace notes, decorations, ties, triplets, rests, transpositions, keys, and accidentals into actual note durations.
@@ -9902,21 +9822,21 @@ var $9zJb9 = parcelRequire("9zJb9");
 (function() {
     "use strict";
     var barAccidentals;
-    var accidentals1;
+    var accidentals;
     var transpose;
     var bagpipes;
-    var tracks1;
-    var startingTempo1;
+    var tracks;
+    var startingTempo;
     var startingMeter;
     var tempoChangeFactor = 1;
     var instrument;
-    var currentInstrument1;
+    var currentInstrument;
     // var channel;
     var currentTrack;
     var lastNoteDurationPosition;
     var currentTrackName;
     var lastEventTime;
-    var meter1 = {
+    var meter = {
         num: 4,
         den: 4
     };
@@ -9924,6 +9844,7 @@ var $9zJb9 = parcelRequire("9zJb9");
     var chordSourceTrack;
     var chordTrackFinished;
     var chordChannel;
+    var bassInstrument = 0;
     var chordInstrument = 0;
     var drumInstrument = 128;
     var boomVolume = 64;
@@ -9945,16 +9866,18 @@ var $9zJb9 = parcelRequire("9zJb9");
     var drumTrack;
     var drumTrackFinished;
     var drumDefinition = {};
+    var drumBars;
     var pickupLength = 0;
     var percmap;
     // The gaps per beat. The first two are in seconds, the third is in fraction of a duration.
     var normalBreakBetweenNotes = 0; //0.000520833333325*1.5; // for articulation (matches muse score value)
     var slurredBreakBetweenNotes = -0.001; // make the slurred notes actually overlap
     var staccatoBreakBetweenNotes = 0.4; // some people say staccato is half duration, some say 3/4 so this splits it
-    $b6c8e015d8cfa676$var$flatten = function(voices, options, percmap_) {
+    $b6c8e015d8cfa676$var$flatten = function(voices, options, percmap_, midiOptions) {
         if (!options) options = {};
+        if (!midiOptions) midiOptions = {};
         barAccidentals = [];
-        accidentals1 = [
+        accidentals = [
             0,
             0,
             0,
@@ -9964,19 +9887,19 @@ var $9zJb9 = parcelRequire("9zJb9");
             0
         ];
         bagpipes = false;
-        tracks1 = [];
-        startingTempo1 = options.qpm;
+        tracks = [];
+        startingTempo = options.qpm;
         startingMeter = undefined;
         tempoChangeFactor = 1;
         instrument = undefined;
-        currentInstrument1 = undefined;
+        currentInstrument = undefined;
         // channel = undefined;
         currentTrack = undefined;
         currentTrackName = undefined;
         lastEventTime = 0;
         percmap = percmap_;
         // For resolving chords.
-        meter1 = {
+        meter = {
             num: 4,
             den: 4
         };
@@ -9985,8 +9908,10 @@ var $9zJb9 = parcelRequire("9zJb9");
         chordChannel = voices.length; // first free channel for chords
         chordTrackFinished = false;
         currentChords = [];
-        boomVolume = 64;
-        chickVolume = 48;
+        bassInstrument = midiOptions.bassprog && midiOptions.bassprog.length === 1 ? midiOptions.bassprog[0] : 0;
+        chordInstrument = midiOptions.chordprog && midiOptions.chordprog.length === 1 ? midiOptions.chordprog[0] : 0;
+        boomVolume = midiOptions.bassvol && midiOptions.bassvol.length === 1 ? midiOptions.bassvol[0] : 64;
+        chickVolume = midiOptions.chordvol && midiOptions.chordvol.length === 1 ? midiOptions.chordvol[0] : 48;
         lastChord = undefined;
         chordLastBar = undefined;
         gChordTacet = options.chordsOff ? true : false;
@@ -10003,6 +9928,7 @@ var $9zJb9 = parcelRequire("9zJb9");
         drumTrack = [];
         drumTrackFinished = false;
         drumDefinition = {};
+        drumBars = 1;
         if (voices.length > 0 && voices[0].length > 0) pickupLength = voices[0][0].pickupLength;
         // First adjust the input to resolve ties, set the starting time for each note, etc. That will make the rest of the logic easier
         preProcess(voices, options);
@@ -10037,16 +9963,17 @@ var $9zJb9 = parcelRequire("9zJb9");
                         if (setChordTrack) chordSourceTrack = i;
                         break;
                     case "key":
-                        accidentals1 = setKeySignature(element);
+                        accidentals = setKeySignature(element);
                         break;
                     case "meter":
                         if (!startingMeter) startingMeter = element;
-                        meter1 = element;
-                        beatFraction = getBeatFraction(meter1);
+                        meter = element;
+                        beatFraction = getBeatFraction(meter);
+                        alignDrumToMeter();
                         break;
                     case "tempo":
-                        if (!startingTempo1) startingTempo1 = element.qpm;
-                        else tempoChangeFactor = element.qpm ? startingTempo1 / element.qpm : 1;
+                        if (!startingTempo) startingTempo = element.qpm;
+                        else tempoChangeFactor = element.qpm ? startingTempo / element.qpm : 1;
                         break;
                     case "transpose":
                         transpose = element.transpose;
@@ -10067,7 +9994,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                         break;
                     case "instrument":
                         if (instrument === undefined) instrument = element.program;
-                        currentInstrument1 = element.program;
+                        currentInstrument = element.program;
                         if (currentTrack.length > 0 && currentTrack[currentTrack.length - 1].cmd === "program") currentTrack[currentTrack.length - 1].instrument = element.program;
                         else {
                             var ii;
@@ -10084,6 +10011,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                         break;
                     case "drum":
                         drumDefinition = normalizeDrumDefinition(element.params);
+                        alignDrumToMeter();
                         break;
                     case "gchord":
                         if (!options.chordsOff) gChordTacet = element.tacet;
@@ -10110,18 +10038,18 @@ var $9zJb9 = parcelRequire("9zJb9");
             }
             if (currentTrack[0].instrument === undefined) currentTrack[0].instrument = instrument ? instrument : 0;
             if (currentTrackName) currentTrack.unshift(currentTrackName);
-            tracks1.push(currentTrack);
+            tracks.push(currentTrack);
             if (!chordTrackEmpty()) chordTrackFinished = true;
             if (drumTrack.length > 0) drumTrackFinished = true;
         }
         // See if any notes are octaves played at the same time. If so, raise the pitch of the higher one.
-        if (options.detuneOctave) findOctaves(tracks1, parseInt(options.detuneOctave, 10));
-        if (!chordTrackEmpty()) tracks1.push(chordTrack);
-        if (drumTrack.length > 0) tracks1.push(drumTrack);
+        if (options.detuneOctave) findOctaves(tracks, parseInt(options.detuneOctave, 10));
+        if (!chordTrackEmpty()) tracks.push(chordTrack);
+        if (drumTrack.length > 0) tracks.push(drumTrack);
         return {
-            tempo: startingTempo1,
+            tempo: startingTempo,
             instrument: instrument,
-            tracks: tracks1,
+            tracks: tracks,
             totalDuration: lastEventTime
         };
     };
@@ -10275,8 +10203,8 @@ var $9zJb9 = parcelRequire("9zJb9");
         } else if (!doBeatAccents) volume = stressBeatDown;
         else if (pickupLength > beat) volume = stressBeatUp;
         else {
-            var barLength = meter1.num / meter1.den;
-            var barBeat = calcBeat(lastBarTime, getBeatFraction(meter1), beat);
+            var barLength = meter.num / meter.den;
+            var barBeat = calcBeat(lastBarTime, getBeatFraction(meter), beat);
             if (barBeat === 0) volume = stressBeat1;
             else if (parseInt(barBeat, 10) === barBeat) volume = stressBeatDown;
             else volume = stressBeatUp;
@@ -10307,7 +10235,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     });
                 }
                 lastChord = c;
-                var barBeat = calcBeat(lastBarTime, getBeatFraction(meter1), timeToRealTime(elem.time));
+                var barBeat = calcBeat(lastBarTime, getBeatFraction(meter), timeToRealTime(elem.time));
                 currentChords.push({
                     chord: lastChord,
                     beat: barBeat,
@@ -10338,7 +10266,7 @@ var $9zJb9 = parcelRequire("9zJb9");
         var start = p.start;
         var pp;
         var runningDuration = p.duration;
-        var shortestNote = durationRounded(0.03125);
+        var shortestNote = durationRounded(1.0 / 32);
         switch(noteModification){
             case "trill":
                 var note = 1;
@@ -10350,7 +10278,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                         start: start,
                         duration: shortestNote,
                         gap: 0,
-                        instrument: currentInstrument1,
+                        instrument: currentInstrument,
                         style: "decoration"
                     });
                     note = note === 1 ? 0 : 1;
@@ -10366,7 +10294,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 runningDuration -= shortestNote;
@@ -10378,7 +10306,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 runningDuration -= shortestNote;
@@ -10390,7 +10318,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: runningDuration,
                     gap: 0,
-                    instrument: currentInstrument1
+                    instrument: currentInstrument
                 });
                 break;
             case "lowermordent":
@@ -10401,7 +10329,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 runningDuration -= shortestNote;
@@ -10413,7 +10341,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 runningDuration -= shortestNote;
@@ -10425,7 +10353,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: runningDuration,
                     gap: 0,
-                    instrument: currentInstrument1
+                    instrument: currentInstrument
                 });
                 break;
             case "turn":
@@ -10437,7 +10365,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 currentTrack.push({
@@ -10447,7 +10375,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start + shortestNote,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 currentTrack.push({
@@ -10457,7 +10385,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start + shortestNote * 2,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 currentTrack.push({
@@ -10467,7 +10395,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start + shortestNote * 3,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1,
+                    instrument: currentInstrument,
                     style: "decoration"
                 });
                 currentTrack.push({
@@ -10477,7 +10405,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                     start: start + shortestNote * 4,
                     duration: shortestNote,
                     gap: 0,
-                    instrument: currentInstrument1
+                    instrument: currentInstrument
                 });
                 break;
             case "roll":
@@ -10489,7 +10417,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                         start: start,
                         duration: shortestNote,
                         gap: 0,
-                        instrument: currentInstrument1,
+                        instrument: currentInstrument,
                         style: "decoration"
                     });
                     runningDuration -= shortestNote * 2;
@@ -10516,7 +10444,7 @@ var $9zJb9 = parcelRequire("9zJb9");
         var graces;
         if (elem.gracenotes && elem.pitches && elem.pitches.length > 0 && elem.pitches[0]) {
             graces = processGraceNotes(elem.gracenotes, elem.pitches[0].duration);
-            if (elem.elem) elem.elem.midiGraceNotePitches = writeGraceNotes(graces, timeToRealTime(elem.time), velocity * 2 / 3, currentInstrument1); // make the graces a little quieter.
+            if (elem.elem) elem.elem.midiGraceNotePitches = writeGraceNotes(graces, timeToRealTime(elem.time), velocity * 2 / 3, currentInstrument); // make the graces a little quieter.
         }
         // The beat fraction is the note that gets a beat (.25 is a quarter note)
         // The tempo is in minutes and we want to get to milliseconds.
@@ -10525,7 +10453,7 @@ var $9zJb9 = parcelRequire("9zJb9");
         // an array and return all of them.
         if (elem.elem) {
             var rt = timeToRealTime(elem.time);
-            var ms = rt / beatFraction / startingTempo1 * 60000;
+            var ms = rt / beatFraction / startingTempo * 60000;
             if (elem.elem.currentTrackMilliseconds === undefined) {
                 elem.elem.currentTrackMilliseconds = ms;
                 elem.elem.currentTrackWholeNotes = rt;
@@ -10578,7 +10506,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                 if (note.startSlur) slurCount += note.startSlur.length;
                 if (note.endSlur) slurCount -= note.endSlur.length;
                 var actualPitch = note.actualPitch ? note.actualPitch : adjustPitch(note);
-                if (currentInstrument1 === drumInstrument && percmap) {
+                if (currentInstrument === drumInstrument && percmap) {
                     var name = $9zJb9(note);
                     if (name && percmap[name]) actualPitch = percmap[name].sound;
                 }
@@ -10588,7 +10516,9 @@ var $9zJb9 = parcelRequire("9zJb9");
                     volume: velocity,
                     start: timeToRealTime(elem.time),
                     duration: durationRounded(note.duration),
-                    instrument: currentInstrument1
+                    instrument: currentInstrument,
+                    startChar: elem.elem.startChar,
+                    endChar: elem.elem.endChar
                 };
                 p = adjustForMicroTone(p);
                 if (elem.gracenotes) {
@@ -10606,7 +10536,7 @@ var $9zJb9 = parcelRequire("9zJb9");
                             break;
                         case "staccato":
                             var d = p.duration * staccatoBreakBetweenNotes;
-                            p.gap = startingTempo1 / 60 * d;
+                            p.gap = startingTempo / 60 * d;
                             break;
                         default:
                             p.gap = normalBreakBetweenNotes;
@@ -10664,7 +10594,7 @@ var $9zJb9 = parcelRequire("9zJb9");
         var actualPitch = extractOctave(pitch) * 12 + scale[extractNote(pitch)] + 60;
         if (barAccidentals[pitch] !== undefined) // An accidental is always taken at face value and supersedes the key signature.
         actualPitch += barAccidentals[pitch];
-        else actualPitch += accidentals1[extractNote(pitch)];
+        else actualPitch += accidentals[extractNote(pitch)];
         actualPitch += transpose;
         return actualPitch;
     }
@@ -10718,7 +10648,7 @@ var $9zJb9 = parcelRequire("9zJb9");
         for(g = 0; g < graces.length; g++){
             grace = graces[g];
             var actualPitch = adjustPitch(grace);
-            if (currentInstrument1 === drumInstrument && percmap) {
+            if (currentInstrument === drumInstrument && percmap) {
                 var name = $9zJb9(grace);
                 if (name && percmap[name]) actualPitch = percmap[name].sound;
             }
@@ -11547,8 +11477,8 @@ var $9zJb9 = parcelRequire("9zJb9");
     function chordNotes(bass, modifier) {
         var intervals = chordIntervals[modifier];
         if (!intervals) {
-            if (modifier.slice(0, 2).toLowerCase() === "ma" || modifier.charAt(0) === "M") intervals = chordIntervals.M;
-            else if (modifier.charAt(0) === "m" || modifier.charAt(0) === "-") intervals = chordIntervals.m;
+            if (modifier.slice(0, 2).toLowerCase() === "ma" || modifier[0] === "M") intervals = chordIntervals.M;
+            else if (modifier[0] === "m" || modifier[0] === "-") intervals = chordIntervals.m;
             else intervals = chordIntervals.M;
         }
         bass += 12; // the chord is an octave above the bass note.
@@ -11565,7 +11495,7 @@ var $9zJb9 = parcelRequire("9zJb9");
             start: lastBarTime + beat * durationRounded(beatLength),
             duration: durationRounded(noteLength),
             gap: 0,
-            instrument: chordInstrument
+            instrument: bassInstrument
         });
     }
     function writeChick(chick, beatLength, volume, beat, noteLength) {
@@ -11641,8 +11571,8 @@ var $9zJb9 = parcelRequire("9zJb9");
         ]
     };
     function resolveChords(startTime, endTime) {
-        var num = meter1.num;
-        var den = meter1.den;
+        var num = meter.num;
+        var den = meter.den;
         var beatLength = 1 / den;
         var noteLength = beatLength / 2;
         var pattern = rhythmPatterns[num + "/" + den];
@@ -11759,7 +11689,7 @@ var $9zJb9 = parcelRequire("9zJb9");
             bars: params.bars,
             pattern: []
         };
-        var beatLength = getBeatFraction(meter1);
+        var beatLength = getBeatFraction(meter);
         var playCount = 0;
         for(var j = 0; j < events.length; j++){
             event = events[j];
@@ -11804,18 +11734,23 @@ var $9zJb9 = parcelRequire("9zJb9");
                 pitch: null
             });
         }
+        drumBars = params.bars ? params.bars : 1;
+        return ret;
+    }
+    function alignDrumToMeter() {
+        if (!drumDefinition || !drumDefinition.pattern) return;
+        var ret = drumDefinition;
         // Now normalize the pattern to cover the correct number of measures. The note lengths passed are relative to each other and need to be scaled to fit a measure.
         var totalTime = 0;
-        var measuresPerBeat = meter1.num / meter1.den;
+        var measuresPerBeat = meter.num / meter.den;
         for(var ii = 0; ii < ret.pattern.length; ii++)totalTime += ret.pattern[ii].len;
-        var numBars = params.bars ? params.bars : 1;
-        var factor = totalTime / numBars / measuresPerBeat;
+        var factor = totalTime / drumBars / measuresPerBeat;
         for(ii = 0; ii < ret.pattern.length; ii++)ret.pattern[ii].len = ret.pattern[ii].len / factor;
-        return ret;
+        drumDefinition = ret;
     }
     function writeDrum(channel) {
         if (drumTrack.length === 0 && !drumDefinition.on) return;
-        var measureLen = meter1.num / meter1.den;
+        var measureLen = meter.num / meter.den;
         if (drumTrack.length === 0) {
             if (lastEventTime < measureLen) return; // This is true if there are pickup notes. The drum doesn't start until the first full measure.
             drumTrack.push({
@@ -11877,7 +11812,7 @@ var $9zJb9 = parcelRequire("9zJb9");
 module.exports = $b6c8e015d8cfa676$var$flatten;
 
 });
-parcelRequire.register("9zJb9", function(module, exports) {
+parcelRegister("9zJb9", function(module, exports) {
 var $6f8a6d85f6a53230$var$pitchMap = {
     f0: "_C",
     n0: "=C",
@@ -11934,7 +11869,19 @@ var $6f8a6d85f6a53230$var$pitchMap = {
     f13: "_b",
     n13: "=b",
     s13: "^b",
-    x13: "b"
+    x13: "b",
+    f14: "_c'",
+    n14: "=c'",
+    s14: "^c'",
+    x14: "c'",
+    f15: "_d'",
+    n15: "=d'",
+    s15: "^d'",
+    x15: "d'",
+    f16: "_e'",
+    n16: "=e'",
+    s16: "^e'",
+    x16: "e'"
 };
 function $6f8a6d85f6a53230$var$pitchesToPerc(pitchObj) {
     var pitch = (pitchObj.accidental ? pitchObj.accidental[0] : "x") + pitchObj.verticalPos;
@@ -11945,7 +11892,7 @@ module.exports = $6f8a6d85f6a53230$var$pitchesToPerc;
 });
 
 
-parcelRequire.register("85Ztm", function(module, exports) {
+parcelRegister("85Ztm", function(module, exports) {
 function $5e4e798b07bd9a92$var$delineTune(inputLines, options) {
     if (!options) options = {};
     var lineBreaks = !!options.lineBreaks;
@@ -12120,11 +12067,13 @@ module.exports = $5e4e798b07bd9a92$var$delineTune;
 });
 
 
-parcelRequire.register("d8DMQ", function(module, exports) {
+parcelRegister("d8DMQ", function(module, exports) {
 
 var $7Au3Q = parcelRequire("7Au3Q");
 
 var $3fSeU = parcelRequire("3fSeU");
+
+var $a3Fkr = parcelRequire("a3Fkr");
 var $990ae28f4294b388$var$TuneBuilder = function(tune) {
     var self = this;
     this.setVisualTranspose = function(visualTranspose) {
@@ -12200,7 +12149,7 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
                                 durationThisBar += event.duration;
                                 durationsPerLines[i] += event.duration;
                             }
-                        } else if (event.el_type === "scale" || event.el_type === "stem" || event.el_type === "overlay" || event.el_type === "style" || event.el_type === "transpose") // These types of events are duplicated on the overlay layer.
+                        } else if (event.el_type === "scale" || event.el_type === "stem" || event.el_type === "overlay" || event.el_type === "style" || event.el_type === "transpose" || event.el_type === "color") // These types of events are duplicated on the overlay layer.
                         overlayVoice[k].voice.push(event);
                     }
                     if (overlayVoice[k].hasOverlay && overlayVoice[k].snip.length === 0) // there was no closing bar, so we didn't set the snip amount.
@@ -12269,82 +12218,90 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             }
         }
     }
-    this.cleanUp = function(barsperstaff1, staffnonote, currSlur) {
+    this.cleanUp = function(barsperstaff, staffnonote, currSlur) {
         this.closeLine(); // Close the last line.
         delete tune.runningFonts;
+        $990ae28f4294b388$var$simplifyMetaText(tune);
+        //addRichTextToAnnotationsAndLyrics(tune)
         // If the tempo was created with a string like "Allegro", then the duration of a beat needs to be set at the last moment, when it is most likely known.
         if (tune.metaText.tempo && tune.metaText.tempo.bpm && !tune.metaText.tempo.duration) tune.metaText.tempo.duration = [
             tune.getBeatLength()
         ];
         // Remove any blank lines
         var anyDeleted = false;
-        var i1, s, v;
-        for(i1 = 0; i1 < tune.lines.length; i1++)if (tune.lines[i1].staff !== undefined) {
+        var i, s, v;
+        for(i = 0; i < tune.lines.length; i++)if (tune.lines[i].staff !== undefined) {
             var hasAny = false;
-            for(s = 0; s < tune.lines[i1].staff.length; s++){
-                if (tune.lines[i1].staff[s] === undefined) {
+            for(s = 0; s < tune.lines[i].staff.length; s++){
+                if (tune.lines[i].staff[s] === undefined) {
                     anyDeleted = true;
-                    tune.lines[i1].staff[s] = null;
+                    tune.lines[i].staff[s] = null;
                 //tune.lines[i].staff[s] = { voices: []};	// TODO-PER: There was a part missing in the abc music. How should we recover?
-                } else for(v = 0; v < tune.lines[i1].staff[s].voices.length; v++){
-                    if (tune.lines[i1].staff[s].voices[v] === undefined) tune.lines[i1].staff[s].voices[v] = []; // TODO-PER: There was a part missing in the abc music. How should we recover?
-                    else if (this.containsNotes(tune.lines[i1].staff[s].voices[v])) hasAny = true;
+                } else for(v = 0; v < tune.lines[i].staff[s].voices.length; v++){
+                    if (tune.lines[i].staff[s].voices[v] === undefined) tune.lines[i].staff[s].voices[v] = []; // TODO-PER: There was a part missing in the abc music. How should we recover?
+                    else if (this.containsNotes(tune.lines[i].staff[s].voices[v])) hasAny = true;
                 }
             }
             if (!hasAny) {
-                tune.lines[i1] = null;
+                tune.lines[i] = null;
                 anyDeleted = true;
             }
         }
         if (anyDeleted) {
-            tune.lines = $3fSeU.compact(tune.lines);
-            $3fSeU.each(tune.lines, function(line) {
-                if (line.staff) line.staff = $3fSeU.compact(line.staff);
+            tune.lines = tune.lines.filter(function(line) {
+                return !!line;
+            });
+            tune.lines.forEach(function(line) {
+                if (line.staff) line.staff = line.staff.filter(function(line) {
+                    return !!line;
+                });
             });
         }
         // if we exceeded the number of bars allowed on a line, then force a new line
-        if (barsperstaff1) {
-            while(wrapMusicLines(tune.lines, barsperstaff1));
+        if (barsperstaff) {
+            while(wrapMusicLines(tune.lines, barsperstaff));
         }
         // If we were passed staffnonote, then we want to get rid of all staffs that contain only rests.
         if (staffnonote) {
             anyDeleted = false;
-            for(i1 = 0; i1 < tune.lines.length; i1++){
-                if (tune.lines[i1].staff !== undefined) for(s = 0; s < tune.lines[i1].staff.length; s++){
+            for(i = 0; i < tune.lines.length; i++){
+                if (tune.lines[i].staff !== undefined) for(s = 0; s < tune.lines[i].staff.length; s++){
                     var keepThis = false;
-                    for(v = 0; v < tune.lines[i1].staff[s].voices.length; v++)if (this.containsNotesStrict(tune.lines[i1].staff[s].voices[v])) keepThis = true;
+                    for(v = 0; v < tune.lines[i].staff[s].voices.length; v++)if (this.containsNotesStrict(tune.lines[i].staff[s].voices[v])) keepThis = true;
                     if (!keepThis) {
                         anyDeleted = true;
-                        tune.lines[i1].staff[s] = null;
+                        tune.lines[i].staff[s] = null;
                     }
                 }
             }
-            if (anyDeleted) $3fSeU.each(tune.lines, function(line) {
-                if (line.staff) line.staff = $3fSeU.compact(line.staff);
+            if (anyDeleted) tune.lines.forEach(function(line) {
+                if (line.staff) line.staff = line.staff.filter(function(staff) {
+                    return !!staff;
+                });
             });
         }
         fixTitles(tune.lines);
         // Remove the temporary working variables
-        for(i1 = 0; i1 < tune.lines.length; i1++){
-            if (tune.lines[i1].staff) for(s = 0; s < tune.lines[i1].staff.length; s++)delete tune.lines[i1].staff[s].workingClef;
+        for(i = 0; i < tune.lines.length; i++){
+            if (tune.lines[i].staff) for(s = 0; s < tune.lines[i].staff.length; s++)delete tune.lines[i].staff[s].workingClef;
         }
         // If there are overlays, create new voices for them.
         while(this.resolveOverlays());
         function cleanUpSlursInLine(line, staffNum, voiceNum) {
             if (!currSlur[staffNum]) currSlur[staffNum] = [];
             if (!currSlur[staffNum][voiceNum]) currSlur[staffNum][voiceNum] = [];
-            var x1;
+            var x;
             //			var lyr = null;	// TODO-PER: debugging.
             var addEndSlur = function(obj, num, chordPos) {
                 if (currSlur[staffNum][voiceNum][chordPos] === undefined) {
                     // There isn't an exact match for note position, but we'll take any other open slur.
-                    for(x1 = 0; x1 < currSlur[staffNum][voiceNum].length; x1++)if (currSlur[staffNum][voiceNum][x1] !== undefined) {
-                        chordPos = x1;
+                    for(x = 0; x < currSlur[staffNum][voiceNum].length; x++)if (currSlur[staffNum][voiceNum][x] !== undefined) {
+                        chordPos = x;
                         break;
                     }
                     if (currSlur[staffNum][voiceNum][chordPos] === undefined) {
                         var offNum = chordPos * 100 + 1;
-                        $3fSeU.each(obj.endSlur, function(x) {
+                        obj.endSlur.forEach(function(x) {
                             if (offNum === x) --offNum;
                         });
                         currSlur[staffNum][voiceNum][chordPos] = [
@@ -12367,20 +12324,20 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
                 var nextNum = chordPos * 100 + 1;
                 for(var i = 0; i < num; i++){
                     if (usedNums) {
-                        $3fSeU.each(usedNums, function(x) {
+                        usedNums.forEach(function(x) {
                             if (nextNum === x) ++nextNum;
                         });
-                        $3fSeU.each(usedNums, function(x) {
+                        usedNums.forEach(function(x) {
                             if (nextNum === x) ++nextNum;
                         });
-                        $3fSeU.each(usedNums, function(x) {
+                        usedNums.forEach(function(x) {
                             if (nextNum === x) ++nextNum;
                         });
                     }
-                    $3fSeU.each(currSlur[staffNum][voiceNum][chordPos], function(x) {
+                    currSlur[staffNum][voiceNum][chordPos].forEach(function(x) {
                         if (nextNum === x) ++nextNum;
                     });
-                    $3fSeU.each(currSlur[staffNum][voiceNum][chordPos], function(x) {
+                    currSlur[staffNum][voiceNum][chordPos].forEach(function(x) {
                         if (nextNum === x) ++nextNum;
                     });
                     currSlur[staffNum][voiceNum][chordPos].push(nextNum);
@@ -12395,8 +12352,8 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
                     nextNum++;
                 }
             };
-            for(var i2 = 0; i2 < line.length; i2++){
-                var el = line[i2];
+            for(var i = 0; i < line.length; i++){
+                var el = line[i];
                 //				if (el.lyric === undefined)	// TODO-PER: debugging
                 //					el.lyric = [{ divider: '-' }];	// TODO-PER: debugging
                 //				lyr = el.lyric[0];	// TODO-PER: debugging
@@ -12409,32 +12366,32 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
                             for(var ggg = 0; ggg < gg; ggg++)addEndSlur(el.gracenotes[g], 1, 20);
                         }
                         if (el.gracenotes[g].startSlur) {
-                            x1 = el.gracenotes[g].startSlur;
-                            addStartSlur(el.gracenotes[g], x1, 20);
+                            x = el.gracenotes[g].startSlur;
+                            addStartSlur(el.gracenotes[g], x, 20);
                         }
                     }
                     if (el.endSlur) {
-                        x1 = el.endSlur;
+                        x = el.endSlur;
                         el.endSlur = [];
-                        addEndSlur(el, x1, 0);
+                        addEndSlur(el, x, 0);
                     }
                     if (el.startSlur) {
-                        x1 = el.startSlur;
-                        addStartSlur(el, x1, 0);
+                        x = el.startSlur;
+                        addStartSlur(el, x, 0);
                     }
                     if (el.pitches) {
-                        var usedNums1 = [];
+                        var usedNums = [];
                         for(var p = 0; p < el.pitches.length; p++)if (el.pitches[p].endSlur) {
                             var k = el.pitches[p].endSlur;
                             el.pitches[p].endSlur = [];
                             for(var j = 0; j < k; j++){
-                                var slurNum1 = addEndSlur(el.pitches[p], 1, p + 1);
-                                usedNums1.push(slurNum1);
+                                var slurNum = addEndSlur(el.pitches[p], 1, p + 1);
+                                usedNums.push(slurNum);
                             }
                         }
                         for(p = 0; p < el.pitches.length; p++)if (el.pitches[p].startSlur) {
-                            x1 = el.pitches[p].startSlur;
-                            addStartSlur(el.pitches[p], x1, p + 1, usedNums1);
+                            x = el.pitches[p].startSlur;
+                            addStartSlur(el.pitches[p], x, p + 1, usedNums);
                         }
                         // Correct for the weird gracenote case where ({g}a) should match.
                         // The end slur was already assigned to the note, and needs to be moved to the first note of the graces.
@@ -12458,11 +12415,11 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             $7Au3Q.fixClef(el);
         }
         function wrapMusicLines(lines, barsperstaff) {
-            for(i1 = 0; i1 < lines.length; i1++){
-                if (lines[i1].staff !== undefined) for(s = 0; s < lines[i1].staff.length; s++){
+            for(i = 0; i < lines.length; i++){
+                if (lines[i].staff !== undefined) for(s = 0; s < lines[i].staff.length; s++){
                     var permanentItems = [];
-                    for(v = 0; v < lines[i1].staff[s].voices.length; v++){
-                        var voice = lines[i1].staff[s].voices[v];
+                    for(v = 0; v < lines[i].staff[s].voices.length; v++){
+                        var voice = lines[i].staff[s].voices[v];
                         var barNumThisLine = 0;
                         for(var n = 0; n < voice.length; n++){
                             if (voice[n].el_type === "bar") {
@@ -12471,16 +12428,16 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
                                 // and there is a next line. If there isn't a next line, create one.
                                 {
                                     if (n < voice.length - 1) {
-                                        var nextLine = getNextMusicLine(lines, i1);
+                                        var nextLine = getNextMusicLine(lines, i);
                                         if (!nextLine) {
-                                            var cp = JSON.parse(JSON.stringify(lines[i1]));
+                                            var cp = JSON.parse(JSON.stringify(lines[i]));
                                             lines.push($3fSeU.clone(cp));
                                             nextLine = lines[lines.length - 1];
                                             for(var ss = 0; ss < nextLine.staff.length; ss++)for(var vv = 0; vv < nextLine.staff[ss].voices.length; vv++)nextLine.staff[ss].voices[vv] = [];
                                         }
                                         var startElement = n + 1;
-                                        var section = lines[i1].staff[s].voices[v].slice(startElement);
-                                        lines[i1].staff[s].voices[v] = lines[i1].staff[s].voices[v].slice(0, startElement);
+                                        var section = lines[i].staff[s].voices[v].slice(startElement);
+                                        lines[i].staff[s].voices[v] = lines[i].staff[s].voices[v].slice(0, startElement);
                                         nextLine.staff[s].voices[v] = permanentItems.concat(section.concat(nextLine.staff[s].voices[v]));
                                         return true;
                                     }
@@ -12505,14 +12462,14 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             if (staff) for(tune.staffNum = 0; tune.staffNum < staff.length; tune.staffNum++){
                 if (staff[tune.staffNum].clef) fixClefPlacement(staff[tune.staffNum].clef);
                 for(tune.voiceNum = 0; tune.voiceNum < staff[tune.staffNum].voices.length; tune.voiceNum++){
-                    var voice1 = staff[tune.staffNum].voices[tune.voiceNum];
-                    cleanUpSlursInLine(voice1, tune.staffNum, tune.voiceNum);
-                    for(var j1 = 0; j1 < voice1.length; j1++)if (voice1[j1].el_type === "clef") fixClefPlacement(voice1[j1]);
-                    if (voice1.length > 0 && voice1[voice1.length - 1].barNumber) {
+                    var voice = staff[tune.staffNum].voices[tune.voiceNum];
+                    cleanUpSlursInLine(voice, tune.staffNum, tune.voiceNum);
+                    for(var j = 0; j < voice.length; j++)if (voice[j].el_type === "clef") fixClefPlacement(voice[j]);
+                    if (voice.length > 0 && voice[voice.length - 1].barNumber) {
                         // Don't hang a bar number on the last bar line: it should go on the next line.
-                        var nextLine1 = getNextMusicLine(tune.lines, tune.lineNum);
-                        if (nextLine1) nextLine1.staff[0].barNumber = voice1[voice1.length - 1].barNumber;
-                        delete voice1[voice1.length - 1].barNumber;
+                        var nextLine = getNextMusicLine(tune.lines, tune.lineNum);
+                        if (nextLine) nextLine.staff[0].barNumber = voice[voice.length - 1].barNumber;
+                        delete voice[voice.length - 1].barNumber;
                     }
                 }
             }
@@ -12565,13 +12522,13 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             return;
             if (hp.pitches !== undefined) {
                 var mid = currStaff.workingClef.verticalPos;
-                $3fSeU.each(hp.pitches, function(p) {
+                hp.pitches.forEach(function(p) {
                     p.verticalPos = p.pitch - mid;
                 });
             }
             if (hp.gracenotes !== undefined) {
                 var mid2 = currStaff.workingClef.verticalPos;
-                $3fSeU.each(hp.gracenotes, function(p) {
+                hp.gracenotes.forEach(function(p) {
                     p.verticalPos = p.pitch - mid2;
                 });
             }
@@ -12758,7 +12715,12 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             size: scale
         });
     };
-    this.startNewLine = function(params1) {
+    this.changeVoiceColor = function(color) {
+        self.appendElement("color", null, null, {
+            color: color
+        });
+    };
+    this.startNewLine = function(params) {
         // If the pointed to line doesn't exist, just create that. If the line does exist, but doesn't have any music on it, just use it.
         // If it does exist and has music, then increment the line number. If the new element doesn't exist, create it.
         var This = tune;
@@ -12795,6 +12757,9 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             }
             if (params.scale) self.appendElement("scale", null, null, {
                 size: params.scale
+            });
+            if (params.color) self.appendElement("color", null, null, {
+                color: params.color
             });
         };
         var createStaff = function(params) {
@@ -12838,20 +12803,20 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             };
             createStaff(params);
         };
-        if (tune.lines[tune.lineNum] === undefined) createLine(params1);
+        if (tune.lines[tune.lineNum] === undefined) createLine(params);
         else if (tune.lines[tune.lineNum].staff === undefined) {
             tune.lineNum++;
-            this.startNewLine(params1);
-        } else if (tune.lines[tune.lineNum].staff[tune.staffNum] === undefined) createStaff(params1);
-        else if (tune.lines[tune.lineNum].staff[tune.staffNum].voices[tune.voiceNum] === undefined) createVoice(params1);
+            this.startNewLine(params);
+        } else if (tune.lines[tune.lineNum].staff[tune.staffNum] === undefined) createStaff(params);
+        else if (tune.lines[tune.lineNum].staff[tune.staffNum].voices[tune.voiceNum] === undefined) createVoice(params);
         else if (!this.containsNotes(tune.lines[tune.lineNum].staff[tune.staffNum].voices[tune.voiceNum])) // We don't need a new line but we might need to update parts of it.
         {
-            if (params1.part) self.appendElement("part", params1.part.startChar, params1.part.endChar, {
-                title: params1.part.title
+            if (params.part) self.appendElement("part", params.part.startChar, params.part.endChar, {
+                title: params.part.title
             });
         } else {
             tune.lineNum++;
-            this.startNewLine(params1);
+            this.startNewLine(params);
         }
     };
     this.setRunningFont = function(type, font) {
@@ -12921,7 +12886,20 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
             tune.metaText[key] = value;
             tune.metaTextInfo[key] = info;
         } else {
-            tune.metaText[key] += "\n" + value;
+            if (typeof tune.metaText[key] === "string" && typeof value === "string") tune.metaText[key] += "\n" + value;
+            else {
+                if (tune.metaText[key] === "string") tune.metaText[key] = [
+                    {
+                        text: tune.metaText[key]
+                    }
+                ];
+                if (typeof value === "string") value = [
+                    {
+                        text: value
+                    }
+                ];
+                tune.metaText[key] = tune.metaText[key].concat(value);
+            }
             tune.metaTextInfo[key].endChar = info.endChar;
         }
     };
@@ -12941,25 +12919,59 @@ var $990ae28f4294b388$var$TuneBuilder = function(tune) {
         tune.metaTextInfo[key] = info;
     };
 };
+function $990ae28f4294b388$var$isArrayOfStrings(arr) {
+    if (!arr) return false;
+    if (typeof arr === "string") return false;
+    var str = "";
+    for(var i = 0; i < arr.length; i++){
+        if (typeof arr[i] !== "string") return false;
+    }
+    return true;
+}
+function $990ae28f4294b388$var$simplifyMetaText(tune) {
+    if ($990ae28f4294b388$var$isArrayOfStrings(tune.metaText.notes)) tune.metaText.notes = tune.metaText.notes.join("\n");
+    if ($990ae28f4294b388$var$isArrayOfStrings(tune.metaText.history)) tune.metaText.history = tune.metaText.history.join("\n");
+}
+function $990ae28f4294b388$var$addRichTextToAnnotationsAndLyrics(tune) {
+    var lines = tune.lines;
+    for(var i = 0; i < lines.length; i++)if (lines[i].staff !== undefined) {
+        for(var s = 0; s < lines[i].staff.length; s++)for(var v = 0; v < lines[i].staff[s].voices.length; v++){
+            var voice = lines[i].staff[s].voices[v];
+            for(var n = 0; n < voice.length; n++){
+                var element = voice[n];
+                if (element.chord) for(var c = 0; c < element.chord.length; c++){
+                    element.chord[c].name = $a3Fkr.parseFontChangeLine(element.chord[c].name);
+                    console.log(element.chord[c].name);
+                }
+                if (element.lyric) for(var l = 0; l < element.lyric.length; l++){
+                    element.lyric[l].syllable = $a3Fkr.parseFontChangeLine(element.lyric[l].syllable);
+                    console.log(element.lyric[l].syllable);
+                }
+            }
+        }
+    }
+}
 module.exports = $990ae28f4294b388$var$TuneBuilder;
 
 });
 
 
-parcelRequire.register("h1izU", function(module, exports) {
+parcelRegister("h1izU", function(module, exports) {
+//    abc_parse_book.js: parses a string representing ABC Music Notation into a usable internal structure.
 
 var $3fSeU = parcelRequire("3fSeU");
 var $c640f0e8069967b3$var$bookParser = function(book) {
     "use strict";
     var directives = "";
+    var initialWhiteSpace = book.match(/(\s*)/);
     book = $3fSeU.strip(book);
     var tuneStrings = book.split("\nX:");
     // Put back the X: that we lost when splitting the tunes.
     for(var i = 1; i < tuneStrings.length; i++)tuneStrings[i] = "X:" + tuneStrings[i];
-    // Keep track of the character position each tune starts with.
-    var pos = 0;
+    // Keep track of the character position each tune starts with. If the string starts with white space, count that, too.
+    var pos = initialWhiteSpace ? initialWhiteSpace[0].length : 0;
     var tunes = [];
-    $3fSeU.each(tuneStrings, function(tune) {
+    tuneStrings.forEach(function(tune) {
         tunes.push({
             abc: tune,
             startPos: pos
@@ -12972,13 +12984,13 @@ var $c640f0e8069967b3$var$bookParser = function(book) {
         // the tune is parsed all at once. The directives will be seen before the engraver begins processing.
         var dir = tunes.shift();
         var arrDir = dir.abc.split("\n");
-        $3fSeU.each(arrDir, function(line) {
+        arrDir.forEach(function(line) {
             if ($3fSeU.startsWith(line, "%%")) directives += line + "\n";
         });
     }
     var header = directives;
     // Now, the tune ends at a blank line, so truncate it if needed. There may be "intertune" stuff.
-    $3fSeU.each(tunes, function(tune) {
+    tunes.forEach(function(tune) {
         var end = tune.abc.indexOf("\n\n");
         if (end > 0) tune.abc = tune.abc.substring(0, end);
         tune.pure = tune.abc;
@@ -13003,15 +13015,75 @@ module.exports = $c640f0e8069967b3$var$bookParser;
 
 });
 
-parcelRequire.register("j3Bvz", function(module, exports) {
-
-var $88ojE = parcelRequire("88ojE");
-
-var $aS3gt = parcelRequire("aS3gt");
+parcelRegister("j3Bvz", function(module, exports) {
+/*
+ * Tablature Plugins
+ * tablature are defined dynamically and registered inside abcjs
+ * by calling abcTablatures.register(plugin) 
+ * where plugin represents a plugin instance 
+ * 
+ */ 
+var $4buUA = parcelRequire("4buUA");
 /* extend the table below when adding a new instrument plugin */ // Existing tab classes 
 var $ddfb64773b62aee4$var$pluginTab = {
-    "violin": "ViolinTab",
-    "guitar": "GuitarTab"
+    "violin": {
+        name: "StringTab",
+        defaultTuning: [
+            "G,",
+            "D",
+            "A",
+            "e"
+        ],
+        isTabBig: false,
+        tabSymbolOffset: 0
+    },
+    "fiddle": {
+        name: "StringTab",
+        defaultTuning: [
+            "G,",
+            "D",
+            "A",
+            "e"
+        ],
+        isTabBig: false,
+        tabSymbolOffset: 0
+    },
+    "mandolin": {
+        name: "StringTab",
+        defaultTuning: [
+            "G,",
+            "D",
+            "A",
+            "e"
+        ],
+        isTabBig: false,
+        tabSymbolOffset: 0
+    },
+    "guitar": {
+        name: "StringTab",
+        defaultTuning: [
+            "E,",
+            "A,",
+            "D",
+            "G",
+            "B",
+            "e"
+        ],
+        isTabBig: true,
+        tabSymbolOffset: 0
+    },
+    "fiveString": {
+        name: "StringTab",
+        defaultTuning: [
+            "C,",
+            "G,",
+            "D",
+            "A",
+            "e"
+        ],
+        isTabBig: false,
+        tabSymbolOffset: -0.95
+    }
 };
 var $ddfb64773b62aee4$var$abcTablatures = {
     inited: false,
@@ -13052,7 +13124,7 @@ var $ddfb64773b62aee4$var$abcTablatures = {
                 }
                 var tabName = $ddfb64773b62aee4$var$pluginTab[instrument];
                 var plugin = null;
-                if (tabName) plugin = this.plugins[tabName];
+                if (tabName) plugin = this.plugins[tabName.name];
                 if (plugin) {
                     if (params.visualTranspose != 0) // populate transposition request to tabs
                     args.visualTranspose = params.visualTranspose;
@@ -13061,13 +13133,16 @@ var $ddfb64773b62aee4$var$abcTablatures = {
                         classz: plugin,
                         tuneNumber: tuneNumber,
                         params: args,
-                        instance: null
+                        instance: null,
+                        tabType: tabName
                     };
                     // proceed with tab plugin  init 
                     // plugin.init(tune, tuneNumber, args, ii);
                     returned.push(pluginInstance);
                     nbPlugins++;
-                } else {
+                } else if (instrument === "") // create a placeholder - there is no tab for this staff
+                returned.push(null);
+                else {
                     // unknown tab plugin 
                     //this.emit_error('Undefined tablature plugin: ' + tabName)
                     this.setError(tune, "Undefined tablature plugin: " + instrument);
@@ -13081,21 +13156,38 @@ var $ddfb64773b62aee4$var$abcTablatures = {
    * Call requested plugin
    * @param {*} renderer 
    * @param {*} abcTune 
-   */ layoutTablatures: function(renderer, abcTune) {
+   */ layoutTablatures: function layoutTablatures(renderer, abcTune) {
         var tabs = abcTune.tablatures;
         // chack tabs request for each staffs
+        var staffLineCount = 0;
+        // Clear the suppression flag
+        if (tabs && tabs.length > 0) {
+            var nTabs = tabs.length;
+            for(var kk = 0; kk < nTabs; ++kk)if (tabs[kk] && tabs[kk].params.firstStaffOnly) tabs[kk].params.suppress = false;
+        }
         for(var ii = 0; ii < abcTune.lines.length; ii++){
             var line = abcTune.lines[ii];
+            if (line.staff) staffLineCount++;
+            // MAE 27Nov2023
+            // If tab param "firstStaffOnly", remove the tab label after the first staff
+            if (staffLineCount > 1) {
+                if (tabs && tabs.length > 0) {
+                    var nTabs = tabs.length;
+                    for(var kk = 0; kk < nTabs; ++kk)if (tabs[kk].params.firstStaffOnly) // Set the staff draw suppression flag
+                    tabs[kk].params.suppress = true;
+                }
+            }
             var curStaff = line.staff;
             if (curStaff) {
-                for(var jj = 0; jj < curStaff.length; jj++)if (tabs[jj]) {
+                var maxStaves = curStaff.length;
+                for(var jj = 0; jj < curStaff.length; jj++)if (tabs[jj] && jj < maxStaves) {
                     // tablature requested for staff
                     var tabPlugin = tabs[jj];
                     if (tabPlugin.instance == null) {
                         tabPlugin.instance = new tabPlugin.classz();
                         // plugin.init(tune, tuneNumber, args, ii);
                         // call initer first
-                        tabPlugin.instance.init(abcTune, tabPlugin.tuneNumber, tabPlugin.params, jj);
+                        tabPlugin.instance.init(abcTune, tabPlugin.tuneNumber, tabPlugin.params, jj, tabPlugin.tabType);
                     }
                     // render next
                     tabPlugin.instance.render(renderer, line, jj);
@@ -13108,8 +13200,7 @@ var $ddfb64773b62aee4$var$abcTablatures = {
    */ init: function() {
         // just register plugin hosted by abcjs 
         if (!this.inited) {
-            this.register(new $88ojE());
-            this.register(new $aS3gt());
+            this.register(new $4buUA());
             this.inited = true;
         }
     }
@@ -13117,7 +13208,7 @@ var $ddfb64773b62aee4$var$abcTablatures = {
 module.exports = $ddfb64773b62aee4$var$abcTablatures;
 
 });
-parcelRequire.register("88ojE", function(module, exports) {
+parcelRegister("4buUA", function(module, exports) {
 
 var $dft97 = parcelRequire("dft97");
 
@@ -13125,48 +13216,47 @@ var $l6ifE = parcelRequire("l6ifE");
 
 var $iEcZU = parcelRequire("iEcZU");
 
-var $8KiBW = parcelRequire("8KiBW");
-
-var $j8QeU = parcelRequire("j8QeU");
+var $g9p1q = parcelRequire("g9p1q");
 /**
  * upon init mainly store provided instances for later usage
  * @param {*} abcTune  the parsed tune AST tree
 *  @param {*} tuneNumber  the parsed tune AST tree
  * @param {*} params  complementary args provided to Tablature Plugin
- */ $5ec1eebc29530dbf$var$Plugin.prototype.init = function(abcTune, tuneNumber, params) {
+ */ $30c02aede53502da$var$Plugin.prototype.init = function(abcTune, tuneNumber, params, staffNumber, tabSettings) {
     var _super = new $l6ifE(abcTune, tuneNumber, params);
     this.abcTune = abcTune;
     this._super = _super;
     this.linePitch = 3;
-    this.nbLines = 4;
-    this.isTabBig = false;
+    this.nbLines = tabSettings.defaultTuning.length;
+    this.isTabBig = tabSettings.isTabBig;
+    this.tabSymbolOffset = tabSettings.tabSymbolOffset;
     this.capo = params.capo;
     this.transpose = params.visualTranspose;
+    this.hideTabSymbol = params.hideTabSymbol;
     this.tablature = new $dft97(this.nbLines, this.linePitch);
-    var semantics = new $8KiBW(this);
+    var semantics = new $g9p1q(this, tabSettings.defaultTuning);
     this.semantics = semantics;
 };
-$5ec1eebc29530dbf$var$Plugin.prototype.render = function(renderer, line, staffIndex) {
+$30c02aede53502da$var$Plugin.prototype.render = function(renderer, line, staffIndex) {
     if (this._super.inError) return;
     if (this.tablature.bypass(line)) return;
-    $j8QeU(this.abcTune);
     var rndrer = new $iEcZU(this, renderer, line, staffIndex);
     rndrer.doLayout();
 };
-function $5ec1eebc29530dbf$var$Plugin() {}
+function $30c02aede53502da$var$Plugin() {}
 //
 // Tablature plugin definition
 //
-var $5ec1eebc29530dbf$var$AbcViolinTab = function() {
+var $30c02aede53502da$var$AbcStringTab = function() {
     return {
-        name: "ViolinTab",
-        tablature: $5ec1eebc29530dbf$var$Plugin
+        name: "StringTab",
+        tablature: $30c02aede53502da$var$Plugin
     };
 };
-module.exports = $5ec1eebc29530dbf$var$AbcViolinTab;
+module.exports = $30c02aede53502da$var$AbcStringTab;
 
 });
-parcelRequire.register("dft97", function(module, exports) {
+parcelRegister("dft97", function(module, exports) {
 /**
  * Layout tablature informations for draw
  * @param {*} numLines 
@@ -13218,7 +13308,7 @@ module.exports = $027d36da7108fc99$var$StringTablature;
 
 });
 
-parcelRequire.register("l6ifE", function(module, exports) {
+parcelRegister("l6ifE", function(module, exports) {
 /**
  *
  * Common Class/Method available for all instruments
@@ -13244,13 +13334,13 @@ module.exports = $f5c850d90715c261$var$TabCommon;
 
 });
 
-parcelRequire.register("iEcZU", function(module, exports) {
-
-var $aB8JU = parcelRequire("aB8JU");
+parcelRegister("iEcZU", function(module, exports) {
+/* eslint-disable no-debugger */ 
+var $iTP1Z = parcelRequire("iTP1Z");
 
 var $7CuqE = parcelRequire("7CuqE");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 function $d9360b798ae6c042$var$initSpecialY() {
     return {
         tempoHeightAbove: 0,
@@ -13281,12 +13371,21 @@ function $d9360b798ae6c042$var$buildTabName(self, dest) {
     var controller = self.renderer.controller;
     var textSize = controller.getTextSize;
     var tabName = stringSemantics.tabInfos(self.plugin);
-    var size = textSize.calc(tabName, "tablabelfont", "text instrumentname");
-    dest.tabNameInfos = {
-        textSize: size,
-        name: tabName
-    };
-    return size.height;
+    var suppress = stringSemantics.suppress(self.plugin);
+    var doDraw = true;
+    if (suppress) doDraw = false;
+    if (doDraw) {
+        var size = textSize.calc(tabName, "tablabelfont", "text instrumentname");
+        dest.tabNameInfos = {
+            textSize: {
+                height: size.height,
+                width: size.width
+            },
+            name: tabName
+        };
+        return size.height;
+    }
+    return 0;
 }
 /**
  * Laying out tabs
@@ -13407,7 +13506,7 @@ $d9360b798ae6c042$var$TabRenderer.prototype.doLayout = function() {
     var padd = 3;
     var prevIndex = this.staffIndex;
     var previousStaff = staffGroup.staffs[prevIndex];
-    var tabTop = previousStaff.top + padd + lyricsHeight;
+    var tabTop = this.tabSize + padd - previousStaff.bottom - lyricsHeight;
     if (previousStaff.isTabStaff) tabTop = previousStaff.top;
     var staffGroupInfos = {
         bottom: -1,
@@ -13430,24 +13529,30 @@ $d9360b798ae6c042$var$TabRenderer.prototype.doLayout = function() {
     // build from staff
     this.tabStaff.voices = [];
     for(var ii = 0; ii < nbVoices; ii++){
-        var tabVoice = new $aB8JU(0, 0);
-        var nameHeight = $d9360b798ae6c042$var$buildTabName(this, tabVoice) / $f4yIj.STEP;
-        staffGroup.staffs[this.staffIndex].top += nameHeight;
-        staffGroup.height += nameHeight * $f4yIj.STEP;
+        var tabVoice = new $iTP1Z(0, 0);
+        if (ii > 0) tabVoice.duplicate = true;
+        var nameHeight = $d9360b798ae6c042$var$buildTabName(this, tabVoice) / $6aPnV.STEP;
+        nameHeight = Math.max(nameHeight, 1) // If there is no label for the tab line, then there needs to be a little padding
+        ;
+        // This was pushing down the top staff by the tab label height
+        //staffGroup.staffs[this.staffIndex].top += nameHeight;
+        staffGroup.staffs[this.staffIndex].top += 1;
+        staffGroup.height += nameHeight;
         tabVoice.staff = staffGroupInfos;
+        var tabVoiceIndex = voices.length;
         voices.splice(voices.length, 0, tabVoice);
         var keySig = $d9360b798ae6c042$var$checkVoiceKeySig(voices, ii + this.staffIndex);
         this.tabStaff.voices[ii] = [];
-        this.absolutes.build(this.plugin, voices, this.tabStaff.voices[ii], ii, this.staffIndex, keySig);
+        this.absolutes.build(this.plugin, voices, this.tabStaff.voices[ii], ii, this.staffIndex, keySig, tabVoiceIndex);
     }
     $d9360b798ae6c042$var$linkStaffAndTabs(staffGroup.staffs); // crossreference tabs and staff
 };
 module.exports = $d9360b798ae6c042$var$TabRenderer;
 
 });
-parcelRequire.register("aB8JU", function(module, exports) {
+parcelRegister("iTP1Z", function(module, exports) {
 //    abc_voice_element.js: Definition of the VoiceElement class.
-var $7b742389aa9f286f$var$VoiceElement = function VoiceElement(voicenumber, voicetotal) {
+var $dc24f2c4df757949$var$VoiceElement = function VoiceElement(voicenumber, voicetotal) {
     this.children = [];
     this.beams = [];
     this.otherchildren = []; // ties, slurs, triplets
@@ -13471,7 +13576,7 @@ var $7b742389aa9f286f$var$VoiceElement = function VoiceElement(voicenumber, voic
         dynamicHeightBelow: 0
     };
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.addChild = function(absElem) {
+$dc24f2c4df757949$var$VoiceElement.prototype.addChild = function(absElem) {
     // This is always passed an AbsoluteElement
     if (absElem.type === "bar") {
         var firstItem = true;
@@ -13484,7 +13589,7 @@ $7b742389aa9f286f$var$VoiceElement.prototype.addChild = function(absElem) {
     this.children[this.children.length] = absElem;
     this.setRange(absElem);
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.setLimit = function(member, child) {
+$dc24f2c4df757949$var$VoiceElement.prototype.setLimit = function(member, child) {
     // Sometimes we get an absolute element in here and sometimes we get some type of relative element.
     // If there is a "specialY" element, then assume it is an absolute element. If that doesn't exist, look for the
     // same members at the top level, because that's where they are in relative elements.
@@ -13494,11 +13599,11 @@ $7b742389aa9f286f$var$VoiceElement.prototype.setLimit = function(member, child) 
     if (!this.specialY[member]) this.specialY[member] = specialY[member];
     else this.specialY[member] = Math.max(this.specialY[member], specialY[member]);
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.adjustRange = function(child) {
+$dc24f2c4df757949$var$VoiceElement.prototype.adjustRange = function(child) {
     if (child.bottom !== undefined) this.bottom = Math.min(this.bottom, child.bottom);
     if (child.top !== undefined) this.top = Math.max(this.top, child.top);
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.setRange = function(child) {
+$dc24f2c4df757949$var$VoiceElement.prototype.setRange = function(child) {
     this.adjustRange(child);
     this.setLimit("tempoHeightAbove", child);
     this.setLimit("partHeightAbove", child);
@@ -13512,27 +13617,27 @@ $7b742389aa9f286f$var$VoiceElement.prototype.setRange = function(child) {
     this.setLimit("volumeHeightBelow", child);
     this.setLimit("dynamicHeightBelow", child);
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.addOther = function(child) {
+$dc24f2c4df757949$var$VoiceElement.prototype.addOther = function(child) {
     this.otherchildren.push(child);
     this.setRange(child);
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.addBeam = function(child) {
+$dc24f2c4df757949$var$VoiceElement.prototype.addBeam = function(child) {
     this.beams.push(child);
 };
-$7b742389aa9f286f$var$VoiceElement.prototype.setWidth = function(width) {
+$dc24f2c4df757949$var$VoiceElement.prototype.setWidth = function(width) {
     this.w = width;
 };
-module.exports = $7b742389aa9f286f$var$VoiceElement;
+module.exports = $dc24f2c4df757949$var$VoiceElement;
 
 });
 
-parcelRequire.register("7CuqE", function(module, exports) {
+parcelRegister("7CuqE", function(module, exports) {
+/**
+ * Tablature Absolute elements factory
+ */ 
+var $lBV2u = parcelRequire("lBV2u");
 
-var $jM9Y7 = parcelRequire("jM9Y7");
-
-var $ilOzb = parcelRequire("ilOzb");
-
-var $bGzAH = parcelRequire("bGzAH");
+var $59E7k = parcelRequire("59E7k");
 function $58c3af9270d6f3b7$var$isObject(a) {
     return a != null && a.constructor === Object;
 }
@@ -13544,7 +13649,7 @@ function $58c3af9270d6f3b7$var$cloneObject(dest, src) {
     }
 }
 function $58c3af9270d6f3b7$var$cloneAbsolute(absSrc) {
-    var returned = new $jM9Y7("", 0, 0, "", 0);
+    var returned = new $lBV2u("", 0, 0, "", 0);
     $58c3af9270d6f3b7$var$cloneObject(returned, absSrc);
     returned.top = 0;
     returned.bottom = -1;
@@ -13553,6 +13658,8 @@ function $58c3af9270d6f3b7$var$cloneAbsolute(absSrc) {
         $58c3af9270d6f3b7$var$cloneObject(returned.abcelem, absSrc.abcelem);
         if (returned.abcelem.el_type === "note") returned.abcelem.el_type = "tabNumber";
     }
+    // TODO-PER: This fixes the classes because the element isn't created at the right time.
+    absSrc.cloned = returned;
     return returned;
 }
 function $58c3af9270d6f3b7$var$cloneAbsoluteAndRelatives(absSrc, plugin) {
@@ -13563,7 +13670,7 @@ function $58c3af9270d6f3b7$var$cloneAbsoluteAndRelatives(absSrc, plugin) {
         var first = true;
         for(var ii = 0; ii < children.length; ii++){
             var child = children[ii];
-            var relative = new $ilOzb("", 0, 0, 0, "");
+            var relative = new $59E7k("", 0, 0, 0, "");
             $58c3af9270d6f3b7$var$cloneObject(relative, child);
             first = plugin.tablature.setRelative(child, relative, first);
             returned.children.push(relative);
@@ -13583,12 +13690,17 @@ function $58c3af9270d6f3b7$var$buildTabAbsolute(plugin, absX, relX) {
         icon: tabIcon,
         Ypos: tabYPos
     };
-    var tabAbsolute = new $jM9Y7(element, 0, 0, "symbol", 0);
-    tabAbsolute.x = absX;
-    var tabRelative = new $ilOzb(tabIcon, 0, 0, 7.5, "tab");
-    tabRelative.x = relX;
-    tabAbsolute.children.push(tabRelative);
-    if (tabAbsolute.abcelem.el_type == "tab") tabRelative.pitch = tabYPos;
+    // Offset the TAB symbol position if specified in the tab description
+    tabYPos += plugin.tabSymbolOffset;
+    // For tablature like whistle tab where you want the TAB symbol hidden
+    if (!plugin.hideTabSymbol) {
+        var tabAbsolute = new $lBV2u(element, 0, 0, "symbol", 0);
+        tabAbsolute.x = absX;
+        var tabRelative = new $59E7k(tabIcon, 0, 0, 7.5, "tab");
+        tabRelative.x = relX;
+        tabAbsolute.children.push(tabRelative);
+        if (tabAbsolute.abcelem.el_type == "tab") tabRelative.pitch = tabYPos;
+    }
     return tabAbsolute;
 }
 function $58c3af9270d6f3b7$var$lyricsDim(abs) {
@@ -13625,7 +13737,7 @@ function $58c3af9270d6f3b7$var$buildRelativeTabNote(plugin, relX, def, curNote, 
     var opt = {
         type: "tabNumber"
     };
-    var tabNoteRelative = new $ilOzb(strNote, 0, 0, pitch + 0.3, opt);
+    var tabNoteRelative = new $59E7k(strNote, 0, 0, pitch + 0.3, opt);
     tabNoteRelative.x = relX;
     tabNoteRelative.isGrace = isGrace;
     tabNoteRelative.isAltered = curNote.note.isAltered;
@@ -13647,13 +13759,6 @@ function $58c3af9270d6f3b7$var$graceInRest(absElem) {
         if (elem.rest) return elem.gracenotes;
     }
     return null;
-}
-function $58c3af9270d6f3b7$var$checkTransposition(plugin, transposer, pitches, graceNotes) {
-    if (plugin.transpose) {
-        //transposer.transpose(plugin.transpose);
-        for(var jj = 0; jj < pitches.length; jj++)pitches[jj] = transposer.transposeNote(pitches[jj]);
-        if (graceNotes) for(var kk = 0; kk < graceNotes.length; kk++)graceNotes[kk] = transposer.transposeNote(graceNotes[kk]);
-    }
 }
 function $58c3af9270d6f3b7$var$convertToNumber(plugin, pitches, graceNotes) {
     var tabPos = plugin.semantics.notesToNumber(pitches, graceNotes);
@@ -13687,11 +13792,10 @@ function $58c3af9270d6f3b7$var$buildGraceRelativesForRest(plugin, abs, absChild,
 /**
  * Build tab absolutes by scanning current staff line absolute array
  * @param {*} staffAbsolute
- */ $58c3af9270d6f3b7$var$TabAbsoluteElements.prototype.build = function(plugin, staffAbsolute, tabVoice, voiceIndex, staffIndex, keySig) {
+ */ $58c3af9270d6f3b7$var$TabAbsoluteElements.prototype.build = function(plugin, staffAbsolute, tabVoice, voiceIndex, staffIndex, keySig, tabVoiceIndex) {
     var staffSize = $58c3af9270d6f3b7$var$getInitialStaffSize(staffAbsolute);
     var source = staffAbsolute[staffIndex + voiceIndex];
-    var dest = staffAbsolute[staffSize + staffIndex + voiceIndex];
-    var transposer = null;
+    var dest = staffAbsolute[tabVoiceIndex];
     var tabPos = null;
     var defNote = null;
     if (source.children[0].abcelem.el_type != "clef") // keysig missing => provide one for tabs
@@ -13705,15 +13809,19 @@ function $58c3af9270d6f3b7$var$buildGraceRelativesForRest(plugin, abs, absChild,
         // if (absChild.children.length > 0) {
         //   relX = absChild.children[0].x;
         // }
-        if (absChild.isClef) dest.children.push($58c3af9270d6f3b7$var$buildTabAbsolute(plugin, absX, relX));
+        if (absChild.isClef) {
+            dest.children.push($58c3af9270d6f3b7$var$buildTabAbsolute(plugin, absX, relX));
+            if (absChild.abcelem.type.indexOf("-8") >= 0) plugin.semantics.strings.clefTranspose = -12;
+            if (absChild.abcelem.type.indexOf("+8") >= 0) plugin.semantics.strings.clefTranspose = 12;
+        }
         switch(absChild.type){
             case "staff-extra key-signature":
                 // refresh key accidentals
                 this.accidentals = absChild.abcelem.accidentals;
                 plugin.semantics.strings.accidentals = this.accidentals;
-                if (plugin.transpose) transposer = new $bGzAH(absChild.abcelem.accidentals, plugin.transpose);
                 break;
             case "bar":
+                plugin.semantics.strings.measureAccidentals = {};
                 var lastBar = false;
                 if (ii === source.children.length - 1) // used for final line bar drawing
                 // for multi tabs / multi staves
@@ -13739,8 +13847,6 @@ function $58c3af9270d6f3b7$var$buildGraceRelativesForRest(plugin, abs, absChild,
             case "rest":
                 var restGraces = $58c3af9270d6f3b7$var$graceInRest(absChild);
                 if (restGraces) {
-                    // check transpose
-                    $58c3af9270d6f3b7$var$checkTransposition(plugin, transposer, null, restGraces);
                     // to number conversion 
                     tabPos = $58c3af9270d6f3b7$var$convertToNumber(plugin, null, restGraces);
                     if (tabPos.error) return;
@@ -13761,9 +13867,7 @@ function $58c3af9270d6f3b7$var$buildGraceRelativesForRest(plugin, abs, absChild,
                 abs.lyricDim = $58c3af9270d6f3b7$var$lyricsDim(absChild);
                 var pitches = absChild.abcelem.pitches;
                 var graceNotes = absChild.abcelem.gracenotes;
-                // check transpose
                 abs.type = "tabNumber";
-                $58c3af9270d6f3b7$var$checkTransposition(plugin, transposer, pitches, graceNotes);
                 // to number conversion 
                 tabPos = $58c3af9270d6f3b7$var$convertToNumber(plugin, pitches, graceNotes);
                 if (tabPos.error) return;
@@ -13798,9 +13902,11 @@ function $58c3af9270d6f3b7$var$buildGraceRelativesForRest(plugin, abs, absChild,
                     var tabNoteRelative = $58c3af9270d6f3b7$var$buildRelativeTabNote(plugin, abs.x + absChild.heads[ll].dx, defNote, curNote, false);
                     abs.children.push(tabNoteRelative);
                 }
-                defNote.abselem = abs;
-                tabVoice.push(defNote);
-                dest.children.push(abs);
+                if (defNote.notes.length > 0) {
+                    defNote.abselem = abs;
+                    tabVoice.push(defNote);
+                    dest.children.push(abs);
+                }
                 break;
         }
     }
@@ -13808,12 +13914,12 @@ function $58c3af9270d6f3b7$var$buildGraceRelativesForRest(plugin, abs, absChild,
 module.exports = $58c3af9270d6f3b7$var$TabAbsoluteElements;
 
 });
-parcelRequire.register("jM9Y7", function(module, exports) {
-parcelRequire("gMcQ4");
+parcelRegister("lBV2u", function(module, exports) {
+//    abc_absolute_element.js: Definition of the AbsoluteElement class.
 
-var $6kCEW = parcelRequire("6kCEW");
+var $fydHO = parcelRequire("fydHO");
 
-var $OtlJZ = parcelRequire("OtlJZ");
+var $Ebu4P = parcelRequire("Ebu4P");
 // Everything that is placed in the SVG is first created as an absolute element. This is one unit of graphic information.
 // That is, it embodies a concept: a clef, a time signature, a bar line,etc. or most complexly:
 // a note with its accidental, grace note, chord symbol, trill, stem, eighth flags, etc.
@@ -13840,7 +13946,7 @@ var $OtlJZ = parcelRequire("OtlJZ");
 // duration - actual musical duration - different from notehead duration in triplets. refer to abcelem to get the notehead duration
 // minspacing - spacing which must be taken on top of the width defined by the duration
 // type is a meta-type for the element. It is not necessary for drawing, but it is useful to make semantic sense of the element. For instance, it can be used in the element's class name.
-var $e65a3b9937764c0b$var$AbsoluteElement = function AbsoluteElement(abcelem, duration, minspacing, type, tuneNumber, options) {
+var $fbb94c739be83ea9$var$AbsoluteElement = function AbsoluteElement(abcelem, duration, minspacing, type, tuneNumber, options) {
     //	console.log("Absolute:",abcelem, duration, minspacing, type, tuneNumber, options);
     if (!options) options = {};
     this.tuneNumber = tuneNumber;
@@ -13883,7 +13989,7 @@ var $e65a3b9937764c0b$var$AbsoluteElement = function AbsoluteElement(abcelem, du
         dynamicHeightBelow: 0
     };
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.getFixedCoords = function() {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.getFixedCoords = function() {
     return {
         x: this.x,
         w: this.fixed.w,
@@ -13891,7 +13997,7 @@ $e65a3b9937764c0b$var$AbsoluteElement.prototype.getFixedCoords = function() {
         b: this.fixed.b
     };
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.addExtra = function(extra) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.addExtra = function(extra) {
     // used for accidentals, multi-measure rest text,
     // left-side decorations, gracenote heads,
     // left annotations, gracenote stems.
@@ -13912,12 +14018,12 @@ $e65a3b9937764c0b$var$AbsoluteElement.prototype.addExtra = function(extra) {
     this.extra[this.extra.length] = extra;
     this._addChild(extra);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.addHead = function(head) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.addHead = function(head) {
     if (head.dx < this.extraw) this.extraw = head.dx;
     this.heads[this.heads.length] = head;
     this.addRight(head);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.addRight = function(right) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.addRight = function(right) {
     // // used for clefs, note heads, bar lines, stems, key-signature accidentals, non-beamed flags, dots
     // if (!(right.c && right.c.indexOf("clefs") >= 0) &&
     // 	!(right.c && right.c.indexOf("noteheads") >= 0) &&
@@ -13954,17 +14060,17 @@ $e65a3b9937764c0b$var$AbsoluteElement.prototype.addRight = function(right) {
     this.right[this.right.length] = right;
     this._addChild(right);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.addFixed = function(elem) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.addFixed = function(elem) {
     // used for elements that can't move relative to other elements after they have been placed.
     // used for ledger lines, bar numbers, debug msgs, clef, key sigs, time sigs
     this._addChild(elem);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.addFixedX = function(elem) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.addFixedX = function(elem) {
     // used for elements that can't move horizontally relative to other elements after they have been placed.
     // used for parts, tempo, decorations
     this._addChild(elem);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.addCentered = function(elem) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.addCentered = function(elem) {
     // // used for chord labels, lyrics
     // if (!(elem.type === "chord" && elem.position === "above") &&
     // 	!(elem.type === "chord" && elem.position === "below") &&
@@ -13978,12 +14084,12 @@ $e65a3b9937764c0b$var$AbsoluteElement.prototype.addCentered = function(elem) {
     this.right[this.right.length] = elem;
     this._addChild(elem);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.setLimit = function(member, child) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.setLimit = function(member, child) {
     if (!child[member]) return;
     if (!this.specialY[member]) this.specialY[member] = child[member];
     else this.specialY[member] = Math.max(this.specialY[member], child[member]);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype._addChild = function(child) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype._addChild = function(child) {
     //	console.log("Relative:",child);
     child.parent = this;
     this.children[this.children.length] = child;
@@ -14001,42 +14107,53 @@ $e65a3b9937764c0b$var$AbsoluteElement.prototype._addChild = function(child) {
     this.setLimit("volumeHeightBelow", child);
     this.setLimit("dynamicHeightBelow", child);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.pushTop = function(top) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.pushTop = function(top) {
     if (top !== undefined) {
         if (this.top === undefined) this.top = top;
         else this.top = Math.max(top, this.top);
     }
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.pushBottom = function(bottom) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.pushBottom = function(bottom) {
     if (bottom !== undefined) {
         if (this.bottom === undefined) this.bottom = bottom;
         else this.bottom = Math.min(bottom, this.bottom);
     }
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.setX = function(x) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.setX = function(x) {
     this.x = x;
     for(var i = 0; i < this.children.length; i++)this.children[i].setX(x);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.center = function(before, after) {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.center = function(before, after) {
     // Used to center whole rests
     var midpoint = (after.x - before.x) / 2 + before.x;
     this.x = midpoint - this.w / 2;
     for(var k = 0; k < this.children.length; k++)this.children[k].setX(this.x);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.setHint = function() {
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.setHint = function() {
     this.hint = true;
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.highlight = function(klass, color) {
-    $6kCEW.bind(this)(klass, color);
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.highlight = function(klass, color) {
+    $fydHO.bind(this)(klass, color);
 };
-$e65a3b9937764c0b$var$AbsoluteElement.prototype.unhighlight = function(klass, color) {
-    $OtlJZ.bind(this)(klass, color);
+$fbb94c739be83ea9$var$AbsoluteElement.prototype.unhighlight = function(klass, color) {
+    $Ebu4P.bind(this)(klass, color);
 };
-module.exports = $e65a3b9937764c0b$var$AbsoluteElement;
+module.exports = $fbb94c739be83ea9$var$AbsoluteElement;
 
 });
-parcelRequire.register("gMcQ4", function(module, exports) {
-var $c36b168c4f11a62f$var$setClass = function(elemset, addClass, removeClass, color) {
+parcelRegister("fydHO", function(module, exports) {
+
+var $iZjgH = parcelRequire("iZjgH");
+var $b524a9a7bc21f3b0$var$highlight = function(klass, color) {
+    if (klass === undefined) klass = "abcjs-note_selected";
+    if (color === undefined) color = "#ff0000";
+    $iZjgH(this.elemset, klass, "", color);
+};
+module.exports = $b524a9a7bc21f3b0$var$highlight;
+
+});
+parcelRegister("iZjgH", function(module, exports) {
+var $dd2cdec6492f5049$var$setClass = function(elemset, addClass, removeClass, color) {
     if (!elemset) return;
     for(var i = 0; i < elemset.length; i++){
         var el = elemset[i];
@@ -14048,44 +14165,33 @@ var $c36b168c4f11a62f$var$setClass = function(elemset, addClass, removeClass, co
         kls = kls.replace(removeClass, "");
         kls = kls.replace(addClass, "");
         if (addClass.length > 0) {
-            if (kls.length > 0 && kls.charAt(kls.length - 1) !== " ") kls += " ";
+            if (kls.length > 0 && kls[kls.length - 1] !== " ") kls += " ";
             kls += addClass;
         }
         el.setAttribute("class", kls);
     }
 };
-module.exports = $c36b168c4f11a62f$var$setClass;
+module.exports = $dd2cdec6492f5049$var$setClass;
 
 });
 
-parcelRequire.register("6kCEW", function(module, exports) {
 
-var $gMcQ4 = parcelRequire("gMcQ4");
-var $49c2994a9aaee895$var$highlight = function(klass, color) {
-    if (klass === undefined) klass = "abcjs-note_selected";
-    if (color === undefined) color = "#ff0000";
-    $gMcQ4(this.elemset, klass, "", color);
-};
-module.exports = $49c2994a9aaee895$var$highlight;
+parcelRegister("Ebu4P", function(module, exports) {
 
-});
-
-parcelRequire.register("OtlJZ", function(module, exports) {
-
-var $gMcQ4 = parcelRequire("gMcQ4");
-var $097b6fdb7a95cd08$var$unhighlight = function(klass, color) {
+var $iZjgH = parcelRequire("iZjgH");
+var $078ca50c08a5864d$var$unhighlight = function(klass, color) {
     if (klass === undefined) klass = "abcjs-note_selected";
     if (color === undefined) color = "#000000";
-    $gMcQ4(this.elemset, "", klass, color);
+    $iZjgH(this.elemset, "", klass, color);
 };
-module.exports = $097b6fdb7a95cd08$var$unhighlight;
+module.exports = $078ca50c08a5864d$var$unhighlight;
 
 });
 
 
-parcelRequire.register("ilOzb", function(module, exports) {
+parcelRegister("59E7k", function(module, exports) {
 //    abc_relative_element.js: Definition of the RelativeElement class.
-var $d5c16997ad3639eb$var$RelativeElement = function RelativeElement(c, dx, w, pitch, opt) {
+var $3c0ce9760aa268d3$var$RelativeElement = function RelativeElement(c, dx, w, pitch, opt) {
     opt = opt || {};
     this.x = 0;
     this.c = c; // character or path or string
@@ -14098,6 +14204,7 @@ var $d5c16997ad3639eb$var$RelativeElement = function RelativeElement(c, dx, w, p
     this.pitch2 = opt.pitch2;
     this.linewidth = opt.linewidth;
     this.klass = opt.klass;
+    this.anchor = opt.anchor ? opt.anchor : "middle";
     this.top = pitch;
     if (this.pitch2 !== undefined && this.pitch2 > this.top) this.top = this.pitch2;
     this.bottom = pitch;
@@ -14144,7 +14251,7 @@ var $d5c16997ad3639eb$var$RelativeElement = function RelativeElement(c, dx, w, p
             break;
     }
 };
-$d5c16997ad3639eb$var$RelativeElement.prototype.getChordDim = function() {
+$3c0ce9760aa268d3$var$RelativeElement.prototype.getChordDim = function() {
     if (this.type === "debug") return null;
     if (!this.chordHeightAbove && !this.chordHeightBelow) return null;
     // Chords are centered, annotations are left justified.
@@ -14163,359 +14270,53 @@ $d5c16997ad3639eb$var$RelativeElement.prototype.getChordDim = function() {
         right: right
     };
 };
-$d5c16997ad3639eb$var$RelativeElement.prototype.invertLane = function(total) {
+$3c0ce9760aa268d3$var$RelativeElement.prototype.invertLane = function(total) {
     if (this.lane === undefined) this.lane = 0;
     this.lane = total - this.lane - 1;
 };
-$d5c16997ad3639eb$var$RelativeElement.prototype.putChordInLane = function(i) {
+$3c0ce9760aa268d3$var$RelativeElement.prototype.putChordInLane = function(i) {
     this.lane = i;
     // Add some extra space to account for the character's descenders.
     if (this.chordHeightAbove) this.chordHeightAbove = this.height * 1.25 * this.lane;
     else this.chordHeightBelow = this.height * 1.25 * this.lane;
 };
-$d5c16997ad3639eb$var$RelativeElement.prototype.getLane = function() {
+$3c0ce9760aa268d3$var$RelativeElement.prototype.getLane = function() {
     if (this.lane === undefined) return 0;
     return this.lane;
 };
-$d5c16997ad3639eb$var$RelativeElement.prototype.setX = function(x) {
+$3c0ce9760aa268d3$var$RelativeElement.prototype.setX = function(x) {
     this.x = x + this.dx;
 };
-module.exports = $d5c16997ad3639eb$var$RelativeElement;
-
-});
-
-parcelRequire.register("bGzAH", function(module, exports) {
-
-var $gxFij = parcelRequire("gxFij");
-function $881f39978ad26958$var$buildAccEquiv(acc, note) {
-    var equiv = note.getAccidentalEquiv();
-    if (acc.note.toUpperCase() == equiv.name.toUpperCase()) {
-        equiv.isSharp = false;
-        equiv.isFlat = false;
-        return equiv;
-    }
-    return note;
-}
-function $881f39978ad26958$var$adjustNoteToKey(acc, note) {
-    if (acc.acc == "sharp") {
-        if (note.isFlat) return $881f39978ad26958$var$buildAccEquiv(acc, note);
-        else if (note.isSharp) {
-            if (acc.note.toUpperCase() == note.name.toUpperCase()) {
-                note.isSharp = false;
-                note.isKeySharp = true;
-            } else if (acc.note.toUpperCase() == note.name.toUpperCase()) note.natural = true;
-        }
-    } else if (acc.acc == "flat") {
-        if (note.isSharp) return $881f39978ad26958$var$buildAccEquiv(acc, note);
-        else if (note.isFlat) {
-            if (acc.note.toUpperCase() == note.name.toUpperCase()) {
-                note.isFlat = false;
-                note.isKeyFlat = true;
-            }
-        } else if (acc.note.toUpperCase() == note.name.toUpperCase()) note.natural = true;
-    }
-    return note;
-}
-function $881f39978ad26958$var$replaceNote(self, newNote, start, end) {
-    if (self.lastEnd) while(start > self.lastEnd){
-        self.updatedSrc.push(self.abcSrc[self.lastEnd]);
-        self.lastEnd++;
-    }
-    var nNote = newNote.split("");
-    for(var ii = 0; ii < nNote.length; ii++)self.updatedSrc.push(nNote[ii]);
-    var curPos = start + ii;
-    while(end >= curPos){
-        self.updatedSrc.push(nNote[curPos]);
-        curPos++;
-    }
-    self.lastEnd = end;
-}
-function $881f39978ad26958$var$checkKeys(self, note) {
-    var accs = self.transposedKey;
-    for(var ii = 0; ii < accs.length; ii++)note = $881f39978ad26958$var$adjustNoteToKey(accs[ii], note);
-    return note;
-}
-$881f39978ad26958$var$Transposer.prototype.transposeNote = function(note) {
-    var returned = note;
-    var curNote = new $gxFij.TabNote(returned.name);
-    if (this.transposeBy > 0) for(var ii = 0; ii < this.transposeBy; ii++)curNote = $881f39978ad26958$var$checkKeys(this, curNote.nextNote());
-    else if (this.transposeBy < 0) for(var jj = this.transposeBy; jj < 0; jj++)curNote = $881f39978ad26958$var$checkKeys(this, curNote.prevNote());
-    returned.name = curNote.emit();
-    return returned;
-};
-$881f39978ad26958$var$Transposer.prototype.upgradeSource = function(note, startChar, endChar) {
-    var n = new $gxFij.TabNote(note.name);
-    var newNote = n.emit();
-    $881f39978ad26958$var$replaceNote(this, newNote, startChar, endChar - 1);
-};
-function $881f39978ad26958$var$Transposer(transposedKey, transposeBy) {
-    this.transposeBy = transposeBy;
-    this.transposedKey = transposedKey;
-    this.lastEnd = this.kEnd + 1;
-}
-module.exports = $881f39978ad26958$var$Transposer;
-
-});
-parcelRequire.register("gxFij", function(module, exports) {
-/**
- * 
- * Note structure for Tabs
- * 
- */ var $c0afc2a1fb6b5787$var$notes = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G"
-];
-function $c0afc2a1fb6b5787$var$TabNote(note) {
-    var isFlat = false;
-    var newNote = note;
-    var isSharp = false;
-    var isAltered = false;
-    var natural = null;
-    var quarter = null;
-    var isDouble = false;
-    var acc = 0;
-    if (note.startsWith("_")) {
-        isFlat = true;
-        acc = -1;
-        // check quarter flat
-        if (note[1] == "/") {
-            isFlat = false;
-            quarter = "v";
-            acc = 0;
-        } else if (note[1] == "_") {
-            // double flat
-            isDouble = true;
-            acc -= 1;
-        }
-    } else if (note.startsWith("^")) {
-        isSharp = true;
-        acc = 1;
-        // check quarter sharp
-        if (note[1] == "/") {
-            isSharp = false;
-            quarter = "^";
-            acc = 0;
-        } else if (note[1] == "^") {
-            // double sharp
-            isDouble = true;
-            acc += 1;
-        }
-    } else if (note.startsWith("=")) {
-        natural = true;
-        acc = 0;
-    }
-    isAltered = isFlat || isSharp || quarter != null;
-    if (isAltered || natural) {
-        if (quarter != null || isDouble) newNote = note.slice(2);
-        else newNote = note.slice(1);
-    }
-    var hasComma = (note.match(/,/g) || []).length;
-    var hasQuote = (note.match(/'/g) || []).length;
-    this.name = newNote;
-    this.acc = acc;
-    this.isSharp = isSharp;
-    this.isKeySharp = false;
-    this.isDouble = isDouble;
-    this.isAltered = isAltered;
-    this.isFlat = isFlat;
-    this.isKeyFlat = false;
-    this.natural = natural;
-    this.quarter = quarter;
-    this.isLower = this.name == this.name.toLowerCase();
-    this.name = this.name[0].toUpperCase();
-    this.hasComma = hasComma;
-    this.isQuoted = hasQuote;
-}
-function $c0afc2a1fb6b5787$var$cloneNote(self) {
-    var newNote = self.name;
-    var newTabNote = new $c0afc2a1fb6b5787$var$TabNote(newNote);
-    newTabNote.hasComma = self.hasComma;
-    newTabNote.isLower = self.isLower;
-    newTabNote.isQuoted = self.isQuoted;
-    newTabNote.isSharp = self.isSharp;
-    newTabNote.isKeySharp = self.isKeySharp;
-    newTabNote.isFlat = self.isFlat;
-    newTabNote.isKeyFlat = self.isKeyFlat;
-    return newTabNote;
-}
-$c0afc2a1fb6b5787$var$TabNote.prototype.sameNoteAs = function(note) {
-    if (this.name == note.name && this.hasComma == note.hasComma && this.isLower == note.isLower && this.isQuoted == note.isQuoted && this.isSharp == note.isSharp && this.isFlat == note.isFlat) return true;
-    else return false;
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.isLowerThan = function(note) {
-    var noteComparator = [
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "A",
-        "B"
-    ];
-    if (this.hasComma > note.hasComma) return true;
-    if (note.hasComma > this.hasComma) return false;
-    if (this.isQuoted > note.isQuoted) return false;
-    if (note.isQuoted > this.isQuoted) return true;
-    if (this.isLower) {
-        if (!note.isLower) return false;
-    } else {
-        if (note.isLower) return true;
-    }
-    var noteName = note.name[0].toUpperCase();
-    var thisName = this.name[0].toUpperCase();
-    if (noteComparator.indexOf(thisName) < noteComparator.indexOf(noteName)) return true;
-    return false;
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.checkKeyAccidentals = function(accidentals) {
-    if (accidentals) {
-        var curNote = this.name;
-        for(var iii = 0; iii < accidentals.length; iii++){
-            var curAccidentals = accidentals[iii];
-            if (curNote == curAccidentals.note.toUpperCase()) {
-                if (curAccidentals.acc == "flat") {
-                    this.acc = -1;
-                    this.isKeyFlat = true;
-                }
-                if (curAccidentals.acc == "sharp") {
-                    this.acc = 1;
-                    this.isKeySharp = true;
-                }
-            }
-        }
-    }
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.getAccidentalEquiv = function() {
-    var cloned = $c0afc2a1fb6b5787$var$cloneNote(this);
-    if (cloned.isSharp || cloned.isKeySharp) {
-        cloned = cloned.nextNote();
-        cloned.isFlat = true;
-        cloned.isSharp = false;
-        cloned.isKeySharp = false;
-    } else if (cloned.isFlat || cloned.isKeyFlat) {
-        cloned = cloned.prevNote();
-        cloned.isSharp = true;
-        cloned.isFlat = false;
-        cloned.isKeyFlat = false;
-    }
-    return cloned;
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.nextNote = function() {
-    var newTabNote = $c0afc2a1fb6b5787$var$cloneNote(this);
-    if (!this.isSharp && !this.isKeySharp) {
-        if (this.name != "E" && this.name != "B") {
-            newTabNote.isSharp = true;
-            return newTabNote;
-        }
-    } else {
-        // cleanup
-        newTabNote.isSharp = false;
-        newTabNote.isKeySharp = false;
-    }
-    var noteIndex = $c0afc2a1fb6b5787$var$notes.indexOf(this.name);
-    if (noteIndex == $c0afc2a1fb6b5787$var$notes.length - 1) noteIndex = 0;
-    else noteIndex++;
-    newTabNote.name = $c0afc2a1fb6b5787$var$notes[noteIndex];
-    if (newTabNote.name == "C") {
-        if (newTabNote.hasComma > 0) newTabNote.hasComma--;
-        else if (!newTabNote.isLower) newTabNote.isLower = true;
-        else newTabNote.isQuoted = true;
-    }
-    return newTabNote;
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.prevNote = function() {
-    var newTabNote = $c0afc2a1fb6b5787$var$cloneNote(this);
-    if (this.isSharp) {
-        newTabNote.isSharp = false;
-        return newTabNote;
-    }
-    var noteIndex = $c0afc2a1fb6b5787$var$notes.indexOf(this.name);
-    if (noteIndex == 0) noteIndex = $c0afc2a1fb6b5787$var$notes.length - 1;
-    else noteIndex--;
-    newTabNote.name = $c0afc2a1fb6b5787$var$notes[noteIndex];
-    if (newTabNote.name == "B") {
-        if (newTabNote.isLower) newTabNote.hasComma = 1;
-        else {
-            if (newTabNote.hasComma > 0) newTabNote.hasComma++;
-            else if (newTabNote.isQuoted > 0) newTabNote.isQuoted -= 1;
-            else newTabNote.isLower = true;
-        }
-    }
-    if (this.isFlat) {
-        newTabNote.isFlat = false;
-        return newTabNote;
-    } else if (this.name != "E" && this.name != "B") newTabNote.isSharp = true;
-    return newTabNote;
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.emitNoAccidentals = function() {
-    var returned = this.name;
-    if (this.isLower) returned = returned.toLowerCase();
-    for(var ii = 0; ii < this.isQuoted; ii++)returned += "'";
-    for(var jj = 0; jj < this.hasComma; jj++)returned += ",";
-    return returned;
-};
-$c0afc2a1fb6b5787$var$TabNote.prototype.emit = function() {
-    var returned = this.name;
-    if (this.isSharp || this.isKeySharp) {
-        returned = "^" + returned;
-        if (this.isDouble) returned = "^" + returned;
-    }
-    if (this.isFlat || this.isKeyFlat) {
-        returned = "_" + returned;
-        if (this.isDouble) returned = "_" + returned;
-    }
-    if (this.quarter) {
-        if (this.quarter == "^") returned = "^/" + returned;
-        else returned = "_/" + returned;
-    }
-    if (this.natural) returned = "=" + returned;
-    for(var ii = 1; ii <= this.hasComma; ii++)returned += ",";
-    if (this.isLower) {
-        returned = returned.toLowerCase();
-        for(var jj = 1; jj <= this.isQuoted; jj++)returned += "'";
-    }
-    return returned;
-};
-module.exports = {
-    "TabNote": $c0afc2a1fb6b5787$var$TabNote,
-    "notes": $c0afc2a1fb6b5787$var$notes
-};
+module.exports = $3c0ce9760aa268d3$var$RelativeElement;
 
 });
 
 
 
-
-parcelRequire.register("8KiBW", function(module, exports) {
+parcelRegister("g9p1q", function(module, exports) {
 
 var $J8ibf = parcelRequire("J8ibf");
-function $65e10e5e75e503bd$var$ViolinPatterns(plugin) {
+function $bc20e571134d112d$var$TabStringPatterns(plugin, defaultTuning) {
     this.tuning = plugin._super.params.tuning;
-    if (!this.tuning) this.tuning = [
-        "G,",
-        "D",
-        "A",
-        "e"
-    ];
+    if (!this.tuning) this.tuning = defaultTuning;
     plugin.tuning = this.tuning;
     this.strings = new $J8ibf(plugin);
 }
-$65e10e5e75e503bd$var$ViolinPatterns.prototype.notesToNumber = function(notes, graces) {
+$bc20e571134d112d$var$TabStringPatterns.prototype.notesToNumber = function(notes, graces) {
     var converter = this.strings;
     return converter.notesToNumber(notes, graces);
 };
-$65e10e5e75e503bd$var$ViolinPatterns.prototype.stringToPitch = function(stringNumber) {
+$bc20e571134d112d$var$TabStringPatterns.prototype.stringToPitch = function(stringNumber) {
     var converter = this.strings;
     return converter.stringToPitch(stringNumber);
 };
-module.exports = $65e10e5e75e503bd$var$ViolinPatterns;
+module.exports = $bc20e571134d112d$var$TabStringPatterns;
 
 });
-parcelRequire.register("J8ibf", function(module, exports) {
+parcelRegister("J8ibf", function(module, exports) {
+
+var $DUOst = parcelRequire("DUOst");
+var $087aa2bfa0cb377a$require$noteToMidi = $DUOst.noteToMidi;
 
 var $gxFij = parcelRequire("gxFij");
 
@@ -14586,7 +14387,9 @@ function $087aa2bfa0cb377a$var$sameString(self, chord) {
 function $087aa2bfa0cb377a$var$handleChordNotes(self, notes) {
     var retNotes = [];
     for(var iiii = 0; iiii < notes.length; iiii++){
-        var note = new $gxFij.TabNote(notes[iiii].name);
+        if (notes[iiii].endTie) continue;
+        var note = new $gxFij.TabNote(notes[iiii].name, self.clefTranspose);
+        note.checkKeyAccidentals(self.accidentals, self.measureAccidentals);
         var curPos = $087aa2bfa0cb377a$var$toNumber(self, note);
         retNotes.push(curPos);
     }
@@ -14595,7 +14398,7 @@ function $087aa2bfa0cb377a$var$handleChordNotes(self, notes) {
 }
 function $087aa2bfa0cb377a$var$noteToNumber(self, note, stringNumber, secondPosition, firstSize) {
     var strings = self.strings;
-    note.checkKeyAccidentals(self.accidentals);
+    note.checkKeyAccidentals(self.accidentals, self.measureAccidentals);
     if (secondPosition) strings = secondPosition;
     var noteName = note.emitNoAccidentals();
     var num = strings[stringNumber].indexOf(noteName);
@@ -14618,22 +14421,32 @@ function $087aa2bfa0cb377a$var$noteToNumber(self, note, stringNumber, secondPosi
     return null;
 }
 function $087aa2bfa0cb377a$var$toNumber(self, note) {
-    var num = null;
-    var str = 0;
-    var lowestString = self.strings[self.strings.length - 1];
-    var lowestNote = new $gxFij.TabNote(lowestString[0]);
-    if (note.isLowerThan(lowestNote)) return {
-        num: "?",
-        str: self.strings.length - 1,
-        note: note,
-        error: note.emit() + ": unexpected note for instrument"
-    };
-    while(str < self.strings.length){
-        num = $087aa2bfa0cb377a$var$noteToNumber(self, note, str);
-        if (num) return num;
-        str++;
+    if (note.isAltered || note.natural) {
+        var acc;
+        if (note.isFlat) {
+            if (note.isDouble) acc = "__";
+            else acc = "_";
+        } else if (note.isSharp) {
+            if (note.isDouble) acc = "^^";
+            else acc = "^";
+        } else if (note.natural) acc = "=";
+        self.measureAccidentals[note.name.toUpperCase()] = acc;
     }
-    return null; // not found
+    for(var i = self.stringPitches.length - 1; i >= 0; i--)if (note.pitch + note.pitchAltered >= self.stringPitches[i]) {
+        var num = note.pitch + note.pitchAltered - self.stringPitches[i];
+        if (note.quarter === "^") num -= 0.5;
+        else if (note.quarter === "v") num += 0.5;
+        return {
+            num: Math.round(num),
+            str: self.stringPitches.length - 1 - i,
+            note: note
+        };
+    }
+    return {
+        num: "?",
+        str: self.stringPitches.length - 1,
+        note: note
+    };
 }
 $087aa2bfa0cb377a$var$StringPatterns.prototype.stringToPitch = function(stringNumber) {
     var startingPitch = 5.3;
@@ -14659,8 +14472,9 @@ $087aa2bfa0cb377a$var$StringPatterns.prototype.notesToNumber = function(notes, g
         if (notes.length > 1) {
             retNotes = $087aa2bfa0cb377a$var$handleChordNotes(this, notes);
             if (retNotes.error) error = retNotes.error;
-        } else {
-            note = new $gxFij.TabNote(notes[0].name);
+        } else if (!notes[0].endTie) {
+            note = new $gxFij.TabNote(notes[0].name, this.clefTranspose);
+            note.checkKeyAccidentals(this.accidentals, this.measureAccidentals);
             number = $087aa2bfa0cb377a$var$toNumber(this, note);
             if (number) retNotes.push(number);
             else {
@@ -14674,7 +14488,8 @@ $087aa2bfa0cb377a$var$StringPatterns.prototype.notesToNumber = function(notes, g
     if (graces) {
         retGraces = [];
         for(var iiii = 0; iiii < graces.length; iiii++){
-            note = new $gxFij.TabNote(graces[iiii].name);
+            note = new $gxFij.TabNote(graces[iiii].name, this.clefTranspose);
+            note.checkKeyAccidentals(this.accidentals, this.measureAccidentals);
             number = $087aa2bfa0cb377a$var$toNumber(this, note);
             if (number) retGraces.push(number);
             else {
@@ -14690,7 +14505,14 @@ $087aa2bfa0cb377a$var$StringPatterns.prototype.notesToNumber = function(notes, g
     };
 };
 $087aa2bfa0cb377a$var$StringPatterns.prototype.toString = function() {
-    return this.tuning.join("").replaceAll(",", "").toUpperCase();
+    var arr = [];
+    for(var i = 0; i < this.tuning.length; i++){
+        var str = this.tuning[i].replaceAll(",", "").replaceAll("'", "").toUpperCase();
+        if (str[0] === "_") str = str[1] + "b ";
+        else if (str[0] === "^") str = str[1] + "# ";
+        arr.push(str);
+    }
+    return arr.join("");
 };
 $087aa2bfa0cb377a$var$StringPatterns.prototype.tabInfos = function(plugin) {
     var _super = plugin._super;
@@ -14707,6 +14529,14 @@ $087aa2bfa0cb377a$var$StringPatterns.prototype.tabInfos = function(plugin) {
     }
     return "";
 };
+// MAE 27 Nov 2023
+$087aa2bfa0cb377a$var$StringPatterns.prototype.suppress = function(plugin) {
+    var _super = plugin._super;
+    var suppress = _super.params.suppress;
+    if (suppress) return true;
+    return false;
+};
+// MAE 27 Nov 2023 End
 /**
  * Common patterns for all string instruments
  * @param {} plugin
@@ -14721,9 +14551,16 @@ $087aa2bfa0cb377a$var$StringPatterns.prototype.tabInfos = function(plugin) {
     this.highestNote = "a'";
     if (highestNote) // override default
     this.highestNote = highestNote;
+    this.measureAccidentals = {};
     this.capo = 0;
-    if (capo) this.capo = capo;
+    if (capo) this.capo = parseInt(capo, 10);
+    this.transpose = plugin.transpose ? plugin.transpose : 0;
     this.tuning = tuning;
+    this.stringPitches = [];
+    for(var i = 0; i < this.tuning.length; i++){
+        var pitch = $087aa2bfa0cb377a$require$noteToMidi(this.tuning[i]) + this.capo;
+        this.stringPitches.push(pitch);
+    }
     if (this.capo > 0) this.capoTuning = $087aa2bfa0cb377a$var$buildCapo(this);
     this.strings = $087aa2bfa0cb377a$var$buildPatterns(this);
     if (this.strings.error) {
@@ -14737,7 +14574,285 @@ $087aa2bfa0cb377a$var$StringPatterns.prototype.tabInfos = function(plugin) {
 module.exports = $087aa2bfa0cb377a$var$StringPatterns;
 
 });
-parcelRequire.register("8hVzi", function(module, exports) {
+parcelRegister("DUOst", function(module, exports) {
+var $077fb67afb383154$var$accidentals = {
+    "__": -2,
+    "_": -1,
+    "_/": -0.5,
+    "=": 0,
+    "": 0,
+    "^/": 0.5,
+    "^": 1,
+    "^^": 2
+};
+var $077fb67afb383154$var$notesInOrder = [
+    "C",
+    "-",
+    "D",
+    "-",
+    "E",
+    "F",
+    "-",
+    "G",
+    "-",
+    "A",
+    "-",
+    "B",
+    "c",
+    "-",
+    "d",
+    "-",
+    "e",
+    "f",
+    "-",
+    "g",
+    "-",
+    "a",
+    "-",
+    "b"
+];
+function $077fb67afb383154$var$noteToMidi(note) {
+    var reg = note.match(/([_^\/]*)([ABCDEFGabcdefg])(,*)('*)/);
+    if (reg && reg.length === 5) {
+        var acc = $077fb67afb383154$var$accidentals[reg[1]];
+        var pitch = $077fb67afb383154$var$notesInOrder.indexOf(reg[2]);
+        var octave = reg[4].length - reg[3].length;
+        return 48 + pitch + acc + octave * 12;
+    }
+    return 0;
+}
+function $077fb67afb383154$var$midiToNote(midi) {
+    midi = parseInt(midi, 10) // TODO-PER: not sure how to handle quarter sharps and flats, so strip them for now.
+    ;
+    var octave = Math.floor(midi / 12);
+    var pitch = midi % 12;
+    var name = $077fb67afb383154$var$notesInOrder[pitch];
+    if (name === "-") name = "^" + $077fb67afb383154$var$notesInOrder[pitch - 1];
+    if (octave > 4) {
+        name = name.toLowerCase();
+        octave -= 5;
+        while(octave > 0){
+            name += "'";
+            octave--;
+        }
+    } else while(octave < 4){
+        name += ",";
+        octave++;
+    }
+    return name;
+}
+module.exports = {
+    noteToMidi: $077fb67afb383154$var$noteToMidi,
+    midiToNote: $077fb67afb383154$var$midiToNote
+};
+
+});
+
+parcelRegister("gxFij", function(module, exports) {
+
+var $DUOst = parcelRequire("DUOst");
+var $c0afc2a1fb6b5787$require$noteToMidi = $DUOst.noteToMidi;
+var $c0afc2a1fb6b5787$require$midiToNote = $DUOst.midiToNote;
+/**
+ * 
+ * Note structure for Tabs
+ * 
+ */ var $c0afc2a1fb6b5787$var$notes = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G"
+];
+function $c0afc2a1fb6b5787$var$TabNote(note, clefTranspose) {
+    var pitch = $c0afc2a1fb6b5787$require$noteToMidi(note);
+    if (clefTranspose) pitch += clefTranspose;
+    var newNote = $c0afc2a1fb6b5787$require$midiToNote(pitch);
+    var isFlat = false;
+    var isSharp = false;
+    var isAltered = false;
+    var natural = null;
+    var quarter = null;
+    var isDouble = false;
+    var acc = 0;
+    if (note.startsWith("_")) {
+        isFlat = true;
+        acc = -1;
+        // check quarter flat
+        if (note[1] == "/") {
+            isFlat = false;
+            quarter = "v";
+            acc = 0;
+        } else if (note[1] == "_") {
+            // double flat
+            isDouble = true;
+            acc -= 1;
+        }
+    } else if (note.startsWith("^")) {
+        isSharp = true;
+        acc = 1;
+        // check quarter sharp
+        if (note[1] == "/") {
+            isSharp = false;
+            quarter = "^";
+            acc = 0;
+        } else if (note[1] == "^") {
+            // double sharp
+            isDouble = true;
+            acc += 1;
+        }
+    } else if (note.startsWith("=")) {
+        natural = true;
+        acc = 0;
+    }
+    isAltered = isFlat || isSharp || quarter != null;
+    if (isAltered || natural) {
+        if (quarter != null || isDouble) newNote = note.slice(2);
+        else newNote = note.slice(1);
+    }
+    var hasComma = (newNote.match(/,/g) || []).length;
+    var hasQuote = (newNote.match(/'/g) || []).length;
+    this.pitch = pitch;
+    this.pitchAltered = 0;
+    this.name = newNote;
+    this.acc = acc;
+    this.isSharp = isSharp;
+    this.isKeySharp = false;
+    this.isDouble = isDouble;
+    this.isAltered = isAltered;
+    this.isFlat = isFlat;
+    this.isKeyFlat = false;
+    this.natural = natural;
+    this.quarter = quarter;
+    this.isLower = this.name == this.name.toLowerCase();
+    this.name = this.name[0].toUpperCase();
+    this.hasComma = hasComma;
+    this.isQuoted = hasQuote;
+}
+function $c0afc2a1fb6b5787$var$cloneNote(self) {
+    var newNote = self.name;
+    var newTabNote = new $c0afc2a1fb6b5787$var$TabNote(newNote);
+    newTabNote.pitch = self.pitch;
+    newTabNote.hasComma = self.hasComma;
+    newTabNote.isLower = self.isLower;
+    newTabNote.isQuoted = self.isQuoted;
+    newTabNote.isSharp = self.isSharp;
+    newTabNote.isKeySharp = self.isKeySharp;
+    newTabNote.isFlat = self.isFlat;
+    newTabNote.isKeyFlat = self.isKeyFlat;
+    return newTabNote;
+}
+$c0afc2a1fb6b5787$var$TabNote.prototype.sameNoteAs = function(note) {
+    return note.pitch === this.pitch;
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.isLowerThan = function(note) {
+    return note.pitch > this.pitch;
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.checkKeyAccidentals = function(accidentals, measureAccidentals) {
+    if (this.isAltered || this.natural) return;
+    if (measureAccidentals[this.name.toUpperCase()]) switch(measureAccidentals[this.name.toUpperCase()]){
+        case "__":
+            this.acc = -2;
+            this.pitchAltered = -2;
+            return;
+        case "_":
+            this.acc = -1;
+            this.pitchAltered = -1;
+            return;
+        case "=":
+            this.acc = 0;
+            this.pitchAltered = 0;
+            return;
+        case "^":
+            this.acc = 1;
+            this.pitchAltered = 1;
+            return;
+        case "^^":
+            this.acc = 2;
+            this.pitchAltered = 2;
+            return;
+    }
+    else if (accidentals) {
+        var curNote = this.name;
+        for(var iii = 0; iii < accidentals.length; iii++){
+            var curAccidentals = accidentals[iii];
+            if (curNote == curAccidentals.note.toUpperCase()) {
+                if (curAccidentals.acc == "flat") {
+                    this.acc = -1;
+                    this.isKeyFlat = true;
+                    this.pitchAltered = -1;
+                }
+                if (curAccidentals.acc == "sharp") {
+                    this.acc = 1;
+                    this.isKeySharp = true;
+                    this.pitchAltered = 1;
+                }
+            }
+        }
+    }
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.getAccidentalEquiv = function() {
+    var cloned = $c0afc2a1fb6b5787$var$cloneNote(this);
+    if (cloned.isSharp || cloned.isKeySharp) {
+        cloned = cloned.nextNote();
+        cloned.isFlat = true;
+        cloned.isSharp = false;
+        cloned.isKeySharp = false;
+    } else if (cloned.isFlat || cloned.isKeyFlat) {
+        cloned = cloned.prevNote();
+        cloned.isSharp = true;
+        cloned.isFlat = false;
+        cloned.isKeyFlat = false;
+    }
+    return cloned;
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.nextNote = function() {
+    var note = $c0afc2a1fb6b5787$require$midiToNote(this.pitch + 1 + this.pitchAltered);
+    return new $c0afc2a1fb6b5787$var$TabNote(note);
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.prevNote = function() {
+    var note = $c0afc2a1fb6b5787$require$midiToNote(this.pitch - 1 + this.pitchAltered);
+    return new $c0afc2a1fb6b5787$var$TabNote(note);
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.emitNoAccidentals = function() {
+    var returned = this.name;
+    if (this.isLower) returned = returned.toLowerCase();
+    for(var ii = 0; ii < this.isQuoted; ii++)returned += "'";
+    for(var jj = 0; jj < this.hasComma; jj++)returned += ",";
+    return returned;
+};
+$c0afc2a1fb6b5787$var$TabNote.prototype.emit = function() {
+    var returned = this.name;
+    if (this.isSharp || this.isKeySharp) {
+        returned = "^" + returned;
+        if (this.isDouble) returned = "^" + returned;
+    }
+    if (this.isFlat || this.isKeyFlat) {
+        returned = "_" + returned;
+        if (this.isDouble) returned = "_" + returned;
+    }
+    if (this.quarter) {
+        if (this.quarter == "^") returned = "^/" + returned;
+        else returned = "_/" + returned;
+    }
+    if (this.natural) returned = "=" + returned;
+    for(var ii = 1; ii <= this.hasComma; ii++)returned += ",";
+    if (this.isLower) {
+        returned = returned.toLowerCase();
+        for(var jj = 1; jj <= this.isQuoted; jj++)returned += "'";
+    }
+    return returned;
+};
+module.exports = {
+    "TabNote": $c0afc2a1fb6b5787$var$TabNote,
+    "notes": $c0afc2a1fb6b5787$var$notes
+};
+
+});
+
+parcelRegister("8hVzi", function(module, exports) {
 
 var $gxFij = parcelRequire("gxFij");
 var $018ea7809d5de78a$var$notes = $gxFij.notes;
@@ -14774,146 +14889,37 @@ module.exports = $018ea7809d5de78a$var$TabNotes;
 
 
 
-parcelRequire.register("j8QeU", function(module, exports) {
-/**
- * Dedicated fonts for violin tabs
- */ /**
- * Set here the fonts used by renderer/drawer 
- * for the violin plugin
- * @param {} tune 
- */ // eslint-disable-next-line no-unused-vars
-function $def7495b75ade764$var$setViolinFonts(tune) {
-/* enhance or change instrument fonts here */ // tune.formatting.tabnumberfont = { face: "\"Times New Roman\"", size: 9, weight: "normal", style: "normal", decoration: "none" };
-// tune.formatting.tabgracefont = { face: "\"Times New Roman\"", size: 7, weight: "normal", style: "normal", decoration: "none" };
-}
-module.exports = $def7495b75ade764$var$setViolinFonts;
-
-});
-
-
-parcelRequire.register("aS3gt", function(module, exports) {
-
-var $dft97 = parcelRequire("dft97");
-
-var $l6ifE = parcelRequire("l6ifE");
-
-var $iEcZU = parcelRequire("iEcZU");
-
-var $jSzay = parcelRequire("jSzay");
-
-var $40pYd = parcelRequire("40pYd");
-/**
-* upon init mainly store provided instances for later usage
-* @param {*} abcTune  the parsed tune AST tree
-*  @param {*} tuneNumber  the parsed tune AST tree
-* @param {*} params  complementary args provided to Tablature Plugin
-*/ $7ea17ace7ff21cb7$var$Plugin.prototype.init = function(abcTune, tuneNumber, params) {
-    var _super = new $l6ifE(abcTune, tuneNumber, params);
-    this._super = _super;
-    this.abcTune = abcTune;
-    this.linePitch = 3;
-    this.nbLines = 6;
-    this.isTabBig = true;
-    this.capo = params.capo;
-    this.transpose = params.visualTranspose;
-    this.tablature = new $dft97(this.nbLines, this.linePitch);
-    var semantics = new $jSzay(this);
-    this.semantics = semantics;
-};
-$7ea17ace7ff21cb7$var$Plugin.prototype.render = function(renderer, line, staffIndex) {
-    if (this._super.inError) return;
-    if (this.tablature.bypass(line)) return;
-    $40pYd(this.abcTune);
-    var rndrer = new $iEcZU(this, renderer, line, staffIndex);
-    rndrer.doLayout();
-};
-function $7ea17ace7ff21cb7$var$Plugin() {}
-//
-// Tablature plugin definition
-//
-var $7ea17ace7ff21cb7$var$AbcGuitarTab = function() {
-    return {
-        name: "GuitarTab",
-        tablature: $7ea17ace7ff21cb7$var$Plugin
-    };
-};
-module.exports = $7ea17ace7ff21cb7$var$AbcGuitarTab;
-
-});
-parcelRequire.register("jSzay", function(module, exports) {
-
-var $J8ibf = parcelRequire("J8ibf");
-function $e78e575d2c920a2a$var$GuitarPatterns(plugin) {
-    this.tuning = plugin._super.params.tuning;
-    if (!this.tuning) this.tuning = [
-        "E,",
-        "A,",
-        "D",
-        "G",
-        "B",
-        "e"
-    ];
-    plugin.tuning = this.tuning;
-    this.strings = new $J8ibf(plugin);
-}
-$e78e575d2c920a2a$var$GuitarPatterns.prototype.notesToNumber = function(notes, graces) {
-    var converter = this.strings;
-    return converter.notesToNumber(notes, graces);
-};
-$e78e575d2c920a2a$var$GuitarPatterns.prototype.stringToPitch = function(stringNumber) {
-    var converter = this.strings;
-    return converter.stringToPitch(stringNumber);
-};
-module.exports = $e78e575d2c920a2a$var$GuitarPatterns;
-
-});
-
-parcelRequire.register("40pYd", function(module, exports) {
-/**
- * Dedicated fonts for violin tabs
- */ /**
- * Set here the fonts used by renderer/drawer 
- * for the violin plugin
- * @param {} tune 
- */ // eslint-disable-next-line no-unused-vars
-function $2eab4eac9c8f3d5f$var$setGuitarFonts(tune) {
-/* enhance or change instrument fonts here */ // tune.formatting.tabnumberfont = { face: "\"Times New Roman\"", size: 9, weight: "normal", style: "normal", decoration: "none" };
-// tune.formatting.tabgracefont = { face: "\"Times New Roman\"", size: 7, weight: "normal", style: "normal", decoration: "none" };
-}
-module.exports = $2eab4eac9c8f3d5f$var$setGuitarFonts;
-
-});
 
 
 
+parcelRegister("7KNxt", function(module, exports) {
+//    abc_engraver_controller.js: Controls the engraving process of an ABCJS abstract syntax tree as produced by ABCJS/parse
+/*global Math */ 
+var $6aPnV = parcelRequire("6aPnV");
 
-parcelRequire.register("bMAdQ", function(module, exports) {
+var $5BHLt = parcelRequire("5BHLt");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $jQMoV = parcelRequire("jQMoV");
 
-var $2g408 = parcelRequire("2g408");
+var $3jpY9 = parcelRequire("3jpY9");
 
-var $5OxDC = parcelRequire("5OxDC");
+var $gvf1B = parcelRequire("gvf1B");
 
-var $fydKH = parcelRequire("fydKH");
+var $c5YID = parcelRequire("c5YID");
 
-var $fPfmS = parcelRequire("fPfmS");
+var $hQqII = parcelRequire("hQqII");
 
-var $3mcQy = parcelRequire("3mcQy");
+var $bSWCB = parcelRequire("bSWCB");
 
-var $lDcb2 = parcelRequire("lDcb2");
-
-var $kRNdb = parcelRequire("kRNdb");
-
-var $3q5XA = parcelRequire("3q5XA");
+var $16rnY = parcelRequire("16rnY");
 
 var $cByzt = parcelRequire("cByzt");
 
-var $ddldS = parcelRequire("ddldS");
+var $eTUPz = parcelRequire("eTUPz");
 
-var $dlOy7 = parcelRequire("dlOy7");
+var $kPEZn = parcelRequire("kPEZn");
 
-var $4a2cO = parcelRequire("4a2cO");
+var $gwBDX = parcelRequire("gwBDX");
 
 var $aY89U = parcelRequire("aY89U");
 
@@ -14929,17 +14935,19 @@ var $j3Bvz = parcelRequire("j3Bvz");
  * elements in ABCJS AES know their "source data" in the ABCJS AST, and their "target shape"
  * in the renderer for highlighting purposes
  *
- */ var $89404660b0523384$var$EngraverController = function(paper, params) {
+ */ var $5a5341b32b25781f$var$EngraverController = function(paper, params) {
     params = params || {};
+    this.oneSvgPerLine = params.oneSvgPerLine;
     this.selectionColor = params.selectionColor;
     this.dragColor = params.dragColor ? params.dragColor : params.selectionColor;
     this.dragging = !!params.dragging;
     this.selectTypes = params.selectTypes;
     this.responsive = params.responsive;
-    this.space = 3 * $f4yIj.SPACE;
+    this.space = 3 * $6aPnV.SPACE;
     this.initialClef = params.initialClef;
+    this.expandToWidest = !!params.expandToWidest;
     this.scale = params.scale ? parseFloat(params.scale) : 0;
-    this.classes = new $ddldS({
+    this.classes = new $eTUPz({
         shouldAddClasses: params.add_classes
     });
     if (!(this.scale > 0.1)) this.scale = undefined;
@@ -14954,17 +14962,20 @@ var $j3Bvz = parcelRequire("j3Bvz");
     }
     this.listeners = [];
     if (params.clickListener) this.addSelectListener(params.clickListener);
-    this.renderer = new $5OxDC(paper);
+    this.renderer = new $jQMoV(paper);
     this.renderer.setPaddingOverride(params);
     if (params.showDebug) this.renderer.showDebug = params.showDebug;
     if (params.jazzchords) this.jazzchords = params.jazzchords;
+    if (params.accentAbove) this.accentAbove = params.accentAbove;
+    if (params.germanAlphabet) this.germanAlphabet = params.germanAlphabet;
+    if (params.lineThickness) this.lineThickness = params.lineThickness;
     this.renderer.controller = this; // TODO-GD needed for highlighting
     this.renderer.foregroundColor = params.foregroundColor ? params.foregroundColor : "currentColor";
     if (params.ariaLabel !== undefined) this.renderer.ariaLabel = params.ariaLabel;
     this.renderer.minPadding = params.minPadding ? params.minPadding : 0;
     this.reset();
 };
-$89404660b0523384$var$EngraverController.prototype.reset = function() {
+$5a5341b32b25781f$var$EngraverController.prototype.reset = function() {
     this.selected = [];
     this.staffgroups = [];
     if (this.engraver) this.engraver.reset();
@@ -14977,31 +14988,33 @@ $89404660b0523384$var$EngraverController.prototype.reset = function() {
         y: -1
     };
     this.dragYStep = 0;
+    if (this.lineThickness) this.renderer.setLineThickness(this.lineThickness);
 };
 /**
  * run the engraving process
- */ $89404660b0523384$var$EngraverController.prototype.engraveABC = function(abctunes, tuneNumber, lineOffset) {
+ */ $5a5341b32b25781f$var$EngraverController.prototype.engraveABC = function(abctunes, tuneNumber, lineOffset) {
     if (abctunes[0] === undefined) abctunes = [
         abctunes
     ];
     this.reset();
     for(var i = 0; i < abctunes.length; i++){
         if (tuneNumber === undefined) tuneNumber = i;
-        this.getFontAndAttr = new $dlOy7(abctunes[i].formatting, this.classes);
-        this.getTextSize = new $4a2cO(this.getFontAndAttr, this.renderer.paper);
+        this.getFontAndAttr = new $kPEZn(abctunes[i].formatting, this.classes);
+        this.getTextSize = new $gwBDX(this.getFontAndAttr, this.renderer.paper);
         this.engraveTune(abctunes[i], tuneNumber, lineOffset);
     }
 };
 /**
  * Some of the items on the page are not scaled, so adjust them in the opposite direction of scaling to cancel out the scaling.
- */ $89404660b0523384$var$EngraverController.prototype.adjustNonScaledItems = function(scale) {
+ */ $5a5341b32b25781f$var$EngraverController.prototype.adjustNonScaledItems = function(scale) {
     this.width /= scale;
     this.renderer.adjustNonScaledItems(scale);
 };
-$89404660b0523384$var$EngraverController.prototype.getMeasureWidths = function(abcTune) {
+$5a5341b32b25781f$var$EngraverController.prototype.getMeasureWidths = function(abcTune) {
     this.reset();
-    this.getFontAndAttr = new $dlOy7(abcTune.formatting, this.classes);
-    this.getTextSize = new $4a2cO(this.getFontAndAttr, this.renderer.paper);
+    this.getFontAndAttr = new $kPEZn(abcTune.formatting, this.classes);
+    this.getTextSize = new $gwBDX(this.getFontAndAttr, this.renderer.paper);
+    var origJazzChords = this.jazzchords;
     this.setupTune(abcTune, 0);
     this.constructTuneElements(abcTune);
     // layout() sets the x-coordinate of the abcTune element here:
@@ -15045,19 +15058,23 @@ $89404660b0523384$var$EngraverController.prototype.getMeasureWidths = function(a
         //section.height += calcHeight(abcLine.staffGroup) * spacing.STEP;
         } else needNewSection = true;
     }
+    this.jazzchords = origJazzChords;
     return ret;
 };
-$89404660b0523384$var$EngraverController.prototype.setupTune = function(abcTune, tuneNumber) {
+$5a5341b32b25781f$var$EngraverController.prototype.setupTune = function(abcTune, tuneNumber) {
     this.classes.reset();
     if (abcTune.formatting.jazzchords !== undefined) this.jazzchords = abcTune.formatting.jazzchords;
+    if (abcTune.formatting.accentAbove !== undefined) this.accentAbove = abcTune.formatting.accentAbove;
     this.renderer.newTune(abcTune);
-    this.engraver = new $2g408(this.getTextSize, tuneNumber, {
+    this.engraver = new $5BHLt(this.getTextSize, tuneNumber, {
         bagpipes: abcTune.formatting.bagpipes,
         flatbeams: abcTune.formatting.flatbeams,
         graceSlurs: abcTune.formatting.graceSlurs !== false,
         percmap: abcTune.formatting.percmap,
         initialClef: this.initialClef,
-        jazzchords: this.jazzchords
+        jazzchords: this.jazzchords,
+        accentAbove: this.accentAbove,
+        germanAlphabet: this.germanAlphabet
     });
     this.engraver.setStemHeight(this.renderer.spacing.stemHeight);
     this.engraver.measureLength = abcTune.getMeterFraction().num / abcTune.getMeterFraction().den;
@@ -15069,8 +15086,8 @@ $89404660b0523384$var$EngraverController.prototype.setupTune = function(abcTune,
     this.adjustNonScaledItems(scale);
     return scale;
 };
-$89404660b0523384$var$EngraverController.prototype.constructTuneElements = function(abcTune) {
-    abcTune.topText = new $lDcb2(abcTune.metaText, abcTune.metaTextInfo, abcTune.formatting, abcTune.lines, this.width, this.renderer.isPrint, this.renderer.padding.left, this.renderer.spacing, this.getTextSize);
+$5a5341b32b25781f$var$EngraverController.prototype.constructTuneElements = function(abcTune) {
+    abcTune.topText = new $hQqII(abcTune.metaText, abcTune.metaTextInfo, abcTune.formatting, abcTune.lines, this.width, this.renderer.isPrint, this.renderer.padding.left, this.renderer.spacing, this.classes.shouldAddClasses, this.getTextSize);
     // Generate the raw staff line data
     var i;
     var abcLine;
@@ -15086,33 +15103,131 @@ $89404660b0523384$var$EngraverController.prototype.constructTuneElements = funct
         {
             if (hasSeenNonSubtitle) {
                 var center = this.width / 2 + this.renderer.padding.left;
-                abcLine.nonMusic = new $3mcQy(this.renderer.spacing.subtitle, abcTune.formatting, abcLine.subtitle, center, this.renderer.padding.left, this.getTextSize);
+                abcLine.nonMusic = new $c5YID(this.renderer.spacing.subtitle, abcTune.formatting, abcLine.subtitle, center, this.renderer.padding.left, this.getTextSize);
             }
         } else if (abcLine.text !== undefined) {
             hasSeenNonSubtitle = true;
-            abcLine.nonMusic = new $fydKH(abcLine.text, abcLine.vskip, this.getFontAndAttr, this.renderer.padding.left, this.width, this.getTextSize);
+            abcLine.nonMusic = new $3jpY9(abcLine.text, abcLine.vskip, this.getFontAndAttr, this.renderer.padding.left, this.width, this.getTextSize);
         } else if (abcLine.separator !== undefined && abcLine.separator.lineLength) {
             hasSeenNonSubtitle = true;
-            abcLine.nonMusic = new $fPfmS(abcLine.separator.spaceAbove, abcLine.separator.lineLength, abcLine.separator.spaceBelow);
+            abcLine.nonMusic = new $gvf1B(abcLine.separator.spaceAbove, abcLine.separator.lineLength, abcLine.separator.spaceBelow);
         }
     }
-    abcTune.bottomText = new $kRNdb(abcTune.metaText, this.width, this.renderer.isPrint, this.renderer.padding.left, this.renderer.spacing, this.getTextSize);
+    abcTune.bottomText = new $bSWCB(abcTune.metaText, this.width, this.renderer.isPrint, this.renderer.padding.left, this.renderer.spacing, this.classes.shouldAddClasses, this.getTextSize);
 };
-$89404660b0523384$var$EngraverController.prototype.engraveTune = function(abcTune, tuneNumber, lineOffset) {
+$5a5341b32b25781f$var$EngraverController.prototype.engraveTune = function(abcTune, tuneNumber, lineOffset) {
+    var origJazzChords = this.jazzchords;
     var scale = this.setupTune(abcTune, tuneNumber);
     // Create all of the element objects that will appear on the page.
     this.constructTuneElements(abcTune);
+    //Set the top text now that we know the width
     // Do all the positioning, both horizontally and vertically
-    var maxWidth = $cByzt(this.renderer, abcTune, this.width, this.space);
+    var maxWidth = $cByzt(this.renderer, abcTune, this.width, this.space, this.expandToWidest);
+    //Set the top text now that we know the width
+    if (this.expandToWidest && maxWidth > this.width + 1) {
+        abcTune.topText = new $hQqII(abcTune.metaText, abcTune.metaTextInfo, abcTune.formatting, abcTune.lines, maxWidth, this.renderer.isPrint, this.renderer.padding.left, this.renderer.spacing, this.classes.shouldAddClasses, this.getTextSize);
+        if (abcTune.lines && abcTune.lines.length > 0) {
+            var nlines = abcTune.lines.length;
+            for(var i = 0; i < nlines; ++i){
+                var entry = abcTune.lines[i];
+                if (entry.nonMusic) {
+                    if (entry.nonMusic.rows && entry.nonMusic.rows.length > 0) {
+                        var nRows = entry.nonMusic.rows.length;
+                        for(var j = 0; j < nRows; ++j){
+                            var thisRow = entry.nonMusic.rows[j];
+                            // Recenter the element if it's a subtitle or centered text 
+                            if (thisRow.left) {
+                                if (entry.subtitle) thisRow.left = maxWidth / 2 + this.renderer.padding.left;
+                                else {
+                                    if (entry.text && entry.text.length > 0) {
+                                        if (entry.text[0].center) thisRow.left = maxWidth / 2 + this.renderer.padding.left;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     // Deal with tablature for staff
     if (abcTune.tablatures) $j3Bvz.layoutTablatures(this.renderer, abcTune);
     // Do all the writing to the SVG
     var ret = $aY89U(this.renderer, this.classes, abcTune, this.width, maxWidth, this.responsive, scale, this.selectTypes, tuneNumber, lineOffset);
     this.staffgroups = ret.staffgroups;
     this.selectables = ret.selectables;
-    $3q5XA(this);
+    if (this.oneSvgPerLine) {
+        var div = this.renderer.paper.svg.parentNode;
+        this.svgs = $5a5341b32b25781f$var$splitSvgIntoLines(this.renderer, div, abcTune.metaText.title, this.responsive);
+    } else this.svgs = [
+        this.renderer.paper.svg
+    ];
+    $16rnY(this, this.svgs);
+    this.jazzchords = origJazzChords;
 };
-$89404660b0523384$var$EngraverController.prototype.getDim = function(historyEl) {
+function $5a5341b32b25781f$var$splitSvgIntoLines(renderer, output, title, responsive) {
+    // Each line is a top level <g> in the svg. To split it into separate
+    // svgs iterate through each of those and put them in a new svg. Since
+    // they are placed absolutely, the viewBox needs to be manipulated to
+    // get the correct vertical positioning.
+    // We copy all the attributes from the original svg except for the aria-label
+    // since we want that to include a count. And the height is now a fraction of the original svg.
+    if (!title) title = "Untitled";
+    var source = output.querySelector("svg");
+    if (responsive === "resize") output.style.paddingBottom = "";
+    var style = source.querySelector("style");
+    var width = responsive === "resize" ? source.viewBox.baseVal.width : source.getAttribute("width");
+    var sections = output.querySelectorAll("svg > g") // each section is a line, or the top matter or the bottom matter, or text that has been inserted.
+    ;
+    var nextTop = 0 // There are often gaps between the elements for spacing, so the actual top and height needs to be inferred.
+    ;
+    var wrappers = [] // Create all the elements and place them at once because we use the current svg to get data. It would disappear after placing the first line.
+    ;
+    var svgs = [];
+    for(var i = 0; i < sections.length; i++){
+        var section = sections[i];
+        var box = section.getBBox();
+        var gapBetweenLines = box.y - nextTop // take the margin into account
+        ;
+        var height = box.height + gapBetweenLines;
+        var wrapper = document.createElement("div");
+        var divStyles = "overflow: hidden;";
+        if (responsive !== "resize") divStyles += "height:" + height + "px;";
+        wrapper.setAttribute("style", divStyles);
+        var svg = $5a5341b32b25781f$var$duplicateSvg(source);
+        var fullTitle = 'Sheet Music for "' + title + '" section ' + (i + 1);
+        svg.setAttribute("aria-label", fullTitle);
+        if (responsive !== "resize") svg.setAttribute("height", height);
+        if (responsive === "resize") svg.style.position = "";
+        // TODO-PER: Hack! Not sure why this is needed.
+        var viewBoxHeight = renderer.firefox112 ? height + 1 : height;
+        svg.setAttribute("viewBox", "0 " + nextTop + " " + width + " " + viewBoxHeight);
+        svg.appendChild(style.cloneNode(true));
+        var titleEl = document.createElement("title");
+        titleEl.innerText = fullTitle;
+        svg.appendChild(titleEl);
+        svg.appendChild(section);
+        wrapper.appendChild(svg);
+        svgs.push(svg);
+        output.appendChild(wrapper);
+        //wrappers.push(wrapper)
+        nextTop = box.y + box.height;
+    }
+    // for (i = 0; i < wrappers.length; i++)
+    // 	output.appendChild(wrappers[i])
+    output.removeChild(source);
+    return svgs;
+}
+function $5a5341b32b25781f$var$duplicateSvg(source) {
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    for(var i = 0; i < source.attributes.length; i++){
+        var attr = source.attributes[i];
+        if (attr.name !== "height" && attr.name != "aria-label") svg.setAttribute(attr.name, attr.value);
+    }
+    return svg;
+}
+$5a5341b32b25781f$var$EngraverController.prototype.getDim = function(historyEl) {
     // Get the dimensions on demand because the getBBox call is expensive.
     if (!historyEl.dim) {
         var box = historyEl.svgEl.getBBox();
@@ -15125,60 +15240,61 @@ $89404660b0523384$var$EngraverController.prototype.getDim = function(historyEl) 
     }
     return historyEl.dim;
 };
-$89404660b0523384$var$EngraverController.prototype.addSelectListener = function(clickListener) {
+$5a5341b32b25781f$var$EngraverController.prototype.addSelectListener = function(clickListener) {
     this.listeners[this.listeners.length] = clickListener;
 };
-module.exports = $89404660b0523384$var$EngraverController;
+module.exports = $5a5341b32b25781f$var$EngraverController;
 
 });
-parcelRequire.register("2g408", function(module, exports) {
+parcelRegister("5BHLt", function(module, exports) {
+// abc_abstract_engraver.js: Creates a data structure suitable for printing a line of abc
 
-var $jM9Y7 = parcelRequire("jM9Y7");
+var $lBV2u = parcelRequire("lBV2u");
 
-var $cwFOY = parcelRequire("cwFOY");
+var $fF6ll = parcelRequire("fF6ll");
 
-var $jcqlU = parcelRequire("jcqlU");
+var $3I6UZ = parcelRequire("3I6UZ");
 
-var $fi83C = parcelRequire("fi83C");
+var $bgxoh = parcelRequire("bgxoh");
 
-var $g91Bn = parcelRequire("g91Bn");
+var $gKO8O = parcelRequire("gKO8O");
 
-var $kv0zt = parcelRequire("kv0zt");
+var $fzNL2 = parcelRequire("fzNL2");
 
-var $gU76P = parcelRequire("gU76P");
+var $a2qSX = parcelRequire("a2qSX");
 
-var $czgAq = parcelRequire("czgAq");
+var $iJbEP = parcelRequire("iJbEP");
 
-var $ideVe = parcelRequire("ideVe");
+var $cgfEq = parcelRequire("cgfEq");
 
-var $qv6HX = parcelRequire("qv6HX");
+var $fJFPv = parcelRequire("fJFPv");
 
-var $ilOzb = parcelRequire("ilOzb");
+var $59E7k = parcelRequire("59E7k");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
-var $bktDO = parcelRequire("bktDO");
+var $1gzGU = parcelRequire("1gzGU");
 
-var $8wDLE = parcelRequire("8wDLE");
+var $39nHs = parcelRequire("39nHs");
 
-var $2u3FD = parcelRequire("2u3FD");
+var $6s25x = parcelRequire("6s25x");
 
-var $fmbEU = parcelRequire("fmbEU");
+var $3ADz0 = parcelRequire("3ADz0");
 
-var $aB8JU = parcelRequire("aB8JU");
+var $iTP1Z = parcelRequire("iTP1Z");
 
-var $eg5HS = parcelRequire("eg5HS");
+var $a10bB = parcelRequire("a10bB");
 
 var $9zJb9 = parcelRequire("9zJb9");
 
 var $3fSeU = parcelRequire("3fSeU");
-var $1a502df734d2bafc$var$getDuration = function(elem) {
+var $41525b2fefc2baa0$var$getDuration = function(elem) {
     var d = 0;
     if (elem.duration) d = elem.duration;
     return d;
 };
-var $1a502df734d2bafc$var$hint = false;
-var $1a502df734d2bafc$var$chartable = {
+var $41525b2fefc2baa0$var$hint = false;
+var $41525b2fefc2baa0$var$chartable = {
     rest: {
         0: "rests.whole",
         1: "rests.half",
@@ -15263,8 +15379,8 @@ var $1a502df734d2bafc$var$chartable = {
         6: "flags.d64th"
     }
 };
-var $1a502df734d2bafc$var$AbstractEngraver = function(getTextSize, tuneNumber, options) {
-    this.decoration = new $czgAq();
+var $41525b2fefc2baa0$var$AbstractEngraver = function(getTextSize, tuneNumber, options) {
+    this.decoration = new $iJbEP();
     this.getTextSize = getTextSize;
     this.tuneNumber = tuneNumber;
     this.isBagpipes = options.bagpipes;
@@ -15273,16 +15389,20 @@ var $1a502df734d2bafc$var$AbstractEngraver = function(getTextSize, tuneNumber, o
     this.percmap = options.percmap;
     this.initialClef = options.initialClef;
     this.jazzchords = !!options.jazzchords;
+    this.accentAbove = !!options.accentAbove;
+    this.germanAlphabet = !!options.germanAlphabet;
     this.reset();
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.reset = function() {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.reset = function() {
     this.slurs = {};
     this.ties = [];
     this.voiceScale = 1;
+    this.voiceColor = undefined;
     this.slursbyvoice = {};
     this.tiesbyvoice = {};
     this.endingsbyvoice = {};
     this.scaleByVoice = {};
+    this.colorByVoice = {};
     this.tripletmultiplier = 1;
     this.abcline = undefined;
     this.accidentalSlot = undefined;
@@ -15294,26 +15414,28 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.reset = function() {
     this.startlimitelem = undefined;
     this.stemdir = undefined;
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.setStemHeight = function(heightInPixels) {
-    this.stemHeight = Math.round(heightInPixels * 10 / $f4yIj.STEP) / 10;
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.setStemHeight = function(heightInPixels) {
+    this.stemHeight = Math.round(heightInPixels * 10 / $6aPnV.STEP) / 10;
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.getCurrentVoiceId = function(s, v) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.getCurrentVoiceId = function(s, v) {
     return "s" + s + "v" + v;
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.pushCrossLineElems = function(s, v) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.pushCrossLineElems = function(s, v) {
     this.slursbyvoice[this.getCurrentVoiceId(s, v)] = this.slurs;
     this.tiesbyvoice[this.getCurrentVoiceId(s, v)] = this.ties;
     this.endingsbyvoice[this.getCurrentVoiceId(s, v)] = this.partstartelem;
     this.scaleByVoice[this.getCurrentVoiceId(s, v)] = this.voiceScale;
+    if (this.voiceColor) this.colorByVoice[this.getCurrentVoiceId(s, v)] = this.voiceColor;
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.popCrossLineElems = function(s, v) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.popCrossLineElems = function(s, v) {
     this.slurs = this.slursbyvoice[this.getCurrentVoiceId(s, v)] || {};
     this.ties = this.tiesbyvoice[this.getCurrentVoiceId(s, v)] || [];
     this.partstartelem = this.endingsbyvoice[this.getCurrentVoiceId(s, v)];
     this.voiceScale = this.scaleByVoice[this.getCurrentVoiceId(s, v)];
     if (this.voiceScale === undefined) this.voiceScale = 1;
+    this.voiceColor = this.colorByVoice[this.getCurrentVoiceId(s, v)];
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.containsLyrics = function(staves) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.containsLyrics = function(staves) {
     for(var i = 0; i < staves.length; i++){
         for(var j = 0; j < staves[i].voices.length; j++)for(var k = 0; k < staves[i].voices[j].length; k++){
             var el = staves[i].voices[j][k];
@@ -15325,40 +15447,40 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.containsLyrics = function(stave
         }
     }
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createABCLine = function(staffs, tempo, l) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createABCLine = function(staffs, tempo, l) {
     this.minY = 2; // PER: This will be the lowest that any note reaches. It will be used to set the dynamics row.
     // See if there are any lyrics on this line.
     this.containsLyrics(staffs);
-    var staffgroup = new $bktDO(this.getTextSize);
+    var staffgroup = new $1gzGU(this.getTextSize);
     this.tempoSet = false;
     for(var s = 0; s < staffs.length; s++){
-        if ($1a502df734d2bafc$var$hint) this.restoreState();
-        $1a502df734d2bafc$var$hint = false;
+        if ($41525b2fefc2baa0$var$hint) this.restoreState();
+        $41525b2fefc2baa0$var$hint = false;
         this.createABCStaff(staffgroup, staffs[s], tempo, s, l);
     }
     return staffgroup;
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createABCStaff = function(staffgroup, abcstaff, tempo, s, l) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createABCStaff = function(staffgroup, abcstaff, tempo, s, l) {
     // If the tempo is passed in, then the first element should get the tempo attached to it.
     staffgroup.getTextSize.updateFonts(abcstaff);
     for(var v = 0; v < abcstaff.voices.length; v++){
-        var voice = new $aB8JU(v, abcstaff.voices.length);
+        var voice = new $iTP1Z(v, abcstaff.voices.length);
         if (v === 0) {
             voice.barfrom = abcstaff.connectBarLines === "start" || abcstaff.connectBarLines === "continue";
             voice.barto = abcstaff.connectBarLines === "continue" || abcstaff.connectBarLines === "end";
         } else voice.duplicate = true; // bar lines and other duplicate info need not be created
         if (abcstaff.title && abcstaff.title[v]) {
             voice.header = abcstaff.title[v].replace(/\\n/g, "\n");
-            voice.headerPosition = 6 + staffgroup.getTextSize.baselineToCenter(voice.header, "voicefont", "staff-extra voice-name", v, abcstaff.voices.length) / $f4yIj.STEP;
+            voice.headerPosition = 6 + staffgroup.getTextSize.baselineToCenter(voice.header, "voicefont", "staff-extra voice-name", v, abcstaff.voices.length) / $6aPnV.STEP;
         }
         if (abcstaff.clef && abcstaff.clef.type === "perc") voice.isPercussion = true;
-        var clef = (!this.initialClef || l === 0) && $fi83C(abcstaff.clef, this.tuneNumber);
+        var clef = (!this.initialClef || l === 0) && $bgxoh(abcstaff.clef, this.tuneNumber);
         if (clef) {
             if (v === 0 && abcstaff.barNumber) this.addMeasureNumber(abcstaff.barNumber, clef);
             voice.addChild(clef);
             this.startlimitelem = clef; // limit ties here
         }
-        var keySig = $g91Bn(abcstaff.key, this.tuneNumber);
+        var keySig = $gKO8O(abcstaff.key, this.tuneNumber);
         if (keySig) {
             voice.addChild(keySig);
             this.startlimitelem = keySig; // limit ties here
@@ -15366,7 +15488,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCStaff = function(staff
         if (abcstaff.meter) {
             if (abcstaff.meter.type === "specified") this.measureLength = abcstaff.meter.value[0].num / abcstaff.meter.value[0].den;
             else this.measureLength = 1;
-            var ts = $gU76P(abcstaff.meter, this.tuneNumber);
+            var ts = $a2qSX(abcstaff.meter, this.tuneNumber);
             voice.addChild(ts);
             this.startlimitelem = ts; // limit ties here
         }
@@ -15380,18 +15502,18 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCStaff = function(staff
             // only do brace and bracket processing on the first voice, otherwise it would be done twice.
             if (abcstaff.brace === "start" || !staffgroup.brace && abcstaff.brace) {
                 if (!staffgroup.brace) staffgroup.brace = [];
-                staffgroup.brace.push(new $jcqlU(voice, "brace"));
+                staffgroup.brace.push(new $3I6UZ(voice, "brace"));
             } else if (abcstaff.brace === "end" && staffgroup.brace) staffgroup.brace[staffgroup.brace.length - 1].setBottomStaff(voice);
             else if (abcstaff.brace === "continue" && staffgroup.brace) staffgroup.brace[staffgroup.brace.length - 1].continuing(voice);
             if (abcstaff.bracket === "start" || !staffgroup.bracket && abcstaff.bracket) {
                 if (!staffgroup.bracket) staffgroup.bracket = [];
-                staffgroup.bracket.push(new $jcqlU(voice, "bracket"));
+                staffgroup.bracket.push(new $3I6UZ(voice, "bracket"));
             } else if (abcstaff.bracket === "end" && staffgroup.bracket) staffgroup.bracket[staffgroup.bracket.length - 1].setBottomStaff(voice);
             else if (abcstaff.bracket === "continue" && staffgroup.bracket) staffgroup.bracket[staffgroup.bracket.length - 1].continuing(voice);
         }
     }
 };
-function $1a502df734d2bafc$var$getBeamGroup(abcline, pos) {
+function $41525b2fefc2baa0$var$getBeamGroup(abcline, pos) {
     // If there are notes beamed together, they are handled as a group, so find all of them here.
     var elem = abcline[pos];
     if (elem.el_type !== "note" || !elem.startBeam || elem.endBeam) return {
@@ -15409,51 +15531,51 @@ function $1a502df734d2bafc$var$getBeamGroup(abcline, pos) {
         elem: group
     };
 }
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createABCVoice = function(abcline, tempo, s, v, isSingleLineStaff, voice) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createABCVoice = function(abcline, tempo, s, v, isSingleLineStaff, voice) {
     this.popCrossLineElems(s, v);
     this.stemdir = this.isBagpipes ? "down" : null;
     this.abcline = abcline;
     if (this.partstartelem) {
-        this.partstartelem = new $ideVe("", null, null);
+        this.partstartelem = new $cgfEq("", null, null);
         voice.addOther(this.partstartelem);
     }
     var voiceNumber = voice.voicetotal < 2 ? -1 : voice.voicenumber;
     for(var slur in this.slurs)if (this.slurs.hasOwnProperty(slur)) {
         // this is already a slur element, but it was created for the last line, so recreate it.
-        this.slurs[slur] = new $2u3FD({
+        this.slurs[slur] = new $6s25x({
             force: this.slurs[slur].force,
             voiceNumber: voiceNumber,
             stemDir: this.slurs[slur].stemDir,
             style: this.slurs[slur].dotted
         });
-        if ($1a502df734d2bafc$var$hint) this.slurs[slur].setHint();
+        if ($41525b2fefc2baa0$var$hint) this.slurs[slur].setHint();
         voice.addOther(this.slurs[slur]);
     }
     for(var i = 0; i < this.ties.length; i++){
         // this is already a tie element, but it was created for the last line, so recreate it.
-        this.ties[i] = new $2u3FD({
+        this.ties[i] = new $6s25x({
             force: this.ties[i].force,
             stemDir: this.ties[i].stemDir,
             voiceNumber: voiceNumber,
             style: this.ties[i].dotted
         });
-        if ($1a502df734d2bafc$var$hint) this.ties[i].setHint();
+        if ($41525b2fefc2baa0$var$hint) this.ties[i].setHint();
         voice.addOther(this.ties[i]);
     }
     for(var j = 0; j < this.abcline.length; j++){
-        $1a502df734d2bafc$var$setAveragePitch(this.abcline[j]);
+        $41525b2fefc2baa0$var$setAveragePitch(this.abcline[j]);
         this.minY = Math.min(this.abcline[j].minpitch, this.minY);
     }
     var isFirstStaff = s === 0;
     var pos = 0;
     while(pos < this.abcline.length){
-        var ret = $1a502df734d2bafc$var$getBeamGroup(this.abcline, pos);
+        var ret = $41525b2fefc2baa0$var$getBeamGroup(this.abcline, pos);
         var abselems = this.createABCElement(isFirstStaff, isSingleLineStaff, voice, ret.elem);
         if (abselems) for(i = 0; i < abselems.length; i++){
             if (!this.tempoSet && tempo && !tempo.suppress) {
                 this.tempoSet = true;
-                var tempoElement = new $jM9Y7(tempo, 0, 0, "tempo", this.tuneNumber, {});
-                tempoElement.addFixedX(new $8wDLE(tempo, this.tuneNumber, $kv0zt));
+                var tempoElement = new $lBV2u(tempo, 0, 0, "tempo", this.tuneNumber, {});
+                tempoElement.addFixedX(new $39nHs(tempo, this.tuneNumber, $fzNL2));
                 voice.addChild(tempoElement);
             }
             voice.addChild(abselems[i]);
@@ -15462,13 +15584,13 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCVoice = function(abcli
     }
     this.pushCrossLineElems(s, v);
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.saveState = function() {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.saveState = function() {
     this.tiesSave = $3fSeU.cloneArray(this.ties);
     this.slursSave = $3fSeU.cloneHashOfHash(this.slurs);
     this.slursbyvoiceSave = $3fSeU.cloneHashOfHash(this.slursbyvoice);
     this.tiesbyvoiceSave = $3fSeU.cloneHashOfArrayOfHash(this.tiesbyvoice);
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.restoreState = function() {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.restoreState = function() {
     this.ties = $3fSeU.cloneArray(this.tiesSave);
     this.slurs = $3fSeU.cloneHashOfHash(this.slursSave);
     this.slursbyvoice = $3fSeU.cloneHashOfHash(this.slursbyvoiceSave);
@@ -15485,7 +15607,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.restoreState = function() {
 // 	return new RelativeElement(width.toFixed(2), -70, 0, undefined, {type:"debug"});
 // }
 // return an array of AbsoluteElement
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createABCElement = function(isFirstStaff, isSingleLineStaff, voice, elem) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createABCElement = function(isFirstStaff, isSingleLineStaff, voice, elem) {
     var elemset = [];
     switch(elem.el_type){
         case undefined:
@@ -15505,17 +15627,17 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCElement = function(isF
             if (voice.duplicate && elemset.length > 0) elemset[0].invisible = true;
             break;
         case "meter":
-            elemset[0] = $gU76P(elem, this.tuneNumber);
+            elemset[0] = $a2qSX(elem, this.tuneNumber);
             this.startlimitelem = elemset[0]; // limit ties here
             if (voice.duplicate && elemset.length > 0) elemset[0].invisible = true;
             break;
         case "clef":
-            elemset[0] = $fi83C(elem, this.tuneNumber);
+            elemset[0] = $bgxoh(elem, this.tuneNumber);
             if (!elemset[0]) return null;
             if (voice.duplicate && elemset.length > 0) elemset[0].invisible = true;
             break;
         case "key":
-            var absKey = $g91Bn(elem, this.tuneNumber);
+            var absKey = $gKO8O(elem, this.tuneNumber);
             if (absKey) {
                 elemset[0] = absKey;
                 this.startlimitelem = elemset[0]; // limit ties here
@@ -15526,17 +15648,17 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCElement = function(isF
             this.stemdir = elem.direction === "auto" ? undefined : elem.direction;
             break;
         case "part":
-            var abselem = new $jM9Y7(elem, 0, 0, "part", this.tuneNumber);
+            var abselem = new $lBV2u(elem, 0, 0, "part", this.tuneNumber);
             var dim = this.getTextSize.calc(elem.title, "partsfont", "part");
-            abselem.addFixedX(new $ilOzb(elem.title, 0, 0, undefined, {
+            abselem.addFixedX(new $59E7k(elem.title, 0, 0, undefined, {
                 type: "part",
-                height: dim.height / $f4yIj.STEP
+                height: dim.height / $6aPnV.STEP
             }));
             elemset[0] = abselem;
             break;
         case "tempo":
-            var abselem3 = new $jM9Y7(elem, 0, 0, "tempo", this.tuneNumber);
-            abselem3.addFixedX(new $8wDLE(elem, this.tuneNumber, $kv0zt));
+            var abselem3 = new $lBV2u(elem, 0, 0, "tempo", this.tuneNumber);
+            abselem3.addFixedX(new $39nHs(elem, this.tuneNumber, $fzNL2));
             elemset[0] = abselem3;
             break;
         case "style":
@@ -15544,7 +15666,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCElement = function(isF
             else this.style = elem.head;
             break;
         case "hint":
-            $1a502df734d2bafc$var$hint = true;
+            $41525b2fefc2baa0$var$hint = true;
             this.saveState();
             break;
         case "midi":
@@ -15552,18 +15674,22 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createABCElement = function(isF
         case "scale":
             this.voiceScale = elem.size;
             break;
+        case "color":
+            this.voiceColor = elem.color;
+            voice.color = this.voiceColor;
+            break;
         default:
-            var abselem2 = new $jM9Y7(elem, 0, 0, "unsupported", this.tuneNumber);
-            abselem2.addFixed(new $ilOzb("element type " + elem.el_type, 0, 0, undefined, {
+            var abselem2 = new $lBV2u(elem, 0, 0, "unsupported", this.tuneNumber);
+            abselem2.addFixed(new $59E7k("element type " + elem.el_type, 0, 0, undefined, {
                 type: "debug"
             }));
             elemset[0] = abselem2;
     }
     return elemset;
 };
-function $1a502df734d2bafc$var$setAveragePitch(elem) {
+function $41525b2fefc2baa0$var$setAveragePitch(elem) {
     if (elem.pitches) {
-        $1a502df734d2bafc$var$sortPitch(elem);
+        $41525b2fefc2baa0$var$sortPitch(elem);
         var sum = 0;
         for(var p = 0; p < elem.pitches.length; p++)sum += elem.pitches[p].verticalPos;
         elem.averagepitch = sum / elem.pitches.length;
@@ -15571,11 +15697,16 @@ function $1a502df734d2bafc$var$setAveragePitch(elem) {
         elem.maxpitch = elem.pitches[elem.pitches.length - 1].verticalPos;
     }
 }
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createBeam = function(isSingleLineStaff, voice, elems) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createBeam = function(isSingleLineStaff, voice, elems) {
     var abselemset = [];
-    var beamelem = new $cwFOY(this.stemHeight * this.voiceScale, this.stemdir, this.flatBeams, elems[0]);
-    if ($1a502df734d2bafc$var$hint) beamelem.setHint();
-    for(var i = 0; i < elems.length; i++){
+    var beamelem = new $fF6ll(this.stemHeight * this.voiceScale, this.stemdir, this.flatBeams, elems[0]);
+    if ($41525b2fefc2baa0$var$hint) beamelem.setHint();
+    for(var i = 0; i < elems.length; i++)// Do a first pass to figure out the stem direction before creating the notes, so that staccatos and other decorations can be placed correctly.
+    beamelem.runningDirection(elems[i]);
+    beamelem.setStemDirection();
+    var tempStemDir = this.stemdir;
+    this.stemdir = beamelem.stemsUp ? "up" : "down";
+    for(i = 0; i < elems.length; i++){
         var elem = elems[i];
         var abselem = this.createNote(elem, true, isSingleLineStaff, voice);
         abselemset.push(abselem);
@@ -15588,9 +15719,10 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createBeam = function(isSingleL
     }
     beamelem.calcDir();
     voice.addBeam(beamelem);
+    this.stemdir = tempStemDir;
     return abselemset;
 };
-var $1a502df734d2bafc$var$sortPitch = function(elem) {
+var $41525b2fefc2baa0$var$sortPitch = function(elem) {
     var sorted;
     do {
         sorted = true;
@@ -15602,30 +15734,30 @@ var $1a502df734d2bafc$var$sortPitch = function(elem) {
         }
     }while (!sorted);
 };
-var $1a502df734d2bafc$var$ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, additionalLedgers, dir, dx, scale) {
-    for(var i = maxPitch; i > 11; i--)if (i % 2 === 0 && !isRest) abselem.addFixed(new $ilOzb(null, dx, (symbolWidth + 4) * scale, i, {
+var $41525b2fefc2baa0$var$ledgerLines = function(abselem, minPitch, maxPitch, isRest, symbolWidth, additionalLedgers, dir, dx, scale) {
+    for(var i = maxPitch; i > 11; i--)if (i % 2 === 0 && !isRest) abselem.addFixed(new $59E7k(null, dx, (symbolWidth + 4) * scale, i, {
         type: "ledger"
     }));
-    for(i = minPitch; i < 1; i++)if (i % 2 === 0 && !isRest) abselem.addFixed(new $ilOzb(null, dx, (symbolWidth + 4) * scale, i, {
+    for(i = minPitch; i < 1; i++)if (i % 2 === 0 && !isRest) abselem.addFixed(new $59E7k(null, dx, (symbolWidth + 4) * scale, i, {
         type: "ledger"
     }));
     for(i = 0; i < additionalLedgers.length; i++){
         var ofs = symbolWidth;
         if (dir === "down") ofs = -ofs;
-        abselem.addFixed(new $ilOzb(null, ofs + dx, (symbolWidth + 4) * scale, additionalLedgers[i], {
+        abselem.addFixed(new $59E7k(null, ofs + dx, (symbolWidth + 4) * scale, additionalLedgers[i], {
             type: "ledger"
         }));
     }
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.addGraceNotes = function(elem, voice, abselem, notehead, stemHeight, isBagpipes, roomtaken) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.addGraceNotes = function(elem, voice, abselem, notehead, stemHeight, isBagpipes, roomtaken) {
     var gracescale = 0.6;
     var graceScaleStem = 0.7; // TODO-PER: empirically found constant.
     stemHeight = Math.round(stemHeight * graceScaleStem);
     var gracebeam = null;
     var flag;
     if (elem.gracenotes.length > 1) {
-        gracebeam = new $cwFOY(stemHeight, "grace", isBagpipes);
-        if ($1a502df734d2bafc$var$hint) gracebeam.setHint();
+        gracebeam = new $fF6ll(stemHeight, "grace", isBagpipes);
+        if ($41525b2fefc2baa0$var$hint) gracebeam.setHint();
         gracebeam.mainNote = abselem; // this gives us a reference back to the note this is attached to so that the stems can be attached somewhere.
     }
     var i;
@@ -15637,9 +15769,9 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addGraceNotes = function(elem, 
     }
     for(i = 0; i < elem.gracenotes.length; i++){
         var gracepitch = elem.gracenotes[i].verticalPos;
-        flag = gracebeam ? null : $1a502df734d2bafc$var$chartable.uflags[isBagpipes ? 5 : 3];
+        flag = gracebeam ? null : $41525b2fefc2baa0$var$chartable.uflags[isBagpipes ? 5 : 3];
         var accidentalSlot = [];
-        var ret = $kv0zt(abselem, "noteheads.quarter", elem.gracenotes[i], {
+        var ret = $fzNL2(abselem, "noteheads.quarter", elem.gracenotes[i], {
             dir: "up",
             headx: -graceoffsets[i],
             extrax: -graceoffsets[i],
@@ -15655,7 +15787,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addGraceNotes = function(elem, 
         if (elem.gracenotes[i].acciaccatura) {
             var pos = elem.gracenotes[i].verticalPos + 7 * gracescale; // the same formula that determines the flag position.
             var dAcciaccatura = gracebeam ? 5 : 6; // just an offset to make it line up correctly.
-            abselem.addRight(new $ilOzb("flags.ugrace", -graceoffsets[i] + dAcciaccatura, 0, pos, {
+            abselem.addRight(new $59E7k("flags.ugrace", -graceoffsets[i] + dAcciaccatura, 0, pos, {
                 scalex: gracescale,
                 scaley: gracescale
             }));
@@ -15680,20 +15812,20 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addGraceNotes = function(elem, 
             var p2 = gracepitch + 7 * gracescale;
             var dx = grace.dx + grace.w;
             var width = -0.6;
-            abselem.addExtra(new $ilOzb(null, dx, 0, p1, {
+            abselem.addExtra(new $59E7k(null, dx, 0, p1, {
                 "type": "stem",
                 "pitch2": p2,
                 linewidth: width
             }));
         }
-        $1a502df734d2bafc$var$ledgerLines(abselem, gracepitch, gracepitch, false, $qv6HX.getSymbolWidth("noteheads.quarter"), [], true, grace.dx - 1, 0.6);
+        $41525b2fefc2baa0$var$ledgerLines(abselem, gracepitch, gracepitch, false, $fJFPv.getSymbolWidth("noteheads.quarter"), [], true, grace.dx - 1, 0.6);
         // if this is the first grace note, we might want to start a slur.
         // there is a slur if graceSlurs is specifically set.
         // there is no slur if it is bagpipes.
         // there is not a slur if the element is a spacer or invisible rest.
         var isInvisibleRest = elem.rest && (elem.rest.type === "spacer" || elem.rest.type === "invisible");
         if (i === 0 && !isBagpipes && this.graceSlurs && !isInvisibleRest) // This is the overall slur that is under the grace notes.
-        voice.addOther(new $2u3FD({
+        voice.addOther(new $6s25x({
             anchor1: grace,
             anchor2: notehead,
             isGrace: true
@@ -15705,7 +15837,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addGraceNotes = function(elem, 
     }
     return roomtaken;
 };
-function $1a502df734d2bafc$var$addRestToAbsElement(abselem, elem, duration, dot, isMultiVoice, stemdir, isSingleLineStaff, durlog, voiceScale) {
+function $41525b2fefc2baa0$var$addRestToAbsElement(abselem, elem, duration, dot, isMultiVoice, stemdir, isSingleLineStaff, durlog, voiceScale) {
     var c;
     var restpitch = 7;
     var noteHead;
@@ -15724,15 +15856,15 @@ function $1a502df734d2bafc$var$addRestToAbsElement(abselem, elem, duration, dot,
     }
     switch(elem.rest.type){
         case "whole":
-            c = $1a502df734d2bafc$var$chartable.rest[0];
+            c = $41525b2fefc2baa0$var$chartable.rest[0];
             elem.averagepitch = restpitch;
             elem.minpitch = restpitch;
             elem.maxpitch = restpitch;
             dot = 0;
             break;
         case "rest":
-            if (elem.style === "rhythm") c = $1a502df734d2bafc$var$chartable.rhythm[-durlog];
-            else c = $1a502df734d2bafc$var$chartable.rest[-durlog];
+            if (elem.style === "rhythm") c = $41525b2fefc2baa0$var$chartable.rhythm[-durlog];
+            else c = $41525b2fefc2baa0$var$chartable.rest[-durlog];
             elem.averagepitch = restpitch;
             elem.minpitch = restpitch;
             elem.maxpitch = restpitch;
@@ -15746,20 +15878,20 @@ function $1a502df734d2bafc$var$addRestToAbsElement(abselem, elem, duration, dot,
             elem.maxpitch = restpitch;
             break;
         case "multimeasure":
-            c = $1a502df734d2bafc$var$chartable.rest["multi"];
+            c = $41525b2fefc2baa0$var$chartable.rest["multi"];
             elem.averagepitch = restpitch;
             elem.minpitch = restpitch;
             elem.maxpitch = restpitch;
             dot = 0;
-            var mmWidth = $qv6HX.getSymbolWidth(c);
-            abselem.addHead(new $ilOzb(c, mmWidth, mmWidth * 2, 7));
-            var numMeasures = new $ilOzb("" + elem.rest.text, mmWidth, mmWidth, 16, {
+            var mmWidth = $fJFPv.getSymbolWidth(c);
+            abselem.addHead(new $59E7k(c, mmWidth, mmWidth * 2, 7));
+            var numMeasures = new $59E7k("" + elem.rest.text, mmWidth, mmWidth, 16, {
                 type: "multimeasure-text"
             });
             abselem.addExtra(numMeasures);
     }
     if (elem.rest.type.indexOf("multimeasure") < 0 && elem.rest.type !== "invisible") {
-        var ret = $kv0zt(abselem, c, {
+        var ret = $fzNL2(abselem, c, {
             verticalPos: restpitch
         }, {
             dot: dot,
@@ -15778,13 +15910,13 @@ function $1a502df734d2bafc$var$addRestToAbsElement(abselem, elem, duration, dot,
         roomTakenRight: roomTakenRight
     };
 }
-function $1a502df734d2bafc$var$addIfNotExist(arr, item) {
+function $41525b2fefc2baa0$var$addIfNotExist(arr, item) {
     for(var i = 0; i < arr.length; i++){
         if (JSON.stringify(arr[i]) === JSON.stringify(item)) return;
     }
     arr.push(item);
 }
-$1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(abselem, elem, dot, stemdir, style, zeroDuration, durlog, nostem, voice) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.addNoteToAbcElement = function(abselem, elem, dot, stemdir, style, zeroDuration, durlog, nostem, voice) {
     var dotshiftx = 0; // room taken by chords with displaced noteheads which cause dots to shift
     var noteHead;
     var roomTaken = 0;
@@ -15803,8 +15935,8 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
     style = elem.style ? elem.style : style; // get the style of note head.
     if (!style || style === "normal") style = "note";
     var noteSymbol;
-    if (zeroDuration) noteSymbol = $1a502df734d2bafc$var$chartable[style].nostem;
-    else noteSymbol = $1a502df734d2bafc$var$chartable[style][-durlog];
+    if (zeroDuration) noteSymbol = $41525b2fefc2baa0$var$chartable[style].nostem;
+    else noteSymbol = $41525b2fefc2baa0$var$chartable[style][-durlog];
     if (!noteSymbol) console.log("noteSymbol:", style, durlog, zeroDuration);
     // determine elements of chords which should be shifted
     var p;
@@ -15815,8 +15947,8 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
         if (delta <= 1 && !prev.printer_shift) {
             curr.printer_shift = delta ? "different" : "same";
             if (curr.verticalPos > 11 || curr.verticalPos < 1) additionalLedgers.push(curr.verticalPos - curr.verticalPos % 2);
-            if (dir === "down") roomTaken = $qv6HX.getSymbolWidth(noteSymbol) + 2;
-            else dotshiftx = $qv6HX.getSymbolWidth(noteSymbol) + 2;
+            if (dir === "down") roomTaken = $fJFPv.getSymbolWidth(noteSymbol) + 2;
+            else dotshiftx = $fJFPv.getSymbolWidth(noteSymbol) + 2;
         }
     }
     var pp = elem.pitches.length;
@@ -15824,15 +15956,15 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
         if (!nostem) {
             var flag;
             if (dir === "down" && p !== 0 || dir === "up" && p !== pp - 1) flag = null;
-            else flag = $1a502df734d2bafc$var$chartable[dir === "down" ? "dflags" : "uflags"][-durlog];
+            else flag = $41525b2fefc2baa0$var$chartable[dir === "down" ? "dflags" : "uflags"][-durlog];
         }
         var c;
-        if (elem.pitches[p].style) c = $1a502df734d2bafc$var$chartable[elem.pitches[p].style][-durlog];
+        if (elem.pitches[p].style) c = $41525b2fefc2baa0$var$chartable[elem.pitches[p].style][-durlog];
         else if (voice.isPercussion && this.percmap) {
             c = noteSymbol;
             var percHead = this.percmap[$9zJb9(elem.pitches[p])];
             if (percHead && percHead.noteHead) {
-                if ($1a502df734d2bafc$var$chartable[percHead.noteHead]) c = $1a502df734d2bafc$var$chartable[percHead.noteHead][-durlog];
+                if ($41525b2fefc2baa0$var$chartable[percHead.noteHead]) c = $41525b2fefc2baa0$var$chartable[percHead.noteHead][-durlog];
             }
         } else c = noteSymbol;
         // The highest position for the sake of placing slurs is itself if the slur is internal. It is the highest position possible if the slur is for the whole chord.
@@ -15843,21 +15975,21 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
         if (isTopWhenStemIsDown || isBottomWhenStemIsUp) {
             if (elem.startSlur || pp === 1) {
                 elem.pitches[p].highestVert = elem.pitches[pp - 1].verticalPos;
-                if ($1a502df734d2bafc$var$getDuration(elem) < 1 && (stemdir === "up" || dir === "up")) elem.pitches[p].highestVert += 6; // If the stem is up, then compensate for the length of the stem
+                if ($41525b2fefc2baa0$var$getDuration(elem) < 1 && (stemdir === "up" || dir === "up")) elem.pitches[p].highestVert += 6; // If the stem is up, then compensate for the length of the stem
             }
             if (elem.startSlur) {
                 if (!elem.pitches[p].startSlur) elem.pitches[p].startSlur = []; //TODO possibly redundant, provided array is not optional
-                for(i = 0; i < elem.startSlur.length; i++)$1a502df734d2bafc$var$addIfNotExist(elem.pitches[p].startSlur, elem.startSlur[i]);
+                for(i = 0; i < elem.startSlur.length; i++)$41525b2fefc2baa0$var$addIfNotExist(elem.pitches[p].startSlur, elem.startSlur[i]);
             }
             if (elem.endSlur) {
                 elem.pitches[p].highestVert = elem.pitches[pp - 1].verticalPos;
-                if ($1a502df734d2bafc$var$getDuration(elem) < 1 && (stemdir === "up" || dir === "up")) elem.pitches[p].highestVert += 6; // If the stem is up, then compensate for the length of the stem
+                if ($41525b2fefc2baa0$var$getDuration(elem) < 1 && (stemdir === "up" || dir === "up")) elem.pitches[p].highestVert += 6; // If the stem is up, then compensate for the length of the stem
                 if (!elem.pitches[p].endSlur) elem.pitches[p].endSlur = []; //TODO possibly redundant, provided array is not optional
-                for(i = 0; i < elem.endSlur.length; i++)$1a502df734d2bafc$var$addIfNotExist(elem.pitches[p].endSlur, elem.endSlur[i]);
+                for(i = 0; i < elem.endSlur.length; i++)$41525b2fefc2baa0$var$addIfNotExist(elem.pitches[p].endSlur, elem.endSlur[i]);
             }
         }
         var hasStem = !nostem && durlog <= -1;
-        var ret = $kv0zt(abselem, c, elem.pitches[p], {
+        var ret = $fzNL2(abselem, c, elem.pitches[p], {
             dir: dir,
             extrax: -roomTaken,
             flag: flag,
@@ -15868,7 +16000,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
             shouldExtendStem: !stemdir,
             printAccidentals: !voice.isPercussion
         });
-        symbolWidth = Math.max($qv6HX.getSymbolWidth(c), symbolWidth);
+        symbolWidth = Math.max($fJFPv.getSymbolWidth(c), symbolWidth);
         abselem.extraw -= ret.extraLeft;
         noteHead = ret.notehead;
         if (noteHead) {
@@ -15895,7 +16027,11 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
             if (dir === "down") p2 -= 1;
             else p1 += 1;
         }
-        abselem.addRight(new $ilOzb(null, dx, 0, p1, {
+        if (noteHead && noteHead.c === "noteheads.triangle.quarter") {
+            if (dir === "down") p2 -= 0.7;
+            else p1 -= 1.2;
+        }
+        abselem.addRight(new $59E7k(null, dx, 0, p1, {
             "type": "stem",
             "pitch2": p2,
             linewidth: width,
@@ -15914,29 +16050,29 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addNoteToAbcElement = function(
         symbolWidth: symbolWidth
     };
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.addLyric = function(abselem, elem) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.addLyric = function(abselem, elem) {
     var lyricStr = "";
-    $3fSeU.each(elem.lyric, function(ly) {
+    elem.lyric.forEach(function(ly) {
         var div = ly.divider === " " ? "" : ly.divider;
         lyricStr += ly.syllable + div + "\n";
     });
     var lyricDim = this.getTextSize.calc(lyricStr, "vocalfont", "lyric");
     var position = elem.positioning ? elem.positioning.vocalPosition : "below";
-    abselem.addCentered(new $ilOzb(lyricStr, 0, lyricDim.width, undefined, {
+    abselem.addCentered(new $59E7k(lyricStr, 0, lyricDim.width, undefined, {
         type: "lyric",
         position: position,
-        height: lyricDim.height / $f4yIj.STEP,
+        height: lyricDim.height / $6aPnV.STEP,
         dim: this.getTextSize.attr("vocalfont", "lyric")
     }));
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createNote = function(elem, nostem, isSingleLineStaff, voice) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createNote = function(elem, nostem, isSingleLineStaff, voice) {
     var notehead = null;
     var roomtaken = 0; // room needed to the left of the note
     var roomtakenright = 0; // room needed to the right of the note
     var symbolWidth = 0;
     var additionalLedgers = []; // PER: handle the case of [bc'], where the b doesn't have a ledger line
     var dir;
-    var duration = $1a502df734d2bafc$var$getDuration(elem);
+    var duration = $41525b2fefc2baa0$var$getDuration(elem);
     var zeroDuration = false;
     if (duration === 0) {
         zeroDuration = true;
@@ -15951,13 +16087,13 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createNote = function(elem, nos
     if (elem.rest && elem.rest.type === "multimeasure") durationForSpacing = 1;
     if (elem.rest && elem.rest.type === "invisible-multimeasure") durationForSpacing = this.measureLength * elem.rest.text;
     var absType = elem.rest ? "rest" : "note";
-    var abselem = new $jM9Y7(elem, durationForSpacing, 1, absType, this.tuneNumber, {
+    var abselem = new $lBV2u(elem, durationForSpacing, 1, absType, this.tuneNumber, {
         durationClassOveride: elem.duration * this.tripletmultiplier
     });
-    if ($1a502df734d2bafc$var$hint) abselem.setHint();
+    if ($41525b2fefc2baa0$var$hint) abselem.setHint();
     if (elem.rest) {
         if (this.measureLength === duration && elem.rest.type !== "invisible" && elem.rest.type !== "spacer" && elem.rest.type.indexOf("multimeasure") < 0) elem.rest.type = "whole"; // If the rest is exactly a measure, always use a whole rest
-        var ret1 = $1a502df734d2bafc$var$addRestToAbsElement(abselem, elem, duration, dot, voice.voicetotal > 1, this.stemdir, isSingleLineStaff, durlog, this.voiceScale);
+        var ret1 = $41525b2fefc2baa0$var$addRestToAbsElement(abselem, elem, duration, dot, voice.voicetotal > 1, this.stemdir, isSingleLineStaff, durlog, this.voiceScale);
         notehead = ret1.noteHead;
         roomtaken = ret1.roomTaken;
         roomtakenright = ret1.roomTakenRight;
@@ -15973,44 +16109,46 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createNote = function(elem, nos
     }
     if (elem.lyric !== undefined) this.addLyric(abselem, elem);
     if (elem.gracenotes !== undefined) roomtaken += this.addGraceNotes(elem, voice, abselem, notehead, this.stemHeight * this.voiceScale, this.isBagpipes, roomtaken);
-    if (elem.decoration) this.decoration.createDecoration(voice, elem.decoration, abselem.top, notehead ? notehead.w : 0, abselem, roomtaken, dir, abselem.bottom, elem.positioning, this.hasVocals);
-    if (elem.barNumber) abselem.addFixed(new $ilOzb(elem.barNumber, -10, 0, 0, {
+    if (elem.decoration) this.decoration.createDecoration(voice, elem.decoration, abselem.top, notehead ? notehead.w : 0, abselem, roomtaken, dir, abselem.bottom, elem.positioning, this.hasVocals, this.accentAbove);
+    if (elem.barNumber) abselem.addFixed(new $59E7k(elem.barNumber, -10, 0, 0, {
         type: "barNumber"
     }));
     // ledger lines
-    $1a502df734d2bafc$var$ledgerLines(abselem, elem.minpitch, elem.maxpitch, elem.rest, symbolWidth, additionalLedgers, dir, -2, 1);
+    $41525b2fefc2baa0$var$ledgerLines(abselem, elem.minpitch, elem.maxpitch, elem.rest, symbolWidth, additionalLedgers, dir, -2, 1);
     if (elem.chord !== undefined) {
-        var ret3 = $eg5HS(this.getTextSize, abselem, elem, roomtaken, roomtakenright, symbolWidth, this.jazzchords);
+        var ret3 = $a10bB(this.getTextSize, abselem, elem, roomtaken, roomtakenright, symbolWidth, this.jazzchords, this.germanAlphabet);
         roomtaken = ret3.roomTaken;
         roomtakenright = ret3.roomTakenRight;
     }
-    if (elem.startTriplet) this.triplet = new $fmbEU(elem.startTriplet, notehead, {
+    if (elem.startTriplet) this.triplet = new $3ADz0(elem.startTriplet, notehead, {
         flatBeams: this.flatBeams
     }); // above is opposite from case of slurs
     if (elem.endTriplet && this.triplet) this.triplet.setCloseAnchor(notehead);
     if (this.triplet && !elem.startTriplet && !elem.endTriplet && !(elem.rest && elem.rest.type === "spacer")) this.triplet.middleNote(notehead);
     return abselem;
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.addSlursAndTies = function(abselem, pitchelem, notehead, voice, dir, isGrace) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.addSlursAndTies = function(abselem, pitchelem, notehead, voice, dir, isGrace) {
     if (pitchelem.endTie) {
         if (this.ties.length > 0) {
             // If there are multiple open ties, find the one that applies by matching the pitch, if possible.
             var found = false;
             for(var j = 0; j < this.ties.length; j++)if (this.ties[j].anchor1 && this.ties[j].anchor1.pitch === notehead.pitch) {
                 this.ties[j].setEndAnchor(notehead);
+                voice.setRange(this.ties[j]);
                 this.ties.splice(j, 1);
                 found = true;
                 break;
             }
             if (!found) {
                 this.ties[0].setEndAnchor(notehead);
+                voice.setRange(this.ties[0]);
                 this.ties.splice(0, 1);
             }
         }
     }
     var voiceNumber = voice.voicetotal < 2 ? -1 : voice.voicenumber;
     if (pitchelem.startTie) {
-        var tie = new $2u3FD({
+        var tie = new $6s25x({
             anchor1: notehead,
             force: this.stemdir === "down" || this.stemdir === "up",
             stemDir: this.stemdir,
@@ -16018,7 +16156,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addSlursAndTies = function(abse
             voiceNumber: voiceNumber,
             style: pitchelem.startTie.style
         });
-        if ($1a502df734d2bafc$var$hint) tie.setHint();
+        if ($41525b2fefc2baa0$var$hint) tie.setHint();
         this.ties[this.ties.length] = tie;
         voice.addOther(tie);
         // HACK-PER: For the animation, we need to know if a note is tied to the next one, so here's a flag.
@@ -16033,14 +16171,15 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addSlursAndTies = function(abse
         if (this.slurs[slurid]) {
             slur = this.slurs[slurid];
             slur.setEndAnchor(notehead);
+            voice.setRange(slur);
             delete this.slurs[slurid];
         } else {
-            slur = new $2u3FD({
+            slur = new $6s25x({
                 anchor2: notehead,
                 stemDir: this.stemdir,
                 voiceNumber: voiceNumber
             });
-            if ($1a502df734d2bafc$var$hint) slur.setHint();
+            if ($41525b2fefc2baa0$var$hint) slur.setHint();
             voice.addOther(slur);
         }
         if (this.startlimitelem) slur.setStartX(this.startlimitelem);
@@ -16050,28 +16189,30 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.addSlursAndTies = function(abse
     }
     if (pitchelem.startSlur) for(i = 0; i < pitchelem.startSlur.length; i++){
         slurid = pitchelem.startSlur[i].label;
-        slur = new $2u3FD({
+        slur = new $6s25x({
             anchor1: notehead,
             stemDir: this.stemdir,
             voiceNumber: voiceNumber,
             style: pitchelem.startSlur[i].style
         });
-        if ($1a502df734d2bafc$var$hint) slur.setHint();
+        if ($41525b2fefc2baa0$var$hint) slur.setHint();
         this.slurs[slurid] = slur;
         voice.addOther(slur);
     }
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.addMeasureNumber = function(number, abselem) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.addMeasureNumber = function(number, abselem) {
     var measureNumDim = this.getTextSize.calc(number, "measurefont", "bar-number");
-    var dx = measureNumDim.width > 18 && abselem.abcelem.type === "treble" ? -7 : 0;
-    abselem.addFixed(new $ilOzb(number, dx, measureNumDim.width, 11 + measureNumDim.height / $f4yIj.STEP, {
+    var dx = 0;
+    if (abselem.isClef) dx += measureNumDim.width / 2;
+    var vert = measureNumDim.width > 10 && abselem.abcelem.type === "treble" ? 13 : 11;
+    abselem.addFixed(new $59E7k(number, dx, measureNumDim.width, vert + measureNumDim.height / $6aPnV.STEP, {
         type: "barNumber",
         dim: this.getTextSize.attr("measurefont", "bar-number")
     }));
 };
-$1a502df734d2bafc$var$AbstractEngraver.prototype.createBarLine = function(voice, elem, isFirstStaff) {
+$41525b2fefc2baa0$var$AbstractEngraver.prototype.createBarLine = function(voice, elem, isFirstStaff) {
     // bar_thin, bar_thin_thick, bar_thin_thin, bar_thick_thin, bar_right_repeat, bar_left_repeat, bar_double_repeat
-    var abselem = new $jM9Y7(elem, 0, 10, "bar", this.tuneNumber);
+    var abselem = new $lBV2u(elem, 0, 10, "bar", this.tuneNumber);
     var anchor = null; // place to attach part lines
     var dx = 0;
     if (elem.barNumber) this.addMeasureNumber(elem.barNumber, abselem);
@@ -16086,12 +16227,12 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createBarLine = function(voice,
         this.startlimitelem = abselem;
     }
     if (firstdots) {
-        abselem.addRight(new $ilOzb("dots.dot", dx, 1, 7));
-        abselem.addRight(new $ilOzb("dots.dot", dx, 1, 5));
+        abselem.addRight(new $59E7k("dots.dot", dx, 1, 7));
+        abselem.addRight(new $59E7k("dots.dot", dx, 1, 5));
         dx += 6; //2 hardcoded, twice;
     }
     if (firstthin) {
-        anchor = new $ilOzb(null, dx, 1, 2, {
+        anchor = new $59E7k(null, dx, 1, 2, {
             "type": "bar",
             "pitch2": 10,
             linewidth: 0.6
@@ -16099,17 +16240,17 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createBarLine = function(voice,
         abselem.addRight(anchor);
     }
     if (elem.type === "bar_invisible") {
-        anchor = new $ilOzb(null, dx, 1, 2, {
+        anchor = new $59E7k(null, dx, 1, 2, {
             "type": "none",
             "pitch2": 10,
             linewidth: 0.6
         });
         abselem.addRight(anchor);
     }
-    if (elem.decoration) this.decoration.createDecoration(voice, elem.decoration, 12, thick ? 3 : 1, abselem, 0, "down", 2, elem.positioning, this.hasVocals);
+    if (elem.decoration) this.decoration.createDecoration(voice, elem.decoration, 12, thick ? 3 : 1, abselem, 0, "down", 2, elem.positioning, this.hasVocals, this.accentAbove);
     if (thick) {
         dx += 4; //3 hardcoded;
-        anchor = new $ilOzb(null, dx, 4, 2, {
+        anchor = new $59E7k(null, dx, 4, 2, {
             "type": "bar",
             "pitch2": 10,
             linewidth: 4
@@ -16127,7 +16268,7 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createBarLine = function(voice,
     }
     if (secondthin) {
         dx += 3; //3 hardcoded;
-        anchor = new $ilOzb(null, dx, 1, 2, {
+        anchor = new $59E7k(null, dx, 1, 2, {
             "type": "bar",
             "pitch2": 10,
             linewidth: 0.6
@@ -16136,23 +16277,24 @@ $1a502df734d2bafc$var$AbstractEngraver.prototype.createBarLine = function(voice,
     }
     if (seconddots) {
         dx += 3; //3 hardcoded;
-        abselem.addRight(new $ilOzb("dots.dot", dx, 1, 7));
-        abselem.addRight(new $ilOzb("dots.dot", dx, 1, 5));
+        abselem.addRight(new $59E7k("dots.dot", dx, 1, 7));
+        abselem.addRight(new $59E7k("dots.dot", dx, 1, 5));
     } // 2 is hardcoded
     if (elem.startEnding && isFirstStaff) {
         var textWidth = this.getTextSize.calc(elem.startEnding, "repeatfont", "").width;
         abselem.minspacing += textWidth + 10; // Give plenty of room for the ending number.
-        this.partstartelem = new $ideVe(elem.startEnding, anchor, null);
+        this.partstartelem = new $cgfEq(elem.startEnding, anchor, null);
         voice.addOther(this.partstartelem);
     }
     // Add a little space to the left of the bar line so that nothing can crowd it.
     abselem.extraw -= 5;
+    if (elem.chord !== undefined) var ret3 = $a10bB(this.getTextSize, abselem, elem, 0, 0, 0, false, this.germanAlphabet);
     return abselem;
 };
-module.exports = $1a502df734d2bafc$var$AbstractEngraver;
+module.exports = $41525b2fefc2baa0$var$AbstractEngraver;
 
 });
-parcelRequire.register("cwFOY", function(module, exports) {
+parcelRegister("fF6ll", function(module, exports) {
 //    abc_beam_element.js: Definition of the BeamElem class.
 // Most elements on the page are related to a particular absolute element -- notes, rests, bars, etc. Beams, however, span multiple elements.
 // This means that beams can't be laid out until the absolute elements are placed. There is the further complication that the stems for beamed
@@ -16167,7 +16309,7 @@ parcelRequire.register("cwFOY", function(module, exports) {
 //
 // Setup phase
 //
-var $91e8ea07e1815608$var$BeamElem = function BeamElem(stemHeight, type, flat, firstElement) {
+var $b66f9afc2994c74b$var$BeamElem = function BeamElem(stemHeight, type, flat, firstElement) {
     // type is "grace", "up", "down", or undefined. flat is used to force flat beams, as it commonly found in the grace notes of bagpipe music.
     this.type = "BeamElem";
     this.isflat = !!flat;
@@ -16186,10 +16328,17 @@ var $91e8ea07e1815608$var$BeamElem = function BeamElem(stemHeight, type, flat, f
         this.duration = Math.round(this.duration * 1000) / 1000;
     } else this.duration = 0;
 };
-$91e8ea07e1815608$var$BeamElem.prototype.setHint = function() {
+$b66f9afc2994c74b$var$BeamElem.prototype.setHint = function() {
     this.hint = true;
 };
-$91e8ea07e1815608$var$BeamElem.prototype.add = function(abselem) {
+$b66f9afc2994c74b$var$BeamElem.prototype.runningDirection = function(abcelem) {
+    var pitch = abcelem.averagepitch;
+    if (pitch === undefined) return; // don't include elements like spacers in beams
+    this.total = Math.round(this.total + pitch);
+    if (!this.count) this.count = 0;
+    this.count++;
+};
+$b66f9afc2994c74b$var$BeamElem.prototype.add = function(abselem) {
     var pitch = abselem.abcelem.averagepitch;
     if (pitch === undefined) return; // don't include elements like spacers in beams
     if (!abselem.abcelem.rest) this.allrests = false;
@@ -16199,11 +16348,23 @@ $91e8ea07e1815608$var$BeamElem.prototype.add = function(abselem) {
     if (this.min === undefined || abselem.abcelem.minpitch < this.min) this.min = abselem.abcelem.minpitch;
     if (this.max === undefined || abselem.abcelem.maxpitch > this.max) this.max = abselem.abcelem.maxpitch;
 };
-$91e8ea07e1815608$var$BeamElem.prototype.addBeam = function(beam) {
+$b66f9afc2994c74b$var$BeamElem.prototype.addBeam = function(beam) {
     this.beams.push(beam);
 };
-$91e8ea07e1815608$var$BeamElem.prototype.calcDir = function() {
-    this.average = $91e8ea07e1815608$var$calcAverage(this.total, this.elems.length);
+$b66f9afc2994c74b$var$BeamElem.prototype.setStemDirection = function() {
+    // Have to figure this out before the notes are placed because placing the notes also places the decorations.
+    this.average = $b66f9afc2994c74b$var$calcAverage(this.total, this.count);
+    if (this.forceup) this.stemsUp = true;
+    else if (this.forcedown) this.stemsUp = false;
+    else {
+        var middleLine = 6; // hardcoded 6 is B
+        this.stemsUp = this.average < middleLine; // true is up, false is down;
+    }
+    delete this.count;
+    this.total = 0;
+};
+$b66f9afc2994c74b$var$BeamElem.prototype.calcDir = function() {
+    this.average = $b66f9afc2994c74b$var$calcAverage(this.total, this.elems.length);
     if (this.forceup) this.stemsUp = true;
     else if (this.forcedown) this.stemsUp = false;
     else {
@@ -16213,21 +16374,21 @@ $91e8ea07e1815608$var$BeamElem.prototype.calcDir = function() {
     var dir = this.stemsUp ? "up" : "down";
     for(var i = 0; i < this.elems.length; i++)for(var j = 0; j < this.elems[i].heads.length; j++)this.elems[i].heads[j].stemDir = dir;
 };
-function $91e8ea07e1815608$var$calcAverage(total, numElements) {
+function $b66f9afc2994c74b$var$calcAverage(total, numElements) {
     if (!numElements) return 0;
     return total / numElements;
 }
-module.exports = $91e8ea07e1815608$var$BeamElem;
+module.exports = $b66f9afc2994c74b$var$BeamElem;
 
 });
 
-parcelRequire.register("jcqlU", function(module, exports) {
+parcelRegister("3I6UZ", function(module, exports) {
 //    abc_brace_element.js: Definition of the BraceElement class.
-var $dfa3945dad24db8c$var$BraceElem = function BraceElem(voice, type) {
+var $2b3ad8f552f801a7$var$BraceElem = function BraceElem(voice, type) {
     this.startVoice = voice;
     this.type = type;
 };
-$dfa3945dad24db8c$var$BraceElem.prototype.setBottomStaff = function(voice) {
+$2b3ad8f552f801a7$var$BraceElem.prototype.setBottomStaff = function(voice) {
     this.endVoice = voice;
     // If only the start brace has a name then the name belongs to the brace instead of the staff.
     if (this.startVoice.header && !this.endVoice.header) {
@@ -16235,33 +16396,34 @@ $dfa3945dad24db8c$var$BraceElem.prototype.setBottomStaff = function(voice) {
         delete this.startVoice.header;
     }
 };
-$dfa3945dad24db8c$var$BraceElem.prototype.continuing = function(voice) {
+$2b3ad8f552f801a7$var$BraceElem.prototype.continuing = function(voice) {
     // If the final staff isn't present, then use the last one we saw.
     this.lastContinuedVoice = voice;
 };
-$dfa3945dad24db8c$var$BraceElem.prototype.getWidth = function() {
+$2b3ad8f552f801a7$var$BraceElem.prototype.getWidth = function() {
     return 10; // TODO-PER: right now the drawing function doesn't vary the width at all. If it does in the future then this will change.
 };
-$dfa3945dad24db8c$var$BraceElem.prototype.isStartVoice = function(voice) {
+$2b3ad8f552f801a7$var$BraceElem.prototype.isStartVoice = function(voice) {
     if (this.startVoice && this.startVoice.staff && this.startVoice.staff.voices.length > 0 && this.startVoice.staff.voices[0] === voice) return true;
     return false;
 };
-module.exports = $dfa3945dad24db8c$var$BraceElem;
+module.exports = $2b3ad8f552f801a7$var$BraceElem;
 
 });
 
-parcelRequire.register("fi83C", function(module, exports) {
+parcelRegister("bgxoh", function(module, exports) {
+//    abc_create_clef.js
 
-var $jM9Y7 = parcelRequire("jM9Y7");
+var $lBV2u = parcelRequire("lBV2u");
 
-var $qv6HX = parcelRequire("qv6HX");
+var $fJFPv = parcelRequire("fJFPv");
 
-var $ilOzb = parcelRequire("ilOzb");
-var $b21ec97fe161e06c$var$createClef = function(elem, tuneNumber) {
+var $59E7k = parcelRequire("59E7k");
+var $833b16fe53f16e05$var$createClef = function(elem, tuneNumber) {
     var clef;
     var octave = 0;
     elem.el_type = "clef";
-    var abselem = new $jM9Y7(elem, 0, 10, "staff-extra clef", tuneNumber);
+    var abselem = new $lBV2u(elem, 0, 10, "staff-extra clef", tuneNumber);
     abselem.isClef = true;
     switch(elem.type){
         case "treble":
@@ -16314,7 +16476,7 @@ var $b21ec97fe161e06c$var$createClef = function(elem, tuneNumber) {
             clef = "clefs.perc";
             break;
         default:
-            abselem.addFixed(new $ilOzb("clef=" + elem.type, 0, 0, undefined, {
+            abselem.addFixed(new $59E7k("clef=" + elem.type, 0, 0, undefined, {
                 type: "debug"
             }));
     }
@@ -16323,15 +16485,15 @@ var $b21ec97fe161e06c$var$createClef = function(elem, tuneNumber) {
     // }
     var dx = 5;
     if (clef) {
-        var height = $qv6HX.symbolHeightInPitches(clef);
-        var ofs = $b21ec97fe161e06c$var$clefOffsets(clef);
-        abselem.addRight(new $ilOzb(clef, dx, $qv6HX.getSymbolWidth(clef), elem.clefPos, {
+        var height = $fJFPv.symbolHeightInPitches(clef);
+        var ofs = $833b16fe53f16e05$var$clefOffsets(clef);
+        abselem.addRight(new $59E7k(clef, dx, $fJFPv.getSymbolWidth(clef), elem.clefPos, {
             top: height + elem.clefPos + ofs,
             bottom: elem.clefPos + ofs
         }));
         if (octave !== 0) {
             var scale = 2 / 3;
-            var adjustspacing = ($qv6HX.getSymbolWidth(clef) - $qv6HX.getSymbolWidth("8") * scale) / 2;
+            var adjustspacing = ($fJFPv.getSymbolWidth(clef) - $fJFPv.getSymbolWidth("8") * scale) / 2;
             var pitch = octave > 0 ? abselem.top + 3 : abselem.bottom - 1;
             var top = octave > 0 ? abselem.top + 3 : abselem.bottom - 3;
             var bottom = top - 2;
@@ -16340,7 +16502,7 @@ var $b21ec97fe161e06c$var$createClef = function(elem, tuneNumber) {
                 pitch = 3;
                 adjustspacing = 0;
             }
-            abselem.addRight(new $ilOzb("8", dx + adjustspacing, $qv6HX.getSymbolWidth("8") * scale, pitch, {
+            abselem.addRight(new $59E7k("8", dx + adjustspacing, $fJFPv.getSymbolWidth("8") * scale, pitch, {
                 scalex: scale,
                 scaley: scale,
                 top: top,
@@ -16351,7 +16513,7 @@ var $b21ec97fe161e06c$var$createClef = function(elem, tuneNumber) {
     }
     return abselem;
 };
-function $b21ec97fe161e06c$var$clefOffsets(clef) {
+function $833b16fe53f16e05$var$clefOffsets(clef) {
     switch(clef){
         case "clefs.G":
             return -5;
@@ -16365,15 +16527,15 @@ function $b21ec97fe161e06c$var$clefOffsets(clef) {
             return 0;
     }
 }
-module.exports = $b21ec97fe161e06c$var$createClef;
+module.exports = $833b16fe53f16e05$var$createClef;
 
 });
-parcelRequire.register("qv6HX", function(module, exports) {
+parcelRegister("fJFPv", function(module, exports) {
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 /**
  * Glyphs and some methods to adjust for their x and y baseline
- */ var $04fa8f1048766a5a$var$glyphs = {
+ */ var $b74b8181709ca0df$var$glyphs = {
     "0": {
         d: [
             [
@@ -41702,7 +41864,7 @@ var $f4yIj = parcelRequire("f4yIj");
         d: [
             [
                 "M",
-                1.32,
+                1.85,
                 -3.36
             ],
             [
@@ -42918,7 +43080,7 @@ var $f4yIj = parcelRequire("f4yIj");
     }
 };
 // Custom characters that weren't generated from the font:
-$04fa8f1048766a5a$var$glyphs["noteheads.slash.whole"] = {
+$b74b8181709ca0df$var$glyphs["noteheads.slash.whole"] = {
     d: [
         [
             "M",
@@ -43016,7 +43178,7 @@ $04fa8f1048766a5a$var$glyphs["noteheads.slash.whole"] = {
     w: 10.81,
     h: 15.63
 };
-$04fa8f1048766a5a$var$glyphs["noteheads.slash.quarter"] = {
+$b74b8181709ca0df$var$glyphs["noteheads.slash.quarter"] = {
     d: [
         [
             "M",
@@ -43045,7 +43207,7 @@ $04fa8f1048766a5a$var$glyphs["noteheads.slash.quarter"] = {
     w: 9,
     h: 9
 };
-$04fa8f1048766a5a$var$glyphs["noteheads.harmonic.quarter"] = {
+$b74b8181709ca0df$var$glyphs["noteheads.harmonic.quarter"] = {
     d: [
         [
             "M",
@@ -43140,12 +43302,12 @@ $04fa8f1048766a5a$var$glyphs["noteheads.harmonic.quarter"] = {
     w: 7.5,
     h: 8.165
 };
-$04fa8f1048766a5a$var$glyphs["noteheads.triangle.quarter"] = {
+$b74b8181709ca0df$var$glyphs["noteheads.triangle.quarter"] = {
     d: [
         [
             "M",
             0,
-            0
+            4
         ],
         [
             "l",
@@ -43164,7 +43326,7 @@ $04fa8f1048766a5a$var$glyphs["noteheads.triangle.quarter"] = {
     w: 9,
     h: 9
 };
-var $04fa8f1048766a5a$var$pathClone = function(pathArray) {
+var $b74b8181709ca0df$var$pathClone = function(pathArray) {
     var res = [];
     for(var i = 0, ii = pathArray.length; i < ii; i++){
         res[i] = [];
@@ -43172,17 +43334,17 @@ var $04fa8f1048766a5a$var$pathClone = function(pathArray) {
     }
     return res;
 };
-var $04fa8f1048766a5a$var$pathScale = function(pathArray, kx, ky) {
+var $b74b8181709ca0df$var$pathScale = function(pathArray, kx, ky) {
     for(var i = 0, ii = pathArray.length; i < ii; i++){
         var p = pathArray[i];
         var j, jj;
         for(j = 1, jj = p.length; j < jj; j++)p[j] *= j % 2 ? kx : ky;
     }
 };
-var $04fa8f1048766a5a$var$Glyphs = {
+var $b74b8181709ca0df$var$Glyphs = {
     printSymbol: function(x, y, symb, paper, attrs) {
-        if (!$04fa8f1048766a5a$var$glyphs[symb]) return null;
-        var pathArray = $04fa8f1048766a5a$var$pathClone($04fa8f1048766a5a$var$glyphs[symb].d);
+        if (!$b74b8181709ca0df$var$glyphs[symb]) return null;
+        var pathArray = $b74b8181709ca0df$var$pathClone($b74b8181709ca0df$var$glyphs[symb].d);
         pathArray[0][1] += x;
         pathArray[0][2] += y;
         var path = "";
@@ -43193,20 +43355,20 @@ var $04fa8f1048766a5a$var$Glyphs = {
     getPathForSymbol: function(x, y, symb, scalex, scaley) {
         scalex = scalex || 1;
         scaley = scaley || 1;
-        if (!$04fa8f1048766a5a$var$glyphs[symb]) return null;
-        var pathArray = $04fa8f1048766a5a$var$pathClone($04fa8f1048766a5a$var$glyphs[symb].d);
-        if (scalex !== 1 || scaley !== 1) $04fa8f1048766a5a$var$pathScale(pathArray, scalex, scaley);
+        if (!$b74b8181709ca0df$var$glyphs[symb]) return null;
+        var pathArray = $b74b8181709ca0df$var$pathClone($b74b8181709ca0df$var$glyphs[symb].d);
+        if (scalex !== 1 || scaley !== 1) $b74b8181709ca0df$var$pathScale(pathArray, scalex, scaley);
         pathArray[0][1] += x;
         pathArray[0][2] += y;
         return pathArray;
     },
     getSymbolWidth: function(symbol) {
-        if ($04fa8f1048766a5a$var$glyphs[symbol]) return $04fa8f1048766a5a$var$glyphs[symbol].w;
+        if ($b74b8181709ca0df$var$glyphs[symbol]) return $b74b8181709ca0df$var$glyphs[symbol].w;
         return 0;
     },
     symbolHeightInPitches: function(symbol) {
-        var height = $04fa8f1048766a5a$var$glyphs[symbol] ? $04fa8f1048766a5a$var$glyphs[symbol].h : 0;
-        return height / $f4yIj.STEP;
+        var height = $b74b8181709ca0df$var$glyphs[symbol] ? $b74b8181709ca0df$var$glyphs[symbol].h : 0;
+        return height / $6aPnV.STEP;
     },
     getSymbolAlign: function(symbol) {
         if (symbol.substring(0, 7) === "scripts" && symbol !== "scripts.roll") return "center";
@@ -43274,30 +43436,29 @@ var $04fa8f1048766a5a$var$Glyphs = {
         }
     },
     setSymbol: function(name, path) {
-        $04fa8f1048766a5a$var$glyphs[name] = path;
+        $b74b8181709ca0df$var$glyphs[name] = path;
     }
 };
-module.exports = $04fa8f1048766a5a$var$Glyphs; // we need the glyphs for layout information
+module.exports = $b74b8181709ca0df$var$Glyphs; // we need the glyphs for layout information
 
 });
 
 
-parcelRequire.register("g91Bn", function(module, exports) {
+parcelRegister("gKO8O", function(module, exports) {
+//    abc_create_key_signature.js
 
-var $jM9Y7 = parcelRequire("jM9Y7");
+var $lBV2u = parcelRequire("lBV2u");
 
-var $qv6HX = parcelRequire("qv6HX");
+var $fJFPv = parcelRequire("fJFPv");
 
-var $ilOzb = parcelRequire("ilOzb");
-
-var $3fSeU = parcelRequire("3fSeU");
-var $bc0ebab351f2f3ba$var$createKeySignature = function(elem, tuneNumber) {
+var $59E7k = parcelRequire("59E7k");
+var $c327d63009fb989f$var$createKeySignature = function(elem, tuneNumber) {
     elem.el_type = "keySignature";
     if (!elem.accidentals || elem.accidentals.length === 0) return null;
-    var abselem = new $jM9Y7(elem, 0, 10, "staff-extra key-signature", tuneNumber);
+    var abselem = new $lBV2u(elem, 0, 10, "staff-extra key-signature", tuneNumber);
     abselem.isKeySig = true;
     var dx = 0;
-    $3fSeU.each(elem.accidentals, function(acc) {
+    elem.accidentals.forEach(function(acc) {
         var symbol;
         var fudge = 0;
         switch(acc.acc){
@@ -43323,25 +43484,25 @@ var $bc0ebab351f2f3ba$var$createKeySignature = function(elem, tuneNumber) {
             default:
                 symbol = "accidentals.flat";
         }
-        abselem.addRight(new $ilOzb(symbol, dx, $qv6HX.getSymbolWidth(symbol), acc.verticalPos, {
-            thickness: $qv6HX.symbolHeightInPitches(symbol),
-            top: acc.verticalPos + $qv6HX.symbolHeightInPitches(symbol) + fudge,
+        abselem.addRight(new $59E7k(symbol, dx, $fJFPv.getSymbolWidth(symbol), acc.verticalPos, {
+            thickness: $fJFPv.symbolHeightInPitches(symbol),
+            top: acc.verticalPos + $fJFPv.symbolHeightInPitches(symbol) + fudge,
             bottom: acc.verticalPos + fudge
         }));
-        dx += $qv6HX.getSymbolWidth(symbol) + 2;
+        dx += $fJFPv.getSymbolWidth(symbol) + 2;
     }, this);
     return abselem;
 };
-module.exports = $bc0ebab351f2f3ba$var$createKeySignature;
+module.exports = $c327d63009fb989f$var$createKeySignature;
 
 });
 
-parcelRequire.register("kv0zt", function(module, exports) {
+parcelRegister("fzNL2", function(module, exports) {
 
-var $qv6HX = parcelRequire("qv6HX");
+var $fJFPv = parcelRequire("fJFPv");
 
-var $ilOzb = parcelRequire("ilOzb");
-var $eec72550170b50c2$var$createNoteHead = function(abselem, c, pitchelem, options) {
+var $59E7k = parcelRequire("59E7k");
+var $b570b8be8c7a8dab$var$createNoteHead = function(abselem, c, pitchelem, options) {
     if (!options) options = {};
     var dir = options.dir !== undefined ? options.dir : null;
     var headx = options.headx !== undefined ? options.headx : 0;
@@ -43359,23 +43520,23 @@ var $eec72550170b50c2$var$createNoteHead = function(abselem, c, pitchelem, optio
     var accidentalshiftx = 0;
     var newDotShiftX = 0;
     var extraLeft = 0;
-    if (c === undefined) abselem.addFixed(new $ilOzb("pitch is undefined", 0, 0, 0, {
+    if (c === undefined) abselem.addFixed(new $59E7k("pitch is undefined", 0, 0, 0, {
         type: "debug"
     }));
-    else if (c === "") notehead = new $ilOzb(null, 0, 0, pitch);
+    else if (c === "") notehead = new $59E7k(null, 0, 0, pitch);
     else {
         var shiftheadx = headx;
         if (pitchelem.printer_shift) {
             var adjust = pitchelem.printer_shift === "same" ? 1 : 0;
-            shiftheadx = dir === "down" ? -$qv6HX.getSymbolWidth(c) * scale + adjust : $qv6HX.getSymbolWidth(c) * scale - adjust;
+            shiftheadx = dir === "down" ? -$fJFPv.getSymbolWidth(c) * scale + adjust : $fJFPv.getSymbolWidth(c) * scale - adjust;
         }
         var opts = {
             scalex: scale,
             scaley: scale,
-            thickness: $qv6HX.symbolHeightInPitches(c) * scale,
+            thickness: $fJFPv.symbolHeightInPitches(c) * scale,
             name: pitchelem.name
         };
-        notehead = new $ilOzb(c, shiftheadx, $qv6HX.getSymbolWidth(c) * scale, pitch, opts);
+        notehead = new $59E7k(c, shiftheadx, $fJFPv.getSymbolWidth(c) * scale, pitch, opts);
         notehead.stemDir = dir;
         if (flag) {
             var pos = pitch + (dir === "down" ? -7 : 7) * scale;
@@ -43386,7 +43547,7 @@ var $eec72550170b50c2$var$createNoteHead = function(abselem, c, pitchelem, optio
             }
             //if (scale===1 && (dir==="down")?(pos>6):(pos<6)) pos=6;
             var xdelta = dir === "down" ? headx : headx + notehead.w - 0.6;
-            abselem.addRight(new $ilOzb(flag, xdelta, $qv6HX.getSymbolWidth(flag) * scale, pos, {
+            abselem.addRight(new $59E7k(flag, xdelta, $fJFPv.getSymbolWidth(flag) * scale, pos, {
                 scalex: scale,
                 scaley: scale
             }));
@@ -43394,7 +43555,7 @@ var $eec72550170b50c2$var$createNoteHead = function(abselem, c, pitchelem, optio
         newDotShiftX = notehead.w + dotshiftx - 2 + 5 * dot;
         for(; dot > 0; dot--){
             var dotadjusty = 1 - Math.abs(pitch) % 2; //PER: take abs value of the pitch. And the shift still happens on ledger lines.
-            abselem.addRight(new $ilOzb("dots.dot", notehead.w + dotshiftx - 2 + 5 * dot, $qv6HX.getSymbolWidth("dots.dot"), pitch + dotadjusty));
+            abselem.addRight(new $59E7k("dots.dot", notehead.w + dotshiftx - 2 + 5 * dot, $fJFPv.getSymbolWidth("dots.dot"), pitch + dotadjusty));
         }
     }
     if (notehead) notehead.highestVert = pitchelem.highestVert;
@@ -43432,21 +43593,21 @@ var $eec72550170b50c2$var$createNoteHead = function(abselem, c, pitchelem, optio
             break;
         }
         if (accSlotFound === false) {
-            accPlace -= $qv6HX.getSymbolWidth(symb) * scale + 2;
+            accPlace -= $fJFPv.getSymbolWidth(symb) * scale + 2;
             accidentalSlot.push([
                 pitch,
                 accPlace
             ]);
-            accidentalshiftx = $qv6HX.getSymbolWidth(symb) * scale + 2;
+            accidentalshiftx = $fJFPv.getSymbolWidth(symb) * scale + 2;
         }
-        var h = $qv6HX.symbolHeightInPitches(symb);
-        abselem.addExtra(new $ilOzb(symb, accPlace, $qv6HX.getSymbolWidth(symb), pitch, {
+        var h = $fJFPv.symbolHeightInPitches(symb);
+        abselem.addExtra(new $59E7k(symb, accPlace, $fJFPv.getSymbolWidth(symb), pitch, {
             scalex: scale,
             scaley: scale,
             top: pitch + h / 2,
             bottom: pitch - h / 2
         }));
-        extraLeft = $qv6HX.getSymbolWidth(symb) / 2; // TODO-PER: We need a little extra width if there is an accidental, but I'm not sure why it isn't the full width of the accidental.
+        extraLeft = $fJFPv.getSymbolWidth(symb) / 2; // TODO-PER: We need a little extra width if there is an accidental, but I'm not sure why it isn't the full width of the accidental.
     }
     return {
         notehead: notehead,
@@ -43455,97 +43616,101 @@ var $eec72550170b50c2$var$createNoteHead = function(abselem, c, pitchelem, optio
         extraLeft: extraLeft
     };
 };
-module.exports = $eec72550170b50c2$var$createNoteHead;
+module.exports = $b570b8be8c7a8dab$var$createNoteHead;
 
 });
 
-parcelRequire.register("gU76P", function(module, exports) {
+parcelRegister("a2qSX", function(module, exports) {
+//    abc_create_time_signature.js
 
-var $jM9Y7 = parcelRequire("jM9Y7");
+var $lBV2u = parcelRequire("lBV2u");
 
-var $qv6HX = parcelRequire("qv6HX");
+var $fJFPv = parcelRequire("fJFPv");
 
-var $ilOzb = parcelRequire("ilOzb");
-var $c4e764093d238485$var$createTimeSignature = function(elem, tuneNumber) {
+var $59E7k = parcelRequire("59E7k");
+var $74eef22ed6cb79cd$var$createTimeSignature = function(elem, tuneNumber) {
     elem.el_type = "timeSignature";
-    var abselem = new $jM9Y7(elem, 0, 10, "staff-extra time-signature", tuneNumber);
+    var abselem = new $lBV2u(elem, 0, 10, "staff-extra time-signature", tuneNumber);
     if (elem.type === "specified") {
         var x = 0;
         for(var i = 0; i < elem.value.length; i++){
             if (i !== 0) {
-                abselem.addRight(new $ilOzb("+", x + 1, $qv6HX.getSymbolWidth("+"), 6, {
-                    thickness: $qv6HX.symbolHeightInPitches("+")
+                abselem.addRight(new $59E7k("+", x + 1, $fJFPv.getSymbolWidth("+"), 6, {
+                    thickness: $fJFPv.symbolHeightInPitches("+")
                 }));
-                x += $qv6HX.getSymbolWidth("+") + 2;
+                x += $fJFPv.getSymbolWidth("+") + 2;
             }
             if (elem.value[i].den) {
                 var numWidth = 0;
-                for(var i2 = 0; i2 < elem.value[i].num.length; i2++)numWidth += $qv6HX.getSymbolWidth(elem.value[i].num.charAt(i2));
+                for(var i2 = 0; i2 < elem.value[i].num.length; i2++)numWidth += $fJFPv.getSymbolWidth(elem.value[i].num[i2]);
                 var denWidth = 0;
-                for(i2 = 0; i2 < elem.value[i].num.length; i2++)denWidth += $qv6HX.getSymbolWidth(elem.value[i].den.charAt(i2));
+                for(i2 = 0; i2 < elem.value[i].num.length; i2++)denWidth += $fJFPv.getSymbolWidth(elem.value[i].den[i2]);
                 var maxWidth = Math.max(numWidth, denWidth);
-                abselem.addRight(new $ilOzb(elem.value[i].num, x + (maxWidth - numWidth) / 2, numWidth, 8, {
-                    thickness: $qv6HX.symbolHeightInPitches(elem.value[i].num.charAt(0))
+                abselem.addRight(new $59E7k(elem.value[i].num, x + (maxWidth - numWidth) / 2, numWidth, 8, {
+                    thickness: $fJFPv.symbolHeightInPitches(elem.value[i].num[0])
                 }));
-                abselem.addRight(new $ilOzb(elem.value[i].den, x + (maxWidth - denWidth) / 2, denWidth, 4, {
-                    thickness: $qv6HX.symbolHeightInPitches(elem.value[i].den.charAt(0))
+                abselem.addRight(new $59E7k(elem.value[i].den, x + (maxWidth - denWidth) / 2, denWidth, 4, {
+                    thickness: $fJFPv.symbolHeightInPitches(elem.value[i].den[0])
                 }));
                 x += maxWidth;
             } else {
                 var thisWidth = 0;
-                for(var i3 = 0; i3 < elem.value[i].num.length; i3++)thisWidth += $qv6HX.getSymbolWidth(elem.value[i].num.charAt(i3));
-                abselem.addRight(new $ilOzb(elem.value[i].num, x, thisWidth, 6, {
-                    thickness: $qv6HX.symbolHeightInPitches(elem.value[i].num.charAt(0))
+                for(var i3 = 0; i3 < elem.value[i].num.length; i3++)thisWidth += $fJFPv.getSymbolWidth(elem.value[i].num[i3]);
+                abselem.addRight(new $59E7k(elem.value[i].num, x, thisWidth, 6, {
+                    thickness: $fJFPv.symbolHeightInPitches(elem.value[i].num[0])
                 }));
                 x += thisWidth;
             }
         }
-    } else if (elem.type === "common_time") abselem.addRight(new $ilOzb("timesig.common", 0, $qv6HX.getSymbolWidth("timesig.common"), 6, {
-        thickness: $qv6HX.symbolHeightInPitches("timesig.common")
+    } else if (elem.type === "common_time") abselem.addRight(new $59E7k("timesig.common", 0, $fJFPv.getSymbolWidth("timesig.common"), 6, {
+        thickness: $fJFPv.symbolHeightInPitches("timesig.common")
     }));
-    else if (elem.type === "cut_time") abselem.addRight(new $ilOzb("timesig.cut", 0, $qv6HX.getSymbolWidth("timesig.cut"), 6, {
-        thickness: $qv6HX.symbolHeightInPitches("timesig.cut")
+    else if (elem.type === "cut_time") abselem.addRight(new $59E7k("timesig.cut", 0, $fJFPv.getSymbolWidth("timesig.cut"), 6, {
+        thickness: $fJFPv.symbolHeightInPitches("timesig.cut")
     }));
-    else if (elem.type === "tempus_imperfectum") abselem.addRight(new $ilOzb("timesig.imperfectum", 0, $qv6HX.getSymbolWidth("timesig.imperfectum"), 6, {
-        thickness: $qv6HX.symbolHeightInPitches("timesig.imperfectum")
+    else if (elem.type === "tempus_imperfectum") abselem.addRight(new $59E7k("timesig.imperfectum", 0, $fJFPv.getSymbolWidth("timesig.imperfectum"), 6, {
+        thickness: $fJFPv.symbolHeightInPitches("timesig.imperfectum")
     }));
-    else if (elem.type === "tempus_imperfectum_prolatio") abselem.addRight(new $ilOzb("timesig.imperfectum2", 0, $qv6HX.getSymbolWidth("timesig.imperfectum2"), 6, {
-        thickness: $qv6HX.symbolHeightInPitches("timesig.imperfectum2")
+    else if (elem.type === "tempus_imperfectum_prolatio") abselem.addRight(new $59E7k("timesig.imperfectum2", 0, $fJFPv.getSymbolWidth("timesig.imperfectum2"), 6, {
+        thickness: $fJFPv.symbolHeightInPitches("timesig.imperfectum2")
     }));
-    else if (elem.type === "tempus_perfectum") abselem.addRight(new $ilOzb("timesig.perfectum", 0, $qv6HX.getSymbolWidth("timesig.perfectum"), 6, {
-        thickness: $qv6HX.symbolHeightInPitches("timesig.perfectum")
+    else if (elem.type === "tempus_perfectum") abselem.addRight(new $59E7k("timesig.perfectum", 0, $fJFPv.getSymbolWidth("timesig.perfectum"), 6, {
+        thickness: $fJFPv.symbolHeightInPitches("timesig.perfectum")
     }));
-    else if (elem.type === "tempus_perfectum_prolatio") abselem.addRight(new $ilOzb("timesig.perfectum2", 0, $qv6HX.getSymbolWidth("timesig.perfectum2"), 6, {
-        thickness: $qv6HX.symbolHeightInPitches("timesig.perfectum2")
+    else if (elem.type === "tempus_perfectum_prolatio") abselem.addRight(new $59E7k("timesig.perfectum2", 0, $fJFPv.getSymbolWidth("timesig.perfectum2"), 6, {
+        thickness: $fJFPv.symbolHeightInPitches("timesig.perfectum2")
     }));
     else console.log("time signature:", elem);
     return abselem;
 };
-module.exports = $c4e764093d238485$var$createTimeSignature;
+module.exports = $74eef22ed6cb79cd$var$createTimeSignature;
 
 });
 
-parcelRequire.register("czgAq", function(module, exports) {
+parcelRegister("iJbEP", function(module, exports) {
+// abc_decoration.js: Creates a data structure suitable for printing a line of abc
 
-var $eU6QT = parcelRequire("eU6QT");
+var $54aMv = parcelRequire("54aMv");
 
-var $5qQ6m = parcelRequire("5qQ6m");
+var $aifIP = parcelRequire("aifIP");
 
-var $qv6HX = parcelRequire("qv6HX");
+var $lCtQn = parcelRequire("lCtQn");
 
-var $ilOzb = parcelRequire("ilOzb");
+var $fJFPv = parcelRequire("fJFPv");
 
-var $2u3FD = parcelRequire("2u3FD");
-var $92659ead8d30c891$var$Decoration = function Decoration() {
+var $59E7k = parcelRequire("59E7k");
+
+var $6s25x = parcelRequire("6s25x");
+var $da2578e199cdc273$var$Decoration = function Decoration() {
     this.startDiminuendoX = undefined;
     this.startCrescendoX = undefined;
     this.minTop = 12; // TODO-PER: this is assuming a 5-line staff. Pass that info in.
     this.minBottom = 0;
 };
-var $92659ead8d30c891$var$closeDecoration = function(voice, decoration, pitch, width, abselem, roomtaken, dir, minPitch) {
+var $da2578e199cdc273$var$closeDecoration = function(voice, decoration, pitch, width, abselem, roomtaken, dir, minPitch, accentAbove) {
     var yPos;
     for(var i = 0; i < decoration.length; i++){
-        if (decoration[i] === "staccato" || decoration[i] === "tenuto" || decoration[i] === "accent") {
+        if (decoration[i] === "staccato" || decoration[i] === "tenuto" || decoration[i] === "accent" && !accentAbove) {
             var symbol = "scripts." + decoration[i];
             if (decoration[i] === "accent") symbol = "scripts.sforzato";
             if (yPos === undefined) yPos = dir === "down" ? pitch + 2 : minPitch - 2;
@@ -43567,17 +43732,17 @@ var $92659ead8d30c891$var$closeDecoration = function(voice, decoration, pitch, w
             }
             if (pitch > 9) yPos++; // take up some room of those that are above
             var deltaX = width / 2;
-            if ($qv6HX.getSymbolAlign(symbol) !== "center") deltaX -= $qv6HX.getSymbolWidth(symbol) / 2;
-            abselem.addFixedX(new $ilOzb(symbol, deltaX, $qv6HX.getSymbolWidth(symbol), yPos));
+            if ($fJFPv.getSymbolAlign(symbol) !== "center") deltaX -= $fJFPv.getSymbolWidth(symbol) / 2;
+            abselem.addFixedX(new $59E7k(symbol, deltaX, $fJFPv.getSymbolWidth(symbol), yPos));
         }
         if (decoration[i] === "slide" && abselem.heads[0]) {
             var yPos2 = abselem.heads[0].pitch;
             yPos2 -= 2; // TODO-PER: not sure what this fudge factor is.
-            var blank1 = new $ilOzb("", -roomtaken - 15, 0, yPos2 - 1);
-            var blank2 = new $ilOzb("", -roomtaken - 5, 0, yPos2 + 1);
+            var blank1 = new $59E7k("", -roomtaken - 15, 0, yPos2 - 1);
+            var blank2 = new $59E7k("", -roomtaken - 5, 0, yPos2 + 1);
             abselem.addFixedX(blank1);
             abselem.addFixedX(blank2);
-            voice.addOther(new $2u3FD({
+            voice.addOther(new $6s25x({
                 anchor1: blank1,
                 anchor2: blank2,
                 fixedY: true
@@ -43590,7 +43755,7 @@ var $92659ead8d30c891$var$closeDecoration = function(voice, decoration, pitch, w
         below: abselem.bottom
     };
 };
-var $92659ead8d30c891$var$volumeDecoration = function(voice, decoration, abselem, positioning) {
+var $da2578e199cdc273$var$volumeDecoration = function(voice, decoration, abselem, positioning) {
     for(var i = 0; i < decoration.length; i++)switch(decoration[i]){
         case "p":
         case "mp":
@@ -43603,11 +43768,11 @@ var $92659ead8d30c891$var$volumeDecoration = function(voice, decoration, abselem
         case "ffff":
         case "sfz":
         case "mf":
-            var elem = new $eU6QT(abselem, decoration[i], positioning);
+            var elem = new $54aMv(abselem, decoration[i], positioning);
             voice.addOther(elem);
     }
 };
-var $92659ead8d30c891$var$compoundDecoration = function(decoration, pitch1, width, abselem, dir) {
+var $da2578e199cdc273$var$compoundDecoration = function(decoration, pitch, width, abselem, dir) {
     function highestPitch() {
         if (abselem.heads.length === 0) return 10; // TODO-PER: I don't know if this can happen, but we'll return the top of the staff if so.
         var pitch = abselem.heads[0].pitch;
@@ -43620,32 +43785,32 @@ var $92659ead8d30c891$var$compoundDecoration = function(decoration, pitch1, widt
         for(var i = 1; i < abselem.heads.length; i++)pitch = Math.min(pitch, abselem.heads[i].pitch);
         return pitch;
     }
-    function compoundDecoration1(symbol, count) {
+    function compoundDecoration(symbol, count) {
         var placement = dir === "down" ? lowestPitch() + 1 : highestPitch() + 9;
         if (dir !== "down" && count === 1) placement--;
         var deltaX = width / 2;
         deltaX += dir === "down" ? -5 : 3;
         for(var i = 0; i < count; i++){
             placement -= 1;
-            abselem.addFixedX(new $ilOzb(symbol, deltaX, $qv6HX.getSymbolWidth(symbol), placement));
+            abselem.addFixedX(new $59E7k(symbol, deltaX, $fJFPv.getSymbolWidth(symbol), placement));
         }
     }
-    for(var i1 = 0; i1 < decoration.length; i1++)switch(decoration[i1]){
+    for(var i = 0; i < decoration.length; i++)switch(decoration[i]){
         case "/":
-            compoundDecoration1("flags.ugrace", 1);
+            compoundDecoration("flags.ugrace", 1);
             break;
         case "//":
-            compoundDecoration1("flags.ugrace", 2);
+            compoundDecoration("flags.ugrace", 2);
             break;
         case "///":
-            compoundDecoration1("flags.ugrace", 3);
+            compoundDecoration("flags.ugrace", 3);
             break;
         case "////":
-            compoundDecoration1("flags.ugrace", 4);
+            compoundDecoration("flags.ugrace", 4);
             break;
     }
 };
-var $92659ead8d30c891$var$stackedDecoration = function(decoration, width, abselem, yPos, positioning, minTop, minBottom) {
+var $da2578e199cdc273$var$stackedDecoration = function(decoration, width, abselem, yPos, positioning, minTop, minBottom, accentAbove) {
     function incrementPlacement(placement, height) {
         if (placement === "above") yPos.above += height;
         else yPos.below -= height;
@@ -43661,27 +43826,28 @@ var $92659ead8d30c891$var$stackedDecoration = function(decoration, width, absele
         }
         return y;
     }
-    function textDecoration(text, placement) {
+    function textDecoration(text, placement, anchor) {
         var y = getPlacement(placement);
         var textFudge = 2;
         var textHeight = 5;
         // TODO-PER: Get the height of the current font and use that for the thickness.
-        abselem.addFixedX(new $ilOzb(text, width / 2, 0, y + textFudge, {
+        abselem.addFixedX(new $59E7k(text, width / 2, 0, y + textFudge, {
             type: "decoration",
             klass: "ornament",
-            thickness: 3
+            thickness: 3,
+            anchor: anchor
         }));
         incrementPlacement(placement, textHeight);
     }
     function symbolDecoration(symbol, placement) {
         var deltaX = width / 2;
-        if ($qv6HX.getSymbolAlign(symbol) !== "center") deltaX -= $qv6HX.getSymbolWidth(symbol) / 2;
-        var height = $qv6HX.symbolHeightInPitches(symbol) + 1; // adding a little padding so nothing touches.
+        if ($fJFPv.getSymbolAlign(symbol) !== "center") deltaX -= $fJFPv.getSymbolWidth(symbol) / 2;
+        var height = $fJFPv.symbolHeightInPitches(symbol) + 1; // adding a little padding so nothing touches.
         var y = getPlacement(placement);
         y = placement === "above" ? y + height / 2 : y - height / 2; // Center the element vertically.
-        abselem.addFixedX(new $ilOzb(symbol, deltaX, $qv6HX.getSymbolWidth(symbol), y, {
+        abselem.addFixedX(new $59E7k(symbol, deltaX, $fJFPv.getSymbolWidth(symbol), y, {
             klass: "ornament",
-            thickness: $qv6HX.symbolHeightInPitches(symbol)
+            thickness: $fJFPv.symbolHeightInPitches(symbol)
         }));
         incrementPlacement(placement, height);
     }
@@ -43723,11 +43889,27 @@ var $92659ead8d30c891$var$stackedDecoration = function(decoration, width, absele
         case "5":
         case "D.C.":
         case "D.S.":
-            textDecoration(decoration[i], positioning);
+            textDecoration(decoration[i], positioning, "middle");
+            hasOne = true;
+            break;
+        case "D.C.alcoda":
+            textDecoration("D.C. al coda", positioning, "end");
+            hasOne = true;
+            break;
+        case "D.C.alfine":
+            textDecoration("D.C. al fine", positioning, "end");
+            hasOne = true;
+            break;
+        case "D.S.alcoda":
+            textDecoration("D.S. al coda", positioning, "end");
+            hasOne = true;
+            break;
+        case "D.S.alfine":
+            textDecoration("D.S. al fine", positioning, "end");
             hasOne = true;
             break;
         case "fine":
-            textDecoration("FINE", positioning);
+            textDecoration("FINE", positioning, "middle");
             hasOne = true;
             break;
         case "+":
@@ -43765,25 +43947,32 @@ var $92659ead8d30c891$var$stackedDecoration = function(decoration, width, absele
         case "mark":
             abselem.klass = "mark";
             break;
+        case "accent":
+            if (accentAbove) {
+                symbolDecoration("scripts.sforzato", positioning);
+                hasOne = true;
+            }
+            break;
     }
     return hasOne;
 };
-function $92659ead8d30c891$var$leftDecoration(decoration, abselem, roomtaken) {
+function $da2578e199cdc273$var$leftDecoration(decoration, abselem, roomtaken) {
     for(var i = 0; i < decoration.length; i++)switch(decoration[i]){
         case "arpeggio":
             // The arpeggio symbol is the height of a note (that is, two Y units). This stacks as many as we need to go from the
             // top note to the bottom note. The arpeggio should also be a little taller than the stacked notes, so there is an extra
             // one drawn and it is offset by half of a note height (that is, one Y unit).
-            for(var j = abselem.abcelem.minpitch - 1; j <= abselem.abcelem.maxpitch; j += 2)abselem.addExtra(new $ilOzb("scripts.arpeggio", -$qv6HX.getSymbolWidth("scripts.arpeggio") * 2 - roomtaken, 0, j + 2, {
+            for(var j = abselem.abcelem.minpitch - 1; j <= abselem.abcelem.maxpitch; j += 2)abselem.addExtra(new $59E7k("scripts.arpeggio", -$fJFPv.getSymbolWidth("scripts.arpeggio") * 2 - roomtaken, 0, j + 2, {
                 klass: "ornament",
-                thickness: $qv6HX.symbolHeightInPitches("scripts.arpeggio")
+                thickness: $fJFPv.symbolHeightInPitches("scripts.arpeggio")
             }));
             break;
     }
 }
-$92659ead8d30c891$var$Decoration.prototype.dynamicDecoration = function(voice, decoration, abselem, positioning) {
+$da2578e199cdc273$var$Decoration.prototype.dynamicDecoration = function(voice, decoration, abselem, positioning) {
     var diminuendo;
     var crescendo;
+    var glissando;
     for(var i = 0; i < decoration.length; i++)switch(decoration[i]){
         case "diminuendo(":
             this.startDiminuendoX = abselem;
@@ -43807,34 +43996,50 @@ $92659ead8d30c891$var$Decoration.prototype.dynamicDecoration = function(voice, d
             };
             this.startCrescendoX = undefined;
             break;
+        case "~(":
+        case "glissando(":
+            this.startGlissandoX = abselem;
+            glissando = undefined;
+            break;
+        case "~)":
+        case "glissando)":
+            glissando = {
+                start: this.startGlissandoX,
+                stop: abselem
+            };
+            this.startGlissandoX = undefined;
+            break;
     }
-    if (diminuendo) voice.addOther(new $5qQ6m(diminuendo.start, diminuendo.stop, ">", positioning));
-    if (crescendo) voice.addOther(new $5qQ6m(crescendo.start, crescendo.stop, "<", positioning));
+    if (diminuendo) voice.addOther(new $aifIP(diminuendo.start, diminuendo.stop, ">", positioning));
+    if (crescendo) voice.addOther(new $aifIP(crescendo.start, crescendo.stop, "<", positioning));
+    if (glissando) voice.addOther(new $lCtQn(glissando.start, glissando.stop));
 };
-$92659ead8d30c891$var$Decoration.prototype.createDecoration = function(voice, decoration, pitch, width, abselem, roomtaken, dir, minPitch, positioning, hasVocals) {
+$da2578e199cdc273$var$Decoration.prototype.createDecoration = function(voice, decoration, pitch, width, abselem, roomtaken, dir, minPitch, positioning, hasVocals, accentAbove) {
     if (!positioning) positioning = {
         ornamentPosition: "above",
         volumePosition: hasVocals ? "above" : "below",
         dynamicPosition: hasVocals ? "above" : "below"
     };
     // These decorations don't affect the placement of other decorations
-    $92659ead8d30c891$var$volumeDecoration(voice, decoration, abselem, positioning.volumePosition);
+    $da2578e199cdc273$var$volumeDecoration(voice, decoration, abselem, positioning.volumePosition);
     this.dynamicDecoration(voice, decoration, abselem, positioning.dynamicPosition);
-    $92659ead8d30c891$var$compoundDecoration(decoration, pitch, width, abselem, dir);
+    $da2578e199cdc273$var$compoundDecoration(decoration, pitch, width, abselem, dir);
     // treat staccato, accent, and tenuto first (may need to shift other markers)
-    var yPos = $92659ead8d30c891$var$closeDecoration(voice, decoration, pitch, width, abselem, roomtaken, dir, minPitch);
+    var yPos = $da2578e199cdc273$var$closeDecoration(voice, decoration, pitch, width, abselem, roomtaken, dir, minPitch, accentAbove);
     // yPos is an object containing 'above' and 'below'. That is the placement of the next symbol on either side.
     yPos.above = Math.max(yPos.above, this.minTop);
-    var hasOne = $92659ead8d30c891$var$stackedDecoration(decoration, width, abselem, yPos, positioning.ornamentPosition, this.minTop, this.minBottom);
-    hasOne;
-    $92659ead8d30c891$var$leftDecoration(decoration, abselem, roomtaken);
+    var hasOne = $da2578e199cdc273$var$stackedDecoration(decoration, width, abselem, yPos, positioning.ornamentPosition, this.minTop, this.minBottom, accentAbove);
+    //if (hasOne) {
+    //			abselem.top = Math.max(yPos.above + 3, abselem.top); // TODO-PER: Not sure why we need this fudge factor.
+    //}
+    $da2578e199cdc273$var$leftDecoration(decoration, abselem, roomtaken);
 };
-module.exports = $92659ead8d30c891$var$Decoration;
+module.exports = $da2578e199cdc273$var$Decoration;
 
 });
-parcelRequire.register("eU6QT", function(module, exports) {
+parcelRegister("54aMv", function(module, exports) {
 //    abc_dynamic_decoration.js: Definition of the DynamicDecoration class.
-var $ad9b9c561196633a$var$DynamicDecoration = function DynamicDecoration(anchor, dec, position) {
+var $3b05b0707eb38711$var$DynamicDecoration = function DynamicDecoration(anchor, dec, position) {
     this.type = "DynamicDecoration";
     this.anchor = anchor;
     this.dec = dec;
@@ -43842,13 +44047,13 @@ var $ad9b9c561196633a$var$DynamicDecoration = function DynamicDecoration(anchor,
     else this.volumeHeightAbove = 6;
     this.pitch = undefined; // This will be set later
 };
-module.exports = $ad9b9c561196633a$var$DynamicDecoration;
+module.exports = $3b05b0707eb38711$var$DynamicDecoration;
 
 });
 
-parcelRequire.register("5qQ6m", function(module, exports) {
+parcelRegister("aifIP", function(module, exports) {
 //    abc_crescendo_element.js: Definition of the CrescendoElem class.
-var $3f47cbbbf0743311$var$CrescendoElem = function CrescendoElem(anchor1, anchor2, dir, positioning) {
+var $77e7c7e625c0ccde$var$CrescendoElem = function CrescendoElem(anchor1, anchor2, dir, positioning) {
     this.type = "CrescendoElem";
     this.anchor1 = anchor1; // must have a .x and a .parent property or be null (means starts at the "beginning" of the line - after keysig)
     this.anchor2 = anchor2; // must have a .x property or be null (means ends at the end of the line)
@@ -43857,13 +44062,23 @@ var $3f47cbbbf0743311$var$CrescendoElem = function CrescendoElem(anchor1, anchor
     else this.dynamicHeightBelow = 6;
     this.pitch = undefined; // This will be set later
 };
-module.exports = $3f47cbbbf0743311$var$CrescendoElem;
+module.exports = $77e7c7e625c0ccde$var$CrescendoElem;
 
 });
 
-parcelRequire.register("2u3FD", function(module, exports) {
+parcelRegister("lCtQn", function(module, exports) {
+var $fbd44bf6b63c817e$var$GlissandoElem = function GlissandoElem(anchor1, anchor2) {
+    this.type = "GlissandoElem";
+    this.anchor1 = anchor1; // must have a .x and a .parent property or be null (means starts at the "beginning" of the line - after keysig)
+    this.anchor2 = anchor2; // must have a .x property or be null (means ends at the end of the line)
+};
+module.exports = $fbd44bf6b63c817e$var$GlissandoElem;
+
+});
+
+parcelRegister("6s25x", function(module, exports) {
 //    abc_tie_element.js: Definition of the TieElement class.
-var $1cf13affada877b2$var$TieElem = function TieElem(options) {
+var $4b26fa4fc075fe7d$var$TieElem = function TieElem(options) {
     this.type = "TieElem";
     //	console.log("constructor", options.anchor1 ? options.anchor1.pitch : "N/A", options.anchor2 ? options.anchor2.pitch : "N/A", options.isTie, options.isGrace);
     this.anchor1 = options.anchor1; // must have a .x and a .pitch, and a .parent property or be null (means starts at the "beginning" of the line - after keysig)
@@ -43875,24 +44090,34 @@ var $1cf13affada877b2$var$TieElem = function TieElem(options) {
     if (options.style !== undefined) this.dotted = true;
     this.internalNotes = [];
 };
-$1cf13affada877b2$var$TieElem.prototype.addInternalNote = function(note) {
+$4b26fa4fc075fe7d$var$TieElem.prototype.addInternalNote = function(note) {
     this.internalNotes.push(note);
 };
-$1cf13affada877b2$var$TieElem.prototype.setEndAnchor = function(anchor2) {
+$4b26fa4fc075fe7d$var$TieElem.prototype.setEndAnchor = function(anchor2) {
     //	console.log("end", this.anchor1 ? this.anchor1.pitch : "N/A", anchor2 ? anchor2.pitch : "N/A", this.isTie, this.isGrace);
     this.anchor2 = anchor2; // must have a .x and a .pitch property or be null (means ends at the end of the line)
+    // we don't really have enough info to know what the vertical extent is yet and we won't until drawing. This will just give it enough
+    // room on either side (we don't even know if the slur will be above yet). We need to set this so that we can make sure the voice has
+    // at least enough room that the line doesn't get cut off if the tie or slur is the lowest thing.
+    if (this.anchor1) {
+        this.top = Math.max(this.anchor1.pitch, this.anchor2.pitch) + 4;
+        this.bottom = Math.min(this.anchor1.pitch, this.anchor2.pitch) - 4;
+    } else {
+        this.top = this.anchor2.pitch + 4;
+        this.bottom = this.anchor2.pitch - 4;
+    }
 };
 // If we encounter a repeat sign, then we don't want to extend either a tie or a slur past it, so these are called to be a limit.
-$1cf13affada877b2$var$TieElem.prototype.setStartX = function(startLimitElem) {
+$4b26fa4fc075fe7d$var$TieElem.prototype.setStartX = function(startLimitElem) {
     this.startLimitX = startLimitElem;
 };
-$1cf13affada877b2$var$TieElem.prototype.setEndX = function(endLimitElem) {
+$4b26fa4fc075fe7d$var$TieElem.prototype.setEndX = function(endLimitElem) {
     this.endLimitX = endLimitElem;
 };
-$1cf13affada877b2$var$TieElem.prototype.setHint = function() {
+$4b26fa4fc075fe7d$var$TieElem.prototype.setHint = function() {
     this.hint = true;
 };
-$1cf13affada877b2$var$TieElem.prototype.calcTieDirection = function() {
+$4b26fa4fc075fe7d$var$TieElem.prototype.calcTieDirection = function() {
     // The rules:
     // 1) If it is in a grace note group, then the direction is always BELOW.
     // 2) If it is in a single voice, then the direction is always OPPOSITE of the stem (or where the stem would have been in the case of whole notes.)
@@ -43919,7 +44144,7 @@ $1cf13affada877b2$var$TieElem.prototype.calcTieDirection = function() {
 // 2) Slurs are placed over the note heads if all stems go down.
 // 3) If there are both up stems and down stems, prefer placing the slur over.
 // 4) When the staff has opposite stemmed voices, all slurs should be on the stemmed side.
-$1cf13affada877b2$var$TieElem.prototype.calcSlurDirection = function() {
+$4b26fa4fc075fe7d$var$TieElem.prototype.calcSlurDirection = function() {
     if (this.isGrace) this.above = false;
     else if (this.voiceNumber === 0) this.above = true;
     else if (this.voiceNumber > 0) this.above = false;
@@ -43934,18 +44159,19 @@ $1cf13affada877b2$var$TieElem.prototype.calcSlurDirection = function() {
         this.above = hasDownStem;
     }
 };
-$1cf13affada877b2$var$TieElem.prototype.calcX = function(lineStartX, lineEndX) {
+$4b26fa4fc075fe7d$var$TieElem.prototype.calcX = function(lineStartX, lineEndX) {
     if (this.anchor1) {
         this.startX = this.anchor1.x; // The normal case where there is a starting element to attach to.
         if (this.anchor1.scalex < 1) this.startX -= 3;
     } else if (this.startLimitX) this.startX = this.startLimitX.x + this.startLimitX.w; // if there is no start element, but there is a repeat mark before the start of the line.
-    else this.startX = lineStartX; // There is no element and no repeat mark: extend to the beginning of the line.
+    else if (this.anchor2) this.startX = this.anchor2.x - 20; // There is no element and no repeat mark: make a small arc
+    else this.startX = lineStartX; // Don't have any guidance, so extend to beginning of line
     if (!this.anchor1 && this.dotted) this.startX -= 3; // The arc needs to be long enough to tell that it is dotted.
     if (this.anchor2) this.endX = this.anchor2.x; // The normal case where there is a starting element to attach to.
     else if (this.endLimitX) this.endX = this.endLimitX.x; // if there is no start element, but there is a repeat mark before the start of the line.
     else this.endX = lineEndX; // There is no element and no repeat mark: extend to the beginning of the line.
 };
-$1cf13affada877b2$var$TieElem.prototype.calcTieY = function() {
+$4b26fa4fc075fe7d$var$TieElem.prototype.calcTieY = function() {
     // If the tie comes from another line, then one or both anchors will be missing.
     if (this.anchor1) this.startY = this.anchor1.pitch;
     else if (this.anchor2) this.startY = this.anchor2.pitch;
@@ -43957,7 +44183,7 @@ $1cf13affada877b2$var$TieElem.prototype.calcTieY = function() {
 // From "standard music notation practice" by Music Publishers’ Association:
 // 1) If the anchor note is down stem, the slur points to the note head.
 // 2) If the anchor note is up stem, and the slur is over, then point to middle of stem.
-$1cf13affada877b2$var$TieElem.prototype.calcSlurY = function() {
+$4b26fa4fc075fe7d$var$TieElem.prototype.calcSlurY = function() {
     if (this.anchor1 && this.anchor2) {
         if (this.above && this.anchor1.stemDir === "up" && !this.fixedY) {
             this.startY = (this.anchor1.highestVert + this.anchor1.pitch) / 2;
@@ -43979,7 +44205,7 @@ $1cf13affada877b2$var$TieElem.prototype.calcSlurY = function() {
         this.endY = this.above ? 14 : 0;
     }
 };
-$1cf13affada877b2$var$TieElem.prototype.avoidCollisionAbove = function() {
+$4b26fa4fc075fe7d$var$TieElem.prototype.avoidCollisionAbove = function() {
     // Double check that an interior note in the slur isn't so high that it interferes.
     if (this.above) {
         var maxInnerHeight = -50;
@@ -43987,14 +44213,14 @@ $1cf13affada877b2$var$TieElem.prototype.avoidCollisionAbove = function() {
         if (maxInnerHeight > this.startY && maxInnerHeight > this.endY) this.startY = this.endY = maxInnerHeight - 1;
     }
 };
-module.exports = $1cf13affada877b2$var$TieElem;
+module.exports = $4b26fa4fc075fe7d$var$TieElem;
 
 });
 
 
-parcelRequire.register("ideVe", function(module, exports) {
+parcelRegister("cgfEq", function(module, exports) {
 //    abc_ending_element.js: Definition of the EndingElement class.
-var $d425041866f651c9$var$EndingElem = function EndingElem(text, anchor1, anchor2) {
+var $8ed31ea09151c7bc$var$EndingElem = function EndingElem(text, anchor1, anchor2) {
     this.type = "EndingElem";
     this.text = text; // text to be displayed top left
     this.anchor1 = anchor1; // must have a .x property or be null (means starts at the "beginning" of the line - after keysig)
@@ -44002,26 +44228,53 @@ var $d425041866f651c9$var$EndingElem = function EndingElem(text, anchor1, anchor
     this.endingHeightAbove = 5;
     this.pitch = undefined; // This will be set later
 };
-module.exports = $d425041866f651c9$var$EndingElem;
+module.exports = $8ed31ea09151c7bc$var$EndingElem;
 
 });
 
-parcelRequire.register("bktDO", function(module, exports) {
+parcelRegister("1gzGU", function(module, exports) {
+//    abc_staff_group_element.js: Definition of the StaffGroupElement class.
+// StaffGroupElement contains all the elements that go together to make one line of music.
+// That might be multiple staves that are tied together, and it might be multiple voices on one staff.
+//
+// Methods:
+// constructor: some basic initialization
+// addVoice(): Called once for each voice. May add a new staff if needed.
+// finished(): Called only internally by layout()
+// layout(): This does all the layout. It sets the following: spacingunits, startx, minspace, w, and the x-coordinate of each element in each voice.
+// draw(): Calls the underlying methods on the voice objects to do the drawing. Sets y and height.
+//
+// Members:
+// staffs: an array of all the staves in this group. Each staff contains the following elements:
+//    { top, bottom, highest, lowest, y }
+// voices: array of VoiceElement objects. This is mostly passed in, but the VoiceElement objects are modified here.
+//
+// spacingunits: number of relative x-units in the line. Used by the calling function to pass back in as the "spacing" input parameter.
+// TODO-PER: This should actually be passed back as a return value.
+// minspace: smallest space between two notes. Used by the calling function to pass back in as the "spacing" input parameter.
+// TODO-PER: This should actually be passed back as a return value.
+// startx: The left edge, taking the margin and the optional voice name. Used by the draw() method.
+// w: The width of the line. Used by calling function to pass back in as the "spacing" input parameter, and the draw() method.
+// TODO-PER: This should actually be passed back as a return value.  (TODO-PER: in pixels or spacing units?)
+// y: The top of the staff group, in pixels. This is set in the draw method.
+// TODO-PER: Where is that used? It looks like it might not be needed.
+// height: Set in the draw() method to the height actually used. Used by the calling function to know where to start the next staff group.
+// TODO-PER: This should actually be set in the layout method and passed back as a return value.
 
-var $jNgPZ = parcelRequire("jNgPZ");
-var $83f88e14f816f643$var$StaffGroupElement = function(getTextSize) {
+var $8oHIr = parcelRequire("8oHIr");
+var $0ec2f893eda1782e$var$StaffGroupElement = function(getTextSize) {
     this.getTextSize = getTextSize;
     this.voices = [];
     this.staffs = [];
     this.brace = undefined; //tony
     this.bracket = undefined;
 };
-$83f88e14f816f643$var$StaffGroupElement.prototype.setLimit = function(member, voice) {
+$0ec2f893eda1782e$var$StaffGroupElement.prototype.setLimit = function(member, voice) {
     if (!voice.specialY[member]) return;
     if (!voice.staff.specialY[member]) voice.staff.specialY[member] = voice.specialY[member];
     else voice.staff.specialY[member] = Math.max(voice.staff.specialY[member], voice.specialY[member]);
 };
-$83f88e14f816f643$var$StaffGroupElement.prototype.addVoice = function(voice, staffnumber, stafflines) {
+$0ec2f893eda1782e$var$StaffGroupElement.prototype.addVoice = function(voice, staffnumber, stafflines) {
     var voiceNum = this.voices.length;
     this.voices[voiceNum] = voice;
     if (this.staffs[staffnumber]) this.staffs[staffnumber].voices.push(voiceNum);
@@ -44049,14 +44302,14 @@ $83f88e14f816f643$var$StaffGroupElement.prototype.addVoice = function(voice, sta
     };
     voice.staff = this.staffs[staffnumber];
 };
-$83f88e14f816f643$var$StaffGroupElement.prototype.setHeight = function() {
-    this.height = $jNgPZ(this);
+$0ec2f893eda1782e$var$StaffGroupElement.prototype.setHeight = function() {
+    this.height = $8oHIr(this);
 };
-$83f88e14f816f643$var$StaffGroupElement.prototype.setWidth = function(width) {
+$0ec2f893eda1782e$var$StaffGroupElement.prototype.setWidth = function(width) {
     this.w = width;
     for(var i = 0; i < this.voices.length; i++)this.voices[i].setWidth(width);
 };
-$83f88e14f816f643$var$StaffGroupElement.prototype.setStaffLimits = function(voice) {
+$0ec2f893eda1782e$var$StaffGroupElement.prototype.setStaffLimits = function(voice) {
     voice.staff.top = Math.max(voice.staff.top, voice.top);
     voice.staff.bottom = Math.min(voice.staff.bottom, voice.bottom);
     this.setLimit("tempoHeightAbove", voice);
@@ -44071,11 +44324,11 @@ $83f88e14f816f643$var$StaffGroupElement.prototype.setStaffLimits = function(voic
     this.setLimit("volumeHeightBelow", voice);
     this.setLimit("dynamicHeightBelow", voice);
 };
-module.exports = $83f88e14f816f643$var$StaffGroupElement;
+module.exports = $0ec2f893eda1782e$var$StaffGroupElement;
 
 });
-parcelRequire.register("jNgPZ", function(module, exports) {
-var $e68fa786d0d64b56$var$calcHeight = function(staffGroup) {
+parcelRegister("8oHIr", function(module, exports) {
+var $61d279ac8f4eb3b2$var$calcHeight = function(staffGroup) {
     // the height is calculated here in a parallel way to the drawing below in hopes that both of these functions will be modified together.
     // TODO-PER: also add the space between staves. (That's systemStaffSeparation, which is the minimum distance between the staff LINES.)
     var height = 0;
@@ -44089,17 +44342,18 @@ var $e68fa786d0d64b56$var$calcHeight = function(staffGroup) {
     }
     return height;
 };
-module.exports = $e68fa786d0d64b56$var$calcHeight;
+module.exports = $61d279ac8f4eb3b2$var$calcHeight;
 
 });
 
 
-parcelRequire.register("8wDLE", function(module, exports) {
+parcelRegister("39nHs", function(module, exports) {
+//    abc_tempo_element.js: Definition of the TempoElement class.
 
-var $jM9Y7 = parcelRequire("jM9Y7");
+var $lBV2u = parcelRequire("lBV2u");
 
-var $ilOzb = parcelRequire("ilOzb");
-var $635028e1ca5737b2$var$TempoElement = function TempoElement(tempo, tuneNumber, createNoteHead) {
+var $59E7k = parcelRequire("59E7k");
+var $24b498a9f373beea$var$TempoElement = function TempoElement(tempo, tuneNumber, createNoteHead) {
     this.type = "TempoElement";
     this.tempo = tempo;
     this.tempo.type = "tempo"; /// TODO-PER: this should be set earlier, in the parser, probably.
@@ -44110,13 +44364,13 @@ var $635028e1ca5737b2$var$TempoElement = function TempoElement(tempo, tuneNumber
     this.pitch = undefined; // This will be set later
     if (this.tempo.duration && !this.tempo.suppressBpm) this.note = this.createNote(createNoteHead, tempo, tuneNumber);
 };
-$635028e1ca5737b2$var$TempoElement.prototype.setX = function(x) {
+$24b498a9f373beea$var$TempoElement.prototype.setX = function(x) {
     this.x = x;
 };
-$635028e1ca5737b2$var$TempoElement.prototype.createNote = function(createNoteHead, tempo, tuneNumber) {
+$24b498a9f373beea$var$TempoElement.prototype.createNote = function(createNoteHead, tempo, tuneNumber) {
     var temposcale = 0.75;
     var duration = tempo.duration[0]; // TODO when multiple durations
-    var absElem = new $jM9Y7(tempo, duration, 1, "tempo", tuneNumber);
+    var absElem = new $lBV2u(tempo, duration, 1, "tempo", tuneNumber);
     // There aren't an infinite number of note values, but we are passed a float, so just in case something is off upstream,
     // merge all of the in between points.
     var dot;
@@ -44183,7 +44437,7 @@ $635028e1ca5737b2$var$TempoElement.prototype.createNote = function(createNoteHea
         var p2 = 5 * temposcale;
         var dx = tempoNote.dx + tempoNote.w;
         var width = -0.6;
-        stem = new $ilOzb(null, dx, 0, p1, {
+        stem = new $59E7k(null, dx, 0, p1, {
             "type": "stem",
             "pitch2": p2,
             linewidth: width
@@ -44192,13 +44446,13 @@ $635028e1ca5737b2$var$TempoElement.prototype.createNote = function(createNoteHea
     }
     return absElem;
 };
-module.exports = $635028e1ca5737b2$var$TempoElement;
+module.exports = $24b498a9f373beea$var$TempoElement;
 
 });
 
-parcelRequire.register("fmbEU", function(module, exports) {
+parcelRegister("3ADz0", function(module, exports) {
 //    abc_triplet_element.js: Definition of the TripletElem class.
-var $b2e1f448eaab67f5$var$TripletElem = function TripletElem(number, anchor1, options) {
+var $29d36c637b0abf37$var$TripletElem = function TripletElem(number, anchor1, options) {
     this.type = "TripletElem";
     this.anchor1 = anchor1; // must have a .x and a .parent property or be null (means starts at the "beginning" of the line - after key signature)
     this.number = number;
@@ -44206,117 +44460,55 @@ var $b2e1f448eaab67f5$var$TripletElem = function TripletElem(number, anchor1, op
     this.middleElems = []; // This is to calculate the highest interior pitch. It is used to make sure that the drawn bracket never crosses a really high middle note.
     this.flatBeams = options.flatBeams;
 };
-$b2e1f448eaab67f5$var$TripletElem.prototype.isClosed = function() {
+$29d36c637b0abf37$var$TripletElem.prototype.isClosed = function() {
     return !!this.anchor2;
 };
-$b2e1f448eaab67f5$var$TripletElem.prototype.middleNote = function(elem) {
+$29d36c637b0abf37$var$TripletElem.prototype.middleNote = function(elem) {
     this.middleElems.push(elem);
 };
-$b2e1f448eaab67f5$var$TripletElem.prototype.setCloseAnchor = function(anchor2) {
+$29d36c637b0abf37$var$TripletElem.prototype.setCloseAnchor = function(anchor2) {
     this.anchor2 = anchor2;
     // TODO-PER: This used to be just for beamed triplets but it looks like bracketed triplets need extra room, too. The only one that doesn't is stem down and beamed
     //if (this.anchor1.parent.beam)
     if (!this.anchor1.parent.beam || this.anchor1.stemDir === "up") this.endingHeightAbove = 4;
 };
-module.exports = $b2e1f448eaab67f5$var$TripletElem;
+module.exports = $29d36c637b0abf37$var$TripletElem;
 
 });
 
-parcelRequire.register("eg5HS", function(module, exports) {
+parcelRegister("a10bB", function(module, exports) {
 
-var $ilOzb = parcelRequire("ilOzb");
+var $59E7k = parcelRequire("59E7k");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
-var $dqANP = parcelRequire("dqANP");
-var $a616fc884485988c$var$addChord = function(getTextSize, abselem, elem, roomTaken, roomTakenRight, noteheadWidth, jazzchords) {
+var $hTNsL = parcelRequire("hTNsL");
+var $74aa2455bfba5774$var$addChord = function(getTextSize, abselem, elem, roomTaken, roomTakenRight, noteheadWidth, jazzchords, germanAlphabet) {
     for(var i = 0; i < elem.chord.length; i++){
         var pos = elem.chord[i].position;
         var rel_position = elem.chord[i].rel_position;
-        var chords = elem.chord[i].name.split("\n");
-        for(var j = chords.length - 1; j >= 0; j--){
-            var chord = chords[j];
-            var x = 0;
-            var y;
-            var font;
-            var klass;
-            if (pos === "left" || pos === "right" || pos === "below" || pos === "above" || !!rel_position) {
-                font = "annotationfont";
-                klass = "annotation";
-            } else {
-                font = "gchordfont";
-                klass = "chord";
-                if (jazzchords) chord = $dqANP(chord);
-            }
-            var attr = getTextSize.attr(font, klass);
-            var dim = getTextSize.calc(chord, font, klass);
-            var chordWidth = dim.width;
-            var chordHeight = dim.height / $f4yIj.STEP;
-            switch(pos){
-                case "left":
-                    roomTaken += chordWidth + 7;
-                    x = -roomTaken; // TODO-PER: This is just a guess from trial and error
-                    y = elem.averagepitch;
-                    abselem.addExtra(new $ilOzb(chord, x, chordWidth + 4, y, {
-                        type: "text",
-                        height: chordHeight,
-                        dim: attr,
-                        position: "left"
-                    }));
-                    break;
-                case "right":
-                    roomTakenRight += 4;
-                    x = roomTakenRight; // TODO-PER: This is just a guess from trial and error
-                    y = elem.averagepitch;
-                    abselem.addRight(new $ilOzb(chord, x, chordWidth + 4, y, {
-                        type: "text",
-                        height: chordHeight,
-                        dim: attr,
-                        position: "right"
-                    }));
-                    break;
-                case "below":
-                    // setting the y-coordinate to undefined for now: it will be overwritten later on, after we figure out what the highest element on the line is.
-                    abselem.addRight(new $ilOzb(chord, 0, 0, undefined, {
-                        type: "text",
-                        position: "below",
-                        height: chordHeight,
-                        dim: attr,
-                        realWidth: chordWidth
-                    }));
-                    break;
-                case "above":
-                    // setting the y-coordinate to undefined for now: it will be overwritten later on, after we figure out what the highest element on the line is.
-                    abselem.addRight(new $ilOzb(chord, 0, 0, undefined, {
-                        type: "text",
-                        position: "above",
-                        height: chordHeight,
-                        dim: attr,
-                        realWidth: chordWidth
-                    }));
-                    break;
-                default:
-                    if (rel_position) {
-                        var relPositionY = rel_position.y + 3 * $f4yIj.STEP; // TODO-PER: this is a fudge factor to make it line up with abcm2ps
-                        abselem.addRight(new $ilOzb(chord, x + rel_position.x, 0, elem.minpitch + relPositionY / $f4yIj.STEP, {
-                            position: "relative",
-                            type: "text",
-                            height: chordHeight,
-                            dim: attr
-                        }));
-                    } else {
-                        // setting the y-coordinate to undefined for now: it will be overwritten later on, after we figure out what the highest element on the line is.
-                        var pos2 = "above";
-                        if (elem.positioning && elem.positioning.chordPosition) pos2 = elem.positioning.chordPosition;
-                        if (pos2 !== "hidden") abselem.addCentered(new $ilOzb(chord, noteheadWidth / 2, chordWidth, undefined, {
-                            type: "chord",
-                            position: pos2,
-                            height: chordHeight,
-                            dim: attr,
-                            realWidth: chordWidth
-                        }));
-                    }
-            }
+        var isAnnotation = pos === "left" || pos === "right" || pos === "below" || pos === "above" || !!rel_position;
+        var font;
+        var klass;
+        if (isAnnotation) {
+            font = "annotationfont";
+            klass = "abcjs-annotation";
+        } else {
+            font = "gchordfont";
+            klass = "abcjs-chord";
+        }
+        var attr = getTextSize.attr(font, klass);
+        var name = elem.chord[i].name;
+        var ret;
+        //console.log("chord",name)
+        if (typeof name === "string") {
+            ret = $74aa2455bfba5774$var$chordString(name, pos, rel_position, isAnnotation, font, klass, attr, getTextSize, abselem, elem, roomTaken, roomTakenRight, noteheadWidth, jazzchords, germanAlphabet);
+            roomTaken = ret.roomTaken;
+            roomTakenRight = ret.roomTakenRight;
+        } else for(var j = 0; j < name.length; j++){
+            ret = $74aa2455bfba5774$var$chordString(name[j].text, pos, rel_position, isAnnotation, font, klass, attr, getTextSize, abselem, elem, roomTaken, roomTakenRight, noteheadWidth, jazzchords, germanAlphabet);
+            roomTaken = ret.roomTaken;
+            roomTakenRight = ret.roomTakenRight;
         }
     }
     return {
@@ -44324,52 +44516,165 @@ var $a616fc884485988c$var$addChord = function(getTextSize, abselem, elem, roomTa
         roomTakenRight: roomTakenRight
     };
 };
-module.exports = $a616fc884485988c$var$addChord;
+function $74aa2455bfba5774$var$chordString(chordString, pos, rel_position, isAnnotation, font, klass, attr, getTextSize, abselem, elem, roomTaken, roomTakenRight, noteheadWidth, jazzchords, germanAlphabet) {
+    var chords = chordString.split("\n");
+    for(var j = chords.length - 1; j >= 0; j--){
+        var chord = chords[j];
+        var x = 0;
+        var y;
+        if (!isAnnotation) chord = $hTNsL(chord, jazzchords, germanAlphabet);
+        var dim = getTextSize.calc(chord, font, klass);
+        var chordWidth = dim.width;
+        var chordHeight = dim.height / $6aPnV.STEP;
+        switch(pos){
+            case "left":
+                roomTaken += chordWidth + 7;
+                x = -roomTaken; // TODO-PER: This is just a guess from trial and error
+                y = elem.averagepitch;
+                abselem.addExtra(new $59E7k(chord, x, chordWidth + 4, y, {
+                    type: "text",
+                    height: chordHeight,
+                    dim: attr,
+                    position: "left"
+                }));
+                break;
+            case "right":
+                roomTakenRight += 4;
+                x = roomTakenRight; // TODO-PER: This is just a guess from trial and error
+                y = elem.averagepitch;
+                abselem.addRight(new $59E7k(chord, x, chordWidth + 4, y, {
+                    type: "text",
+                    height: chordHeight,
+                    dim: attr,
+                    position: "right"
+                }));
+                break;
+            case "below":
+                // setting the y-coordinate to undefined for now: it will be overwritten later on, after we figure out what the highest element on the line is.
+                abselem.addRight(new $59E7k(chord, 0, 0, undefined, {
+                    type: "text",
+                    position: "below",
+                    height: chordHeight,
+                    dim: attr,
+                    realWidth: chordWidth
+                }));
+                break;
+            case "above":
+                // setting the y-coordinate to undefined for now: it will be overwritten later on, after we figure out what the highest element on the line is.
+                abselem.addRight(new $59E7k(chord, 0, 0, undefined, {
+                    type: "text",
+                    position: "above",
+                    height: chordHeight,
+                    dim: attr,
+                    realWidth: chordWidth
+                }));
+                break;
+            default:
+                if (rel_position) {
+                    var relPositionY = rel_position.y + 3 * $6aPnV.STEP; // TODO-PER: this is a fudge factor to make it line up with abcm2ps
+                    abselem.addRight(new $59E7k(chord, x + rel_position.x, 0, elem.minpitch + relPositionY / $6aPnV.STEP, {
+                        position: "relative",
+                        type: "text",
+                        height: chordHeight,
+                        dim: attr
+                    }));
+                } else {
+                    // setting the y-coordinate to undefined for now: it will be overwritten later on, after we figure out what the highest element on the line is.
+                    var pos2 = "above";
+                    if (elem.positioning && elem.positioning.chordPosition) pos2 = elem.positioning.chordPosition;
+                    if (pos2 !== "hidden") abselem.addCentered(new $59E7k(chord, noteheadWidth / 2, chordWidth, undefined, {
+                        type: "chord",
+                        position: pos2,
+                        height: chordHeight,
+                        dim: attr,
+                        realWidth: chordWidth
+                    }));
+                }
+        }
+    }
+    return {
+        roomTaken: roomTaken,
+        roomTakenRight: roomTakenRight
+    };
+}
+module.exports = $74aa2455bfba5774$var$addChord;
 
 });
-parcelRequire.register("dqANP", function(module, exports) {
-function $9c6a40521eb197ae$var$formatJazzChord(chordString) {
-    // This puts markers in the pieces of the chord that are read by the svg creator.
-    // After the main part of the chord (the letter, a sharp or flat, and "m") a marker is added. Before a slash a marker is added.
+parcelRegister("hTNsL", function(module, exports) {
+function $d07df10b6bda0f51$var$germanNote(note) {
+    switch(note){
+        case "B#":
+            return "H#";
+        case "B\u266F":
+            return "H\u266F";
+        case "B":
+            return "H";
+        case "Bb":
+            return "B";
+        case "B\u266D":
+            return "B";
+    }
+    return note;
+}
+function $d07df10b6bda0f51$var$translateChord(chordString, jazzchords, germanAlphabet) {
     var lines = chordString.split("\n");
-    for(var i = 0; i < lines.length; i++){
-        var chord = lines[i];
-        // If the chord isn't in a recognizable format then just skip the formatting.
-        var reg = chord.match(/^([ABCDEFG][♯♭]?)?([^\/]+)?(\/[ABCDEFG][#b]?)?/);
-        if (reg) lines[i] = (reg[1] ? reg[1] : "") + "\x03" + (reg[2] ? reg[2] : "") + "\x03" + (reg[3] ? reg[3] : "");
+    for(let i = 0; i < lines.length; i++){
+        let chord = lines[i];
+        // If the chord isn't in a recognizable format then just skip it.
+        let reg = chord.match(/^([ABCDEFG][♯♭]?)?([^\/]+)?(\/([ABCDEFG][#b♯♭]?))?/);
+        if (!reg) continue;
+        let baseChord = reg[1] || "";
+        let modifier = reg[2] || "";
+        let bassNote = reg[4] || "";
+        if (germanAlphabet) {
+            baseChord = $d07df10b6bda0f51$var$germanNote(baseChord);
+            bassNote = $d07df10b6bda0f51$var$germanNote(bassNote);
+        }
+        // This puts markers in the pieces of the chord that are read by the svg creator.
+        // After the main part of the chord (the letter, a sharp or flat, and "m") a marker is added. Before a slash a marker is added.
+        const marker = jazzchords ? "\x03" : "";
+        const bass = bassNote ? "/" + bassNote : "";
+        lines[i] = [
+            baseChord,
+            modifier,
+            bass
+        ].join(marker);
     }
     return lines.join("\n");
 }
-module.exports = $9c6a40521eb197ae$var$formatJazzChord;
+module.exports = $d07df10b6bda0f51$var$translateChord;
 
 });
 
 
 
-parcelRequire.register("5OxDC", function(module, exports) {
-
-var $f4yIj = parcelRequire("f4yIj");
+parcelRegister("jQMoV", function(module, exports) {
+//    abc_renderer.js: API to render to SVG/Raphael/whatever rendering engine
+/*global Math */ 
+var $6aPnV = parcelRequire("6aPnV");
 
 var $goFAi = parcelRequire("goFAi");
 /**
  * Implements the API for rendering ABCJS Abstract Rendering Structure to a canvas/paper (e.g. SVG, Raphael, etc)
  * @param {Object} paper
- */ var $43bbb70c017432e3$var$Renderer = function(paper) {
+ */ var $e7386b1873c67bbf$var$Renderer = function(paper) {
     this.paper = new $goFAi(paper);
     this.controller = null;
-    this.space = 3 * $f4yIj.SPACE;
+    this.space = 3 * $6aPnV.SPACE;
     this.padding = {}; // renderer's padding is managed by the controller
     this.reset();
+    this.firefox112 = navigator.userAgent.indexOf("Firefox/112.0") >= 0;
 };
-$43bbb70c017432e3$var$Renderer.prototype.reset = function() {
+$e7386b1873c67bbf$var$Renderer.prototype.reset = function() {
     this.paper.clear();
     this.y = 0;
     this.abctune = null;
     this.path = null;
     this.isPrint = false;
+    this.lineThickness = 0;
     this.initVerticalSpace();
 };
-$43bbb70c017432e3$var$Renderer.prototype.newTune = function(abcTune) {
+$e7386b1873c67bbf$var$Renderer.prototype.newTune = function(abcTune) {
     this.abctune = abcTune; // TODO-PER: this is just to get the font info.
     this.setVerticalSpace(abcTune.formatting);
     //this.measureNumber = null;
@@ -44377,7 +44682,10 @@ $43bbb70c017432e3$var$Renderer.prototype.newTune = function(abcTune) {
     this.isPrint = abcTune.media === "print";
     this.setPadding(abcTune);
 };
-$43bbb70c017432e3$var$Renderer.prototype.setPaddingOverride = function(params) {
+$e7386b1873c67bbf$var$Renderer.prototype.setLineThickness = function(lineThickness) {
+    this.lineThickness = lineThickness;
+};
+$e7386b1873c67bbf$var$Renderer.prototype.setPaddingOverride = function(params) {
     this.paddingOverride = {
         top: params.paddingtop,
         bottom: params.paddingbottom,
@@ -44385,7 +44693,7 @@ $43bbb70c017432e3$var$Renderer.prototype.setPaddingOverride = function(params) {
         left: params.paddingleft
     };
 };
-$43bbb70c017432e3$var$Renderer.prototype.setPadding = function(abctune) {
+$e7386b1873c67bbf$var$Renderer.prototype.setPadding = function(abctune) {
     // If the padding is set in the tune, then use that.
     // Otherwise, if the padding is set in the override, use that.
     // Otherwise, use the defaults (there are a different set of defaults for screen and print.)
@@ -44405,7 +44713,7 @@ $43bbb70c017432e3$var$Renderer.prototype.setPadding = function(abctune) {
 /**
  * Some of the items on the page are not scaled, so adjust them in the opposite direction of scaling to cancel out the scaling.
  * @param {float} scale
- */ $43bbb70c017432e3$var$Renderer.prototype.adjustNonScaledItems = function(scale) {
+ */ $e7386b1873c67bbf$var$Renderer.prototype.adjustNonScaledItems = function(scale) {
     this.padding.top /= scale;
     this.padding.bottom /= scale;
     this.padding.left /= scale;
@@ -44415,7 +44723,7 @@ $43bbb70c017432e3$var$Renderer.prototype.setPadding = function(abctune) {
 };
 /**
  * Set the the values for all the configurable vertical space options.
- */ $43bbb70c017432e3$var$Renderer.prototype.initVerticalSpace = function() {
+ */ $e7386b1873c67bbf$var$Renderer.prototype.initVerticalSpace = function() {
     // conversion: 37.7953 = conversion factor for cm to px.
     // All of the following values are in px.
     this.spacing = {
@@ -44466,7 +44774,7 @@ Stretch the last music line of a tune when it exceeds
 the <float> fraction of the page width.
 <float> range is 0.0 to 1.0.
 	 */ };
-$43bbb70c017432e3$var$Renderer.prototype.setVerticalSpace = function(formatting) {
+$e7386b1873c67bbf$var$Renderer.prototype.setVerticalSpace = function(formatting) {
     // conversion from pts to px 4/3
     if (formatting.staffsep !== undefined) this.spacing.staffSeparation = formatting.staffsep * 4 / 3;
     if (formatting.composerspace !== undefined) this.spacing.composer = formatting.composerspace * 4 / 3;
@@ -44481,24 +44789,22 @@ $43bbb70c017432e3$var$Renderer.prototype.setVerticalSpace = function(formatting)
     if (formatting.wordsspace !== undefined) this.spacing.words = formatting.wordsspace * 4 / 3;
 };
 /**
- * Leave space before printing a staff system
- */ /**
  * Calculates the y for a given pitch value (relative to the stave the renderer is currently printing)
  * @param {number} ofs pitch value (bottom C on a G clef = 0, D=1, etc.)
- */ $43bbb70c017432e3$var$Renderer.prototype.calcY = function(ofs) {
-    return this.y - ofs * $f4yIj.STEP;
+ */ $e7386b1873c67bbf$var$Renderer.prototype.calcY = function(ofs) {
+    return this.y - ofs * $6aPnV.STEP;
 };
-$43bbb70c017432e3$var$Renderer.prototype.moveY = function(em, numLines) {
+$e7386b1873c67bbf$var$Renderer.prototype.moveY = function(em, numLines) {
     if (numLines === undefined) numLines = 1;
     this.y += em * numLines;
 };
-$43bbb70c017432e3$var$Renderer.prototype.absolutemoveY = function(y) {
+$e7386b1873c67bbf$var$Renderer.prototype.absolutemoveY = function(y) {
     this.y = y;
 };
-module.exports = $43bbb70c017432e3$var$Renderer;
+module.exports = $e7386b1873c67bbf$var$Renderer;
 
 });
-parcelRequire.register("goFAi", function(module, exports) {
+parcelRegister("goFAi", function(module, exports) {
 //    abc_voice_element.js: Definition of the VoiceElement class.
 /*global module */ var $beff250504ee188b$var$svgNS = "http://www.w3.org/2000/svg";
 function $beff250504ee188b$var$Svg(wrapper) {
@@ -44673,6 +44979,29 @@ $beff250504ee188b$var$Svg.prototype.text = function(text, attr, target) {
     else this.append(el);
     return el;
 };
+$beff250504ee188b$var$Svg.prototype.richTextLine = function(phrases, x, y, klass, anchor, target) {
+    var el = document.createElementNS($beff250504ee188b$var$svgNS, "text");
+    el.setAttribute("stroke", "none");
+    el.setAttribute("class", klass);
+    el.setAttribute("x", x);
+    el.setAttribute("y", y);
+    el.setAttribute("text-anchor", anchor);
+    el.setAttribute("dominant-baseline", "middle");
+    for(var i = 0; i < phrases.length; i++){
+        var phrase = phrases[i];
+        var tspan = document.createElementNS($beff250504ee188b$var$svgNS, "tspan");
+        var attrs = Object.keys(phrase.attrs);
+        for(var j = 0; j < attrs.length; j++){
+            var value = phrase.attrs[attrs[j]];
+            if (value !== "") tspan.setAttribute(attrs[j], value);
+        }
+        tspan.textContent = phrase.content;
+        el.appendChild(tspan);
+    }
+    if (target) target.appendChild(el);
+    else this.append(el);
+    return el;
+};
 $beff250504ee188b$var$Svg.prototype.guessWidth = function(text, attr) {
     var svg = this.createDummySvg();
     var el = this.text(text, attr, svg);
@@ -44760,7 +45089,7 @@ $beff250504ee188b$var$Svg.prototype.closeGroup = function() {
     var g = this.currentGroup.shift();
     if (g && g.children.length === 0) {
         // If nothing was added to the group it is because all the elements were invisible. We don't need the group, then.
-        this.svg.removeChild(g);
+        g.parentElement.removeChild(g);
         return null;
     }
     return g;
@@ -44782,6 +45111,13 @@ $beff250504ee188b$var$Svg.prototype.pathToBack = function(attr) {
         else if (key === "klass") el.setAttributeNS(null, "class", attr[key]);
         else el.setAttributeNS(null, key, attr[key]);
     }
+    this.prepend(el);
+    return el;
+};
+$beff250504ee188b$var$Svg.prototype.lineToBack = function(attr) {
+    var el = document.createElementNS($beff250504ee188b$var$svgNS, "line");
+    var keys = Object.keys(attr);
+    for(var i = 0; i < keys.length; i++)el.setAttribute(keys[i], attr[keys[i]]);
     this.prepend(el);
     return el;
 };
@@ -44813,8 +45149,8 @@ module.exports = $beff250504ee188b$var$Svg;
 });
 
 
-parcelRequire.register("fydKH", function(module, exports) {
-function $b524b2ea5fb57746$var$FreeText(info, vskip, getFontAndAttr, paddingLeft, width, getTextSize) {
+parcelRegister("3jpY9", function(module, exports) {
+function $26974a5ddffb6a60$var$FreeText(info, vskip, getFontAndAttr, paddingLeft, width, getTextSize) {
     var text = info.text;
     this.rows = [];
     var size;
@@ -44889,12 +45225,12 @@ function $b524b2ea5fb57746$var$FreeText(info, vskip, getFontAndAttr, paddingLeft
         });
     }
 }
-module.exports = $b524b2ea5fb57746$var$FreeText;
+module.exports = $26974a5ddffb6a60$var$FreeText;
 
 });
 
-parcelRequire.register("fPfmS", function(module, exports) {
-function $b8578a38e165c3ef$var$Separator(spaceAbove, lineLength, spaceBelow) {
+parcelRegister("gvf1B", function(module, exports) {
+function $c03b32384d84cccc$var$Separator(spaceAbove, lineLength, spaceBelow) {
     this.rows = [];
     if (spaceAbove) this.rows.push({
         move: spaceAbove
@@ -44907,12 +45243,12 @@ function $b8578a38e165c3ef$var$Separator(spaceAbove, lineLength, spaceBelow) {
         move: spaceBelow
     });
 }
-module.exports = $b8578a38e165c3ef$var$Separator;
+module.exports = $c03b32384d84cccc$var$Separator;
 
 });
 
-parcelRequire.register("3mcQy", function(module, exports) {
-function $271d643a8cbcc4ff$var$Subtitle(spaceAbove, formatting, info, center, paddingLeft, getTextSize) {
+parcelRegister("c5YID", function(module, exports) {
+function $8ce50d30eda6ba5c$var$Subtitle(spaceAbove, formatting, info, center, paddingLeft, getTextSize) {
     this.rows = [];
     if (spaceAbove) this.rows.push({
         move: spaceAbove
@@ -44935,20 +45271,22 @@ function $271d643a8cbcc4ff$var$Subtitle(spaceAbove, formatting, info, center, pa
         move: size.height
     });
 }
-module.exports = $271d643a8cbcc4ff$var$Subtitle;
+module.exports = $8ce50d30eda6ba5c$var$Subtitle;
 
 });
 
-parcelRequire.register("lDcb2", function(module, exports) {
+parcelRegister("hQqII", function(module, exports) {
 
-var $2mhMq = parcelRequire("2mhMq");
-function $fbf6af95049b4106$var$TopText(metaText, metaTextInfo, formatting, lines, width, isPrint, paddingLeft, spacing, getTextSize) {
+var $b4Hg9 = parcelRequire("b4Hg9");
+
+var $ZssaD = parcelRequire("ZssaD");
+function $cfdc05136bab56ef$var$TopText(metaText, metaTextInfo, formatting, lines, width, isPrint, paddingLeft, spacing, shouldAddClasses, getTextSize) {
     this.rows = [];
     if (metaText.header && isPrint) {
         // Note: whether there is a header or not doesn't change any other positioning, so this doesn't change the Y-coordinate.
         // This text goes above the margin, so we'll temporarily move up.
         var headerTextHeight = getTextSize.calc("X", "headerfont", "abcjs-header abcjs-meta-top").height;
-        $2mhMq(this.rows, {
+        $b4Hg9(this.rows, {
             marginLeft: paddingLeft,
             text: metaText.header.left,
             font: "headerfont",
@@ -44957,7 +45295,7 @@ function $fbf6af95049b4106$var$TopText(metaText, metaTextInfo, formatting, lines
             info: metaTextInfo.header,
             name: "header"
         }, getTextSize);
-        $2mhMq(this.rows, {
+        $b4Hg9(this.rows, {
             marginLeft: paddingLeft + width / 2,
             text: metaText.header.center,
             font: "headerfont",
@@ -44967,7 +45305,7 @@ function $fbf6af95049b4106$var$TopText(metaText, metaTextInfo, formatting, lines
             info: metaTextInfo.header,
             name: "header"
         }, getTextSize);
-        $2mhMq(this.rows, {
+        $b4Hg9(this.rows, {
             marginLeft: paddingLeft + width,
             text: metaText.header.right,
             font: "headerfont",
@@ -44984,30 +45322,24 @@ function $fbf6af95049b4106$var$TopText(metaText, metaTextInfo, formatting, lines
     });
     var tAnchor = formatting.titleleft ? "start" : "middle";
     var tLeft = formatting.titleleft ? paddingLeft : paddingLeft + width / 2;
-    if (metaText.title) $2mhMq(this.rows, {
-        marginLeft: tLeft,
-        text: metaText.title,
-        font: "titlefont",
-        klass: "title meta-top",
-        marginTop: spacing.title,
-        anchor: tAnchor,
-        absElemType: "title",
-        info: metaTextInfo.title,
-        name: "title"
-    }, getTextSize);
+    if (metaText.title) {
+        var klass = shouldAddClasses ? "abcjs-title" : "";
+        $ZssaD(this.rows, metaText.title, "titlefont", klass, "title", tLeft, {
+            marginTop: spacing.title,
+            anchor: tAnchor,
+            absElemType: "title",
+            info: metaTextInfo.title
+        }, getTextSize);
+    }
     if (lines.length) {
         var index = 0;
         while(index < lines.length && lines[index].subtitle){
-            $2mhMq(this.rows, {
-                marginLeft: tLeft,
-                text: lines[index].subtitle.text,
-                font: "subtitlefont",
-                klass: "text meta-top subtitle",
+            var klass = shouldAddClasses ? "abcjs-text abcjs-subtitle" : "";
+            $ZssaD(this.rows, lines[index].subtitle.text, "subtitlefont", klass, "subtitle", tLeft, {
                 marginTop: spacing.subtitle,
                 anchor: tAnchor,
                 absElemType: "subtitle",
-                info: lines[index].subtitle,
-                name: "subtitle"
+                info: lines[index].subtitle
             }, getTextSize);
             index++;
         }
@@ -45018,56 +45350,79 @@ function $fbf6af95049b4106$var$TopText(metaText, metaTextInfo, formatting, lines
         });
         if (metaText.rhythm && metaText.rhythm.length > 0) {
             var noMove = !!(metaText.composer || metaText.origin);
-            $2mhMq(this.rows, {
+            var klass = shouldAddClasses ? "abcjs-rhythm" : "";
+            $b4Hg9(this.rows, {
                 marginLeft: paddingLeft,
                 text: metaText.rhythm,
                 font: "infofont",
-                klass: "meta-top rhythm",
+                klass: klass,
                 absElemType: "rhythm",
-                noMove: true,
+                noMove: noMove,
                 info: metaTextInfo.rhythm,
                 name: "rhythm"
             }, getTextSize);
         }
-        var composerLine = "";
-        if (metaText.composer) composerLine += metaText.composer;
-        if (metaText.origin) composerLine += " (" + metaText.origin + ")";
-        if (composerLine.length > 0) $2mhMq(this.rows, {
-            marginLeft: paddingLeft + width,
-            text: composerLine,
-            font: "composerfont",
-            klass: "meta-top composer",
+        var hasSimpleComposerLine = true;
+        if (metaText.composer && typeof metaText.composer !== "string") hasSimpleComposerLine = false;
+        if (metaText.origin && typeof metaText.origin !== "string") hasSimpleComposerLine = false;
+        var composerLine = metaText.composer ? metaText.composer : "";
+        if (metaText.origin) {
+            if (typeof composerLine === "string" && typeof metaText.origin === "string") composerLine += " (" + metaText.origin + ")";
+            else if (typeof composerLine === "string" && typeof metaText.origin !== "string") {
+                composerLine = [
+                    {
+                        text: composerLine
+                    }
+                ];
+                composerLine.push({
+                    text: " ("
+                });
+                composerLine = composerLine.concat(metaText.origin);
+                composerLine.push({
+                    text: ")"
+                });
+            } else {
+                composerLine.push({
+                    text: " ("
+                });
+                composerLine = composerLine.concat(metaText.origin);
+                composerLine.push({
+                    text: ")"
+                });
+            }
+        }
+        if (composerLine) {
+            var klass = shouldAddClasses ? "abcjs-composer" : "";
+            $ZssaD(this.rows, composerLine, "composerfont", klass, "composer", paddingLeft + width, {
+                anchor: "end",
+                absElemType: "composer",
+                info: metaTextInfo.composer,
+                ingroup: true
+            }, getTextSize);
+        }
+    }
+    if (metaText.author && metaText.author.length > 0) {
+        var klass = shouldAddClasses ? "abcjs-author" : "";
+        $ZssaD(this.rows, metaText.author, "composerfont", klass, "author", paddingLeft + width, {
             anchor: "end",
-            absElemType: "composer",
-            info: metaTextInfo.composer,
-            name: "composer"
+            absElemType: "author",
+            info: metaTextInfo.author
         }, getTextSize);
     }
-    if (metaText.author && metaText.author.length > 0) $2mhMq(this.rows, {
-        marginLeft: paddingLeft + width,
-        text: metaText.author,
-        font: "composerfont",
-        klass: "meta-top author",
-        anchor: "end",
-        absElemType: "author",
-        info: metaTextInfo.author,
-        name: "author"
-    }, getTextSize);
-    if (metaText.partOrder && metaText.partOrder.length > 0) $2mhMq(this.rows, {
-        marginLeft: paddingLeft,
-        text: metaText.partOrder,
-        font: "partsfont",
-        klass: "meta-top part-order",
-        absElemType: "partOrder",
-        info: metaTextInfo.partOrder,
-        name: "part-order"
-    }, getTextSize);
+    if (metaText.partOrder && metaText.partOrder.length > 0) {
+        var klass = shouldAddClasses ? "abcjs-part-order" : "";
+        $ZssaD(this.rows, metaText.partOrder, "partsfont", klass, "part-order", paddingLeft, {
+            absElemType: "partOrder",
+            info: metaTextInfo.partOrder,
+            anchor: "start"
+        }, getTextSize);
+    }
 }
-module.exports = $fbf6af95049b4106$var$TopText;
+module.exports = $cfdc05136bab56ef$var$TopText;
 
 });
-parcelRequire.register("2mhMq", function(module, exports) {
-function $1b7b6d9e053bc00f$var$addTextIf(rows, params, getTextSize) {
+parcelRegister("b4Hg9", function(module, exports) {
+function $81019fdc688a3145$var$addTextIf(rows, params, getTextSize) {
     if (!params.text) return;
     if (!params.marginLeft) params.marginLeft = 0;
     if (!params.klass) params.klass = "";
@@ -45085,10 +45440,11 @@ function $1b7b6d9e053bc00f$var$addTextIf(rows, params, getTextSize) {
         font: params.font,
         anchor: params.anchor,
         startChar: params.info.startChar,
-        endChar: params.info.endChar
+        endChar: params.info.endChar,
+        "dominant-baseline": params["dominant-baseline"]
     };
     if (params.absElemType) attr.absElemType = params.absElemType;
-    if (!params.inGroup) attr.klass = params.klass;
+    if (!params.inGroup && params.klass) attr.klass = params.klass;
     if (params.name) attr.name = params.name;
     rows.push(attr);
     // If there are blank lines they won't be counted by getTextSize, so just get the height of one line and multiply
@@ -45105,101 +45461,186 @@ function $1b7b6d9e053bc00f$var$addTextIf(rows, params, getTextSize) {
         });
     }
 }
-module.exports = $1b7b6d9e053bc00f$var$addTextIf;
+module.exports = $81019fdc688a3145$var$addTextIf;
+
+});
+
+parcelRegister("ZssaD", function(module, exports) {
+
+var $b4Hg9 = parcelRequire("b4Hg9");
+function $0b8bc4dd7c69aec9$var$richText(rows, str, defFont, klass, name, paddingLeft, attr, getTextSize) {
+    var space = getTextSize.calc("i", defFont, klass);
+    if (str === "") rows.push({
+        move: space.height
+    });
+    else {
+        if (typeof str === "string") {
+            $b4Hg9(rows, {
+                marginLeft: paddingLeft,
+                text: str,
+                font: defFont,
+                klass: klass,
+                marginTop: attr.marginTop,
+                anchor: attr.anchor,
+                absElemType: attr.absElemType,
+                info: attr.info,
+                name: name
+            }, getTextSize);
+            return;
+        }
+        if (attr.marginTop) rows.push({
+            move: attr.marginTop
+        });
+        var largestY = 0;
+        var gap = 0;
+        var row = {
+            left: paddingLeft,
+            anchor: attr.anchor,
+            phrases: []
+        };
+        if (klass) row.klass = klass;
+        rows.push(row);
+        for(var k = 0; k < str.length; k++){
+            var thisWord = str[k];
+            var font = thisWord.font ? thisWord.font : getTextSize.attr(defFont, klass).font;
+            var phrase = {
+                content: thisWord.text
+            };
+            if (font) phrase.attrs = {
+                "font-family": getTextSize.getFamily(font.face),
+                "font-size": font.size,
+                "font-weight": font.weight,
+                "font-style": font.style,
+                "font-decoration": font.decoration
+            };
+            //if (thisWord.text) {
+            row.phrases.push(phrase);
+            var size = getTextSize.calc(thisWord.text, font, klass);
+            largestY = Math.max(largestY, size.height);
+            if (thisWord.text[thisWord.text.length - 1] === " ") gap = space.width;
+        }
+        rows.push({
+            move: largestY
+        });
+    }
+}
+module.exports = $0b8bc4dd7c69aec9$var$richText;
 
 });
 
 
-parcelRequire.register("kRNdb", function(module, exports) {
+parcelRegister("bSWCB", function(module, exports) {
 
-var $2mhMq = parcelRequire("2mhMq");
-function $f30eee4f6bc0eea7$var$BottomText(metaText, width, isPrint, paddingLeft, spacing, getTextSize) {
+var $b4Hg9 = parcelRequire("b4Hg9");
+
+var $ZssaD = parcelRequire("ZssaD");
+function $8a7235e24f4a0875$var$BottomText(metaText, width, isPrint, paddingLeft, spacing, shouldAddClasses, getTextSize) {
     this.rows = [];
-    if (metaText.unalignedWords && metaText.unalignedWords.length > 0) this.unalignedWords(metaText.unalignedWords, paddingLeft, spacing, getTextSize);
-    this.extraText(metaText, paddingLeft, spacing, getTextSize);
+    if (metaText.unalignedWords && metaText.unalignedWords.length > 0) this.unalignedWords(metaText.unalignedWords, paddingLeft, spacing, shouldAddClasses, getTextSize);
+    this.extraText(metaText, paddingLeft, spacing, shouldAddClasses, getTextSize);
     if (metaText.footer && isPrint) this.footer(metaText.footer, width, paddingLeft, getTextSize);
 }
-$f30eee4f6bc0eea7$var$BottomText.prototype.unalignedWords = function(unalignedWords, paddingLeft, spacing, getTextSize) {
-    var indent = 50;
-    var klass = "meta-bottom unaligned-words";
+$8a7235e24f4a0875$var$BottomText.prototype.unalignedWords = function(unalignedWords, marginLeft, spacing, shouldAddClasses, getTextSize) {
+    var klass = shouldAddClasses ? "abcjs-unaligned-words" : "";
     var defFont = "wordsfont";
-    this.rows.push({
-        startGroup: "unalignedWords",
-        klass: "abcjs-meta-bottom abcjs-unaligned-words",
-        name: "words"
-    });
     var space = getTextSize.calc("i", defFont, klass);
     this.rows.push({
         move: spacing.words
     });
-    for(var j = 0; j < unalignedWords.length; j++){
-        if (unalignedWords[j] === "") this.rows.push({
-            move: space.height
-        });
-        else if (typeof unalignedWords[j] === "string") $2mhMq(this.rows, {
-            marginLeft: paddingLeft + indent,
-            text: unalignedWords[j],
-            font: defFont,
-            klass: klass,
-            inGroup: true,
-            name: "words"
+    $8a7235e24f4a0875$var$addMultiLine(this.rows, "", unalignedWords, marginLeft, defFont, "unalignedWords", "unalignedWords", klass, "unalignedWords", spacing, shouldAddClasses, getTextSize);
+    this.rows.push({
+        move: space.height
+    });
+};
+function $8a7235e24f4a0875$var$addSingleLine(rows, preface, text, marginLeft, klass, shouldAddClasses, getTextSize) {
+    if (text) {
+        if (preface) {
+            if (typeof text === "string") text = preface + text;
+            else text = [
+                {
+                    text: preface
+                }
+            ].concat(text);
+        }
+        klass = shouldAddClasses ? "abcjs-extra-text " + klass : "";
+        $ZssaD(rows, text, "historyfont", klass, "description", marginLeft, {
+            absElemType: "extraText",
+            anchor: "start"
         }, getTextSize);
-        else {
-            var largestY = 0;
-            var offsetX = 0;
-            for(var k = 0; k < unalignedWords[j].length; k++){
-                var thisWord = unalignedWords[j][k];
-                var font = thisWord.font ? thisWord.font : defFont;
-                this.rows.push({
-                    left: paddingLeft + indent + offsetX,
-                    text: thisWord.text,
-                    font: font,
-                    anchor: "start"
+    }
+}
+function $8a7235e24f4a0875$var$addMultiLine(rows, preface, content, marginLeft, defFont, absElemType, groupName, klass, name, spacing, shouldAddClasses, getTextSize) {
+    if (content) {
+        klass = shouldAddClasses ? "abcjs-extra-text " + klass : "";
+        var size = getTextSize.calc("A", defFont, klass);
+        if (typeof content === "string") {
+            if (preface) content = preface + "\n" + content;
+            $b4Hg9(rows, {
+                marginLeft: marginLeft,
+                text: content,
+                font: defFont,
+                absElemType: "extraText",
+                name: name,
+                "dominant-baseline": "middle",
+                klass: klass
+            }, getTextSize);
+        //rows.push({move: size.height*3/4})
+        } else {
+            rows.push({
+                startGroup: groupName,
+                klass: klass,
+                name: name
+            });
+            rows.push({
+                move: spacing.info
+            });
+            if (preface) {
+                $b4Hg9(rows, {
+                    marginLeft: marginLeft,
+                    text: preface,
+                    font: defFont,
+                    absElemType: "extraText",
+                    name: name,
+                    "dominant-baseline": "middle"
+                }, getTextSize);
+                rows.push({
+                    move: size.height * 3 / 4
                 });
-                var size = getTextSize.calc(thisWord.text, defFont, klass);
-                largestY = Math.max(largestY, size.height);
-                offsetX += size.width;
-                // If the phrase ends in a space, then that is not counted in the width, so we need to add that in ourselves.
-                if (thisWord.text[thisWord.text.length - 1] === " ") offsetX += space.width;
             }
-            this.rows.push({
-                move: largestY
+            for(var j = 0; j < content.length; j++){
+                $ZssaD(rows, content[j], defFont, "", name, marginLeft, {
+                    anchor: "start"
+                }, getTextSize);
+                // TODO-PER: Hack! the string and rich lines should have used up the same amount of space without this.
+                if (j < content.length - 1 && typeof content[j] === "string" && typeof content[j + 1] !== "string") rows.push({
+                    move: size.height * 3 / 4
+                });
+            }
+            rows.push({
+                endGroup: groupName,
+                absElemType: absElemType,
+                startChar: -1,
+                endChar: -1,
+                name: name
+            });
+            rows.push({
+                move: size.height
             });
         }
     }
-    this.rows.push({
-        move: space.height * 2
-    });
-    this.rows.push({
-        endGroup: "unalignedWords",
-        absElemType: "unalignedWords",
-        startChar: -1,
-        endChar: -1,
-        name: "unalignedWords"
-    });
+}
+$8a7235e24f4a0875$var$BottomText.prototype.extraText = function(metaText, marginLeft, spacing, shouldAddClasses, getTextSize) {
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Book: ", metaText.book, marginLeft, "abcjs-book", shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Source: ", metaText.source, marginLeft, "abcjs-source", shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Discography: ", metaText.discography, marginLeft, "abcjs-discography", shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addMultiLine(this.rows, "Notes:", metaText.notes, marginLeft, "historyfont", "extraText", "notes", "abcjs-notes", "description", spacing, shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Transcription: ", metaText.transcription, marginLeft, "abcjs-transcription", shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addMultiLine(this.rows, "History:", metaText.history, marginLeft, "historyfont", "extraText", "history", "abcjs-history", "description", spacing, shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Copyright: ", metaText["abc-copyright"], marginLeft, "abcjs-copyright", shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Creator: ", metaText["abc-creator"], marginLeft, "abcjs-creator", shouldAddClasses, getTextSize);
+    $8a7235e24f4a0875$var$addSingleLine(this.rows, "Edited By: ", metaText["abc-edited-by"], marginLeft, "abcjs-edited-by", shouldAddClasses, getTextSize);
 };
-$f30eee4f6bc0eea7$var$BottomText.prototype.extraText = function(metaText, marginLeft, spacing, getTextSize) {
-    var extraText = "";
-    if (metaText.book) extraText += "Book: " + metaText.book + "\n";
-    if (metaText.source) extraText += "Source: " + metaText.source + "\n";
-    if (metaText.discography) extraText += "Discography: " + metaText.discography + "\n";
-    if (metaText.notes) extraText += "Notes: " + metaText.notes + "\n";
-    if (metaText.transcription) extraText += "Transcription: " + metaText.transcription + "\n";
-    if (metaText.history) extraText += "History: " + metaText.history + "\n";
-    if (metaText["abc-copyright"]) extraText += "Copyright: " + metaText["abc-copyright"] + "\n";
-    if (metaText["abc-creator"]) extraText += "Creator: " + metaText["abc-creator"] + "\n";
-    if (metaText["abc-edited-by"]) extraText += "Edited By: " + metaText["abc-edited-by"] + "\n";
-    if (extraText.length > 0) $2mhMq(this.rows, {
-        marginLeft: marginLeft,
-        text: extraText,
-        font: "historyfont",
-        klass: "meta-bottom extra-text",
-        marginTop: spacing.info,
-        absElemType: "extraText",
-        name: "description"
-    }, getTextSize);
-};
-$f30eee4f6bc0eea7$var$BottomText.prototype.footer = function(footer, width, paddingLeft, getTextSize) {
+$8a7235e24f4a0875$var$BottomText.prototype.footer = function(footer, width, paddingLeft, getTextSize) {
     var klass = "header meta-bottom";
     var font = "footerfont";
     this.rows.push({
@@ -45207,14 +45648,14 @@ $f30eee4f6bc0eea7$var$BottomText.prototype.footer = function(footer, width, padd
         klass: klass
     });
     // Note: whether there is a footer or not doesn't change any other positioning, so this doesn't change the Y-coordinate.
-    $2mhMq(this.rows, {
+    $b4Hg9(this.rows, {
         marginLeft: paddingLeft,
         text: footer.left,
         font: font,
         klass: klass,
         name: "footer"
     }, getTextSize);
-    $2mhMq(this.rows, {
+    $b4Hg9(this.rows, {
         marginLeft: paddingLeft + width / 2,
         text: footer.center,
         font: font,
@@ -45222,7 +45663,7 @@ $f30eee4f6bc0eea7$var$BottomText.prototype.footer = function(footer, width, padd
         anchor: "middle",
         name: "footer"
     }, getTextSize);
-    $2mhMq(this.rows, {
+    $b4Hg9(this.rows, {
         marginLeft: paddingLeft + width,
         text: footer.right,
         font: font,
@@ -45231,40 +45672,54 @@ $f30eee4f6bc0eea7$var$BottomText.prototype.footer = function(footer, width, padd
         name: "footer"
     }, getTextSize);
 };
-module.exports = $f30eee4f6bc0eea7$var$BottomText;
+module.exports = $8a7235e24f4a0875$var$BottomText;
 
 });
 
-parcelRequire.register("3q5XA", function(module, exports) {
+parcelRegister("16rnY", function(module, exports) {
 
-var $f4yIj = parcelRequire("f4yIj");
-function $27d86c53abe24698$var$setupSelection(engraver) {
-    engraver.rangeHighlight = $27d86c53abe24698$var$rangeHighlight;
+var $6aPnV = parcelRequire("6aPnV");
+function $0cdb983a22a9860c$var$setupSelection(engraver, svgs) {
+    engraver.rangeHighlight = $0cdb983a22a9860c$var$rangeHighlight;
     if (engraver.dragging) for(var h = 0; h < engraver.selectables.length; h++){
         var hist = engraver.selectables[h];
         if (hist.svgEl.getAttribute("selectable") === "true") {
             hist.svgEl.setAttribute("tabindex", 0);
             hist.svgEl.setAttribute("data-index", h);
-            hist.svgEl.addEventListener("keydown", $27d86c53abe24698$var$keyboardDown.bind(engraver));
-            hist.svgEl.addEventListener("keyup", $27d86c53abe24698$var$keyboardSelection.bind(engraver));
-            hist.svgEl.addEventListener("focus", $27d86c53abe24698$var$elementFocused.bind(engraver));
+            hist.svgEl.addEventListener("keydown", $0cdb983a22a9860c$var$keyboardDown.bind(engraver));
+            hist.svgEl.addEventListener("keyup", $0cdb983a22a9860c$var$keyboardSelection.bind(engraver));
+            hist.svgEl.addEventListener("focus", $0cdb983a22a9860c$var$elementFocused.bind(engraver));
         }
     }
-    engraver.renderer.paper.svg.addEventListener("mousedown", $27d86c53abe24698$var$mouseDown.bind(engraver));
-    engraver.renderer.paper.svg.addEventListener("mousemove", $27d86c53abe24698$var$mouseMove.bind(engraver));
-    engraver.renderer.paper.svg.addEventListener("mouseup", $27d86c53abe24698$var$mouseUp.bind(engraver));
+    for(var i = 0; i < svgs.length; i++){
+        svgs[i].addEventListener("touchstart", $0cdb983a22a9860c$var$mouseDown.bind(engraver), {
+            passive: true
+        });
+        svgs[i].addEventListener("touchmove", $0cdb983a22a9860c$var$mouseMove.bind(engraver), {
+            passive: true
+        });
+        svgs[i].addEventListener("touchend", $0cdb983a22a9860c$var$mouseUp.bind(engraver), {
+            passive: true
+        });
+        svgs[i].addEventListener("mousedown", $0cdb983a22a9860c$var$mouseDown.bind(engraver));
+        svgs[i].addEventListener("mousemove", $0cdb983a22a9860c$var$mouseMove.bind(engraver));
+        svgs[i].addEventListener("mouseup", $0cdb983a22a9860c$var$mouseUp.bind(engraver));
+    }
 }
-function $27d86c53abe24698$var$getCoord(ev, svg) {
+function $0cdb983a22a9860c$var$getCoord(ev) {
     var scaleX = 1;
     var scaleY = 1;
+    var svg = ev.target.closest("svg");
+    var yOffset = 0;
     // when renderer.options.responsive === 'resize' the click coords are in relation to the HTML
     // element, we need to convert to the SVG viewBox coords
-    if (svg.viewBox.baseVal) {
+    if (svg && svg.viewBox && svg.viewBox.baseVal) {
         // Chrome makes these values null when no viewBox is given.
         if (svg.viewBox.baseVal.width !== 0) scaleX = svg.viewBox.baseVal.width / svg.clientWidth;
         if (svg.viewBox.baseVal.height !== 0) scaleY = svg.viewBox.baseVal.height / svg.clientHeight;
+        yOffset = svg.viewBox.baseVal.y;
     }
-    var svgClicked = ev.target.tagName === "svg";
+    var svgClicked = ev.target && ev.target.tagName === "svg";
     var x;
     var y;
     if (svgClicked) {
@@ -45279,15 +45734,15 @@ function $27d86c53abe24698$var$getCoord(ev, svg) {
     //console.log(x, y)
     return [
         x,
-        y
+        y + yOffset
     ];
 }
-function $27d86c53abe24698$var$elementFocused(ev) {
+function $0cdb983a22a9860c$var$elementFocused(ev) {
     // If there had been another element focused and is being dragged, then report that before setting the new element up.
-    if (this.dragMechanism === "keyboard" && this.dragYStep !== 0 && this.dragTarget) $27d86c53abe24698$var$notifySelect.bind(this)(this.dragTarget, this.dragYStep, this.selectables.length, this.dragIndex, ev);
+    if (this.dragMechanism === "keyboard" && this.dragYStep !== 0 && this.dragTarget) $0cdb983a22a9860c$var$notifySelect.bind(this)(this.dragTarget, this.dragYStep, this.selectables.length, this.dragIndex, ev);
     this.dragYStep = 0;
 }
-function $27d86c53abe24698$var$keyboardDown(ev) {
+function $0cdb983a22a9860c$var$keyboardDown(ev) {
     // Swallow the up and down arrow events - they will be used for dragging with the keyboard
     switch(ev.keyCode){
         case 38:
@@ -45295,7 +45750,7 @@ function $27d86c53abe24698$var$keyboardDown(ev) {
             ev.preventDefault();
     }
 }
-function $27d86c53abe24698$var$keyboardSelection(ev) {
+function $0cdb983a22a9860c$var$keyboardSelection(ev) {
     // "this" is the EngraverController because of the bind(this) when setting the event listener.
     var handled = false;
     var index = ev.target.dataset.index;
@@ -45306,16 +45761,16 @@ function $27d86c53abe24698$var$keyboardSelection(ev) {
             this.dragTarget = this.selectables[index];
             this.dragIndex = index;
             this.dragMechanism = "keyboard";
-            $27d86c53abe24698$var$mouseUp.bind(this)(ev);
+            $0cdb983a22a9860c$var$mouseUp.bind(this)(ev);
             break;
         case 38:
             handled = true;
             this.dragTarget = this.selectables[index];
             this.dragIndex = index;
-            if (this.dragTarget.isDraggable) {
+            if (this.dragTarget && this.dragTarget.isDraggable) {
                 if (this.dragging && this.dragTarget.isDraggable) this.dragTarget.absEl.highlight(undefined, this.dragColor);
                 this.dragYStep--;
-                this.dragTarget.svgEl.setAttribute("transform", "translate(0," + this.dragYStep * $f4yIj.STEP + ")");
+                this.dragTarget.svgEl.setAttribute("transform", "translate(0," + this.dragYStep * $6aPnV.STEP + ")");
             }
             break;
         case 40:
@@ -45323,28 +45778,29 @@ function $27d86c53abe24698$var$keyboardSelection(ev) {
             this.dragTarget = this.selectables[index];
             this.dragIndex = index;
             this.dragMechanism = "keyboard";
-            if (this.dragTarget.isDraggable) {
+            if (this.dragTarget && this.dragTarget.isDraggable) {
                 if (this.dragging && this.dragTarget.isDraggable) this.dragTarget.absEl.highlight(undefined, this.dragColor);
                 this.dragYStep++;
-                this.dragTarget.svgEl.setAttribute("transform", "translate(0," + this.dragYStep * $f4yIj.STEP + ")");
+                this.dragTarget.svgEl.setAttribute("transform", "translate(0," + this.dragYStep * $6aPnV.STEP + ")");
             }
             break;
         case 9:
             // This is losing focus - if there had been dragging, then do the callback
-            if (this.dragYStep !== 0) $27d86c53abe24698$var$mouseUp.bind(this)(ev);
+            if (this.dragYStep !== 0) $0cdb983a22a9860c$var$mouseUp.bind(this)(ev);
             break;
         default:
             break;
     }
     if (handled) ev.preventDefault();
 }
-function $27d86c53abe24698$var$findElementInHistory(selectables, el) {
+function $0cdb983a22a9860c$var$findElementInHistory(selectables, el) {
+    if (!el) return -1;
     for(var i = 0; i < selectables.length; i++){
-        if (el === selectables[i].svgEl) return i;
+        if (el.dataset.index === selectables[i].svgEl.dataset.index) return i;
     }
     return -1;
 }
-function $27d86c53abe24698$var$findElementByCoord(self, x, y) {
+function $0cdb983a22a9860c$var$findElementByCoord(self, x, y) {
     var minDistance = 9999999;
     var closestIndex = -1;
     for(var i = 0; i < self.selectables.length && minDistance > 0; i++){
@@ -45381,7 +45837,7 @@ function $27d86c53abe24698$var$findElementByCoord(self, x, y) {
     }
     return closestIndex >= 0 && minDistance <= 12 ? closestIndex : -1;
 }
-function $27d86c53abe24698$var$getBestMatchCoordinates(dim, ev, scale) {
+function $0cdb983a22a9860c$var$getBestMatchCoordinates(dim, ev, scale) {
     // Different browsers have conflicting meanings for the coordinates that are returned.
     // If the item we want is clicked on directly, then we will just see what is the best match.
     // This seems like less of a hack than browser sniffing.
@@ -45405,36 +45861,39 @@ function $27d86c53abe24698$var$getBestMatchCoordinates(dim, ev, scale) {
         ev.layerY
     ];
 }
-function $27d86c53abe24698$var$getTarget(target) {
+function $0cdb983a22a9860c$var$getTarget(target) {
     // This searches up the dom for the first item containing the attribute "selectable", or stopping at the SVG.
+    if (!target) return null;
     if (target.tagName === "svg") return target;
+    if (!target.getAttribute) return null;
     var found = target.getAttribute("selectable");
-    while(!found){
+    while(!found)if (!target.parentElement) found = true;
+    else {
         target = target.parentElement;
         if (target.tagName === "svg") found = true;
         else found = target.getAttribute("selectable");
     }
     return target;
 }
-function $27d86c53abe24698$var$getMousePosition(self, ev) {
+function $0cdb983a22a9860c$var$getMousePosition(self, ev) {
     // if the user clicked exactly on an element that we're interested in, then we already have the answer.
     // This is more reliable than the calculations because firefox returns different coords for offsetX, offsetY
     var x;
     var y;
     var box;
-    var clickedOn = $27d86c53abe24698$var$findElementInHistory(self.selectables, $27d86c53abe24698$var$getTarget(ev.target));
+    var clickedOn = $0cdb983a22a9860c$var$findElementInHistory(self.selectables, $0cdb983a22a9860c$var$getTarget(ev.target));
     if (clickedOn >= 0) {
         // There was a direct hit on an element.
-        box = $27d86c53abe24698$var$getBestMatchCoordinates(self.selectables[clickedOn].svgEl.getBBox(), ev, self.scale);
+        box = $0cdb983a22a9860c$var$getBestMatchCoordinates(self.selectables[clickedOn].svgEl.getBBox(), ev, self.scale);
         x = box[0];
         y = box[1];
     //console.log("clicked on", clickedOn, x, y, self.selectables[clickedOn].svgEl.getBBox(), ev.target.getBBox());
     } else {
         // See if they clicked close to an element.
-        box = $27d86c53abe24698$var$getCoord(ev, self.renderer.paper.svg);
+        box = $0cdb983a22a9860c$var$getCoord(ev);
         x = box[0];
         y = box[1];
-        clickedOn = $27d86c53abe24698$var$findElementByCoord(self, x, y);
+        clickedOn = $0cdb983a22a9860c$var$findElementByCoord(self, x, y);
     //console.log("clicked near", clickedOn, x, y, printEl(ev.target));
     }
     return {
@@ -45443,11 +45902,26 @@ function $27d86c53abe24698$var$getMousePosition(self, ev) {
         clickedOn: clickedOn
     };
 }
-function $27d86c53abe24698$var$mouseDown(ev) {
+function $0cdb983a22a9860c$var$attachMissingTouchEventAttributes(touchEv) {
+    if (!touchEv || !touchEv.target || !touchEv.touches || touchEv.touches.length < 1) return;
+    var rect = touchEv.target.getBoundingClientRect();
+    var offsetX = touchEv.touches[0].pageX - rect.left;
+    var offsetY = touchEv.touches[0].pageY - rect.top;
+    touchEv.touches[0].offsetX = offsetX;
+    touchEv.touches[0].offsetY = offsetY;
+    touchEv.touches[0].layerX = touchEv.touches[0].pageX;
+    touchEv.touches[0].layerY = touchEv.touches[0].pageY;
+}
+function $0cdb983a22a9860c$var$mouseDown(ev) {
     // "this" is the EngraverController because of the bind(this) when setting the event listener.
-    var positioning = $27d86c53abe24698$var$getMousePosition(this, ev);
+    var _ev = ev;
+    if (ev.type === "touchstart") {
+        $0cdb983a22a9860c$var$attachMissingTouchEventAttributes(ev);
+        if (ev.touches.length > 0) _ev = ev.touches[0];
+    }
+    var positioning = $0cdb983a22a9860c$var$getMousePosition(this, _ev);
     // Only start dragging if the user clicked close enough to an element and clicked with the main mouse button.
-    if (positioning.clickedOn >= 0 && ev.button === 0) {
+    if (positioning.clickedOn >= 0 && (ev.type === "touchstart" || ev.button === 0) && this.selectables[positioning.clickedOn]) {
         this.dragTarget = this.selectables[positioning.clickedOn];
         this.dragIndex = positioning.clickedOn;
         this.dragMechanism = "mouse";
@@ -45456,50 +45930,61 @@ function $27d86c53abe24698$var$mouseDown(ev) {
             y: positioning.y
         };
         if (this.dragging && this.dragTarget.isDraggable) {
-            $27d86c53abe24698$var$addGlobalClass(this.renderer.paper, "abcjs-dragging-in-progress");
+            $0cdb983a22a9860c$var$addGlobalClass(this.renderer.paper, "abcjs-dragging-in-progress");
             this.dragTarget.absEl.highlight(undefined, this.dragColor);
         }
     }
 }
-function $27d86c53abe24698$var$mouseMove(ev) {
+function $0cdb983a22a9860c$var$mouseMove(ev) {
+    var _ev = ev;
+    if (ev.type === "touchmove") {
+        $0cdb983a22a9860c$var$attachMissingTouchEventAttributes(ev);
+        if (ev.touches.length > 0) _ev = ev.touches[0];
+    }
+    this.lastTouchMove = ev;
     // "this" is the EngraverController because of the bind(this) when setting the event listener.
-    if (!this.dragTarget || !this.dragging || !this.dragTarget.isDraggable || this.dragMechanism !== "mouse") return;
-    var positioning = $27d86c53abe24698$var$getMousePosition(this, ev);
-    var yDist = Math.round((positioning.y - this.dragMouseStart.y) / $f4yIj.STEP);
+    if (!this.dragTarget || !this.dragging || !this.dragTarget.isDraggable || this.dragMechanism !== "mouse" || !this.dragMouseStart) return;
+    var positioning = $0cdb983a22a9860c$var$getMousePosition(this, _ev);
+    var yDist = Math.round((positioning.y - this.dragMouseStart.y) / $6aPnV.STEP);
     if (yDist !== this.dragYStep) {
         this.dragYStep = yDist;
-        this.dragTarget.svgEl.setAttribute("transform", "translate(0," + yDist * $f4yIj.STEP + ")");
+        this.dragTarget.svgEl.setAttribute("transform", "translate(0," + yDist * $6aPnV.STEP + ")");
     }
 }
-function $27d86c53abe24698$var$mouseUp(ev) {
+function $0cdb983a22a9860c$var$mouseUp(ev) {
     // "this" is the EngraverController because of the bind(this) when setting the event listener.
+    var _ev = ev;
+    if (ev.type === "touchend" && this.lastTouchMove) {
+        $0cdb983a22a9860c$var$attachMissingTouchEventAttributes(this.lastTouchMove);
+        if (this.lastTouchMove && this.lastTouchMove.touches && this.lastTouchMove.touches.length > 0) _ev = this.lastTouchMove.touches[0];
+    }
     if (!this.dragTarget) return;
-    $27d86c53abe24698$var$clearSelection.bind(this)();
+    $0cdb983a22a9860c$var$clearSelection.bind(this)();
     if (this.dragTarget.absEl && this.dragTarget.absEl.highlight) {
         this.selected = [
             this.dragTarget.absEl
         ];
         this.dragTarget.absEl.highlight(undefined, this.selectionColor);
     }
-    $27d86c53abe24698$var$notifySelect.bind(this)(this.dragTarget, this.dragYStep, this.selectables.length, this.dragIndex, ev);
+    $0cdb983a22a9860c$var$notifySelect.bind(this)(this.dragTarget, this.dragYStep, this.selectables.length, this.dragIndex, _ev);
     if (this.dragTarget.svgEl && this.dragTarget.svgEl.focus) {
         this.dragTarget.svgEl.focus();
         this.dragTarget = null;
         this.dragIndex = -1;
     }
-    $27d86c53abe24698$var$removeGlobalClass(this.renderer.svg, "abcjs-dragging-in-progress");
+    $0cdb983a22a9860c$var$removeGlobalClass(this.renderer.svg, "abcjs-dragging-in-progress");
 }
-function $27d86c53abe24698$var$setSelection(dragIndex) {
+function $0cdb983a22a9860c$var$setSelection(dragIndex) {
     if (dragIndex >= 0 && dragIndex < this.selectables.length) {
         this.dragTarget = this.selectables[dragIndex];
         this.dragIndex = dragIndex;
         this.dragMechanism = "keyboard";
-        $27d86c53abe24698$var$mouseUp.bind(this)({
+        $0cdb983a22a9860c$var$mouseUp.bind(this)({
             target: this.dragTarget.svgEl
         });
     }
 }
-function $27d86c53abe24698$var$notifySelect(target, dragStep, dragMax, dragIndex, ev) {
+function $0cdb983a22a9860c$var$notifySelect(target, dragStep, dragMax, dragIndex, ev) {
     var classes = [];
     if (target.absEl.elemset) {
         var classObj = {};
@@ -45514,40 +45999,42 @@ function $27d86c53abe24698$var$notifySelect(target, dragStep, dragMax, dragIndex
     }
     var analysis = {};
     for(var ii = 0; ii < classes.length; ii++){
-        $27d86c53abe24698$var$findNumber(classes[ii], "abcjs-v", analysis, "voice");
-        $27d86c53abe24698$var$findNumber(classes[ii], "abcjs-l", analysis, "line");
-        $27d86c53abe24698$var$findNumber(classes[ii], "abcjs-m", analysis, "measure");
+        $0cdb983a22a9860c$var$findNumber(classes[ii], "abcjs-v", analysis, "voice");
+        $0cdb983a22a9860c$var$findNumber(classes[ii], "abcjs-l", analysis, "line");
+        $0cdb983a22a9860c$var$findNumber(classes[ii], "abcjs-m", analysis, "measure");
     }
     if (target.staffPos) analysis.staffPos = target.staffPos;
     var closest = ev.target;
-    while(!closest.dataset.name && closest.tagName.toLowerCase() !== "svg")closest = closest.parentNode;
+    while(closest && closest.dataset && !closest.dataset.name && closest.tagName.toLowerCase() !== "svg")closest = closest.parentNode;
     var parent = ev.target;
-    while(!parent.dataset.index && parent.tagName.toLowerCase() !== "svg")parent = parent.parentNode;
-    analysis.name = parent.dataset.name;
-    analysis.clickedName = closest.dataset.name;
-    analysis.parentClasses = parent.classList;
-    analysis.clickedClasses = closest.classList;
+    while(parent && parent.dataset && !parent.dataset.index && parent.tagName.toLowerCase() !== "svg")parent = parent.parentNode;
+    if (parent && parent.dataset) {
+        analysis.name = parent.dataset.name;
+        analysis.clickedName = closest.dataset.name;
+        analysis.parentClasses = parent.classList;
+    }
+    if (closest && closest.classList) analysis.clickedClasses = closest.classList;
     analysis.selectableElement = target.svgEl;
     for(var i = 0; i < this.listeners.length; i++)this.listeners[i](target.absEl.abcelem, target.absEl.tuneNumber, classes.join(" "), analysis, {
         step: dragStep,
         max: dragMax,
         index: dragIndex,
-        setSelection: $27d86c53abe24698$var$setSelection.bind(this)
+        setSelection: $0cdb983a22a9860c$var$setSelection.bind(this)
     }, ev);
 }
-function $27d86c53abe24698$var$findNumber(klass, match, target, name) {
+function $0cdb983a22a9860c$var$findNumber(klass, match, target, name) {
     if (klass.indexOf(match) === 0) {
         var value = klass.replace(match, "");
         var num = parseInt(value, 10);
         if ("" + num === value) target[name] = num;
     }
 }
-function $27d86c53abe24698$var$clearSelection() {
+function $0cdb983a22a9860c$var$clearSelection() {
     for(var i = 0; i < this.selected.length; i++)this.selected[i].unhighlight(undefined, this.renderer.foregroundColor);
     this.selected = [];
 }
-function $27d86c53abe24698$var$rangeHighlight(start, end) {
-    $27d86c53abe24698$var$clearSelection.bind(this)();
+function $0cdb983a22a9860c$var$rangeHighlight(start, end) {
+    $0cdb983a22a9860c$var$clearSelection.bind(this)();
     for(var line = 0; line < this.staffgroups.length; line++){
         var voices = this.staffgroups[line].voices;
         for(var voice = 0; voice < voices.length; voice++){
@@ -45566,7 +46053,7 @@ function $27d86c53abe24698$var$rangeHighlight(start, end) {
         }
     }
 }
-function $27d86c53abe24698$var$getClassSet(el) {
+function $0cdb983a22a9860c$var$getClassSet(el) {
     var oldClass = el.getAttribute("class");
     if (!oldClass) oldClass = "";
     var klasses = oldClass.split(" ");
@@ -45574,39 +46061,39 @@ function $27d86c53abe24698$var$getClassSet(el) {
     for(var i = 0; i < klasses.length; i++)obj[klasses[i]] = true;
     return obj;
 }
-function $27d86c53abe24698$var$setClassSet(el, klassSet) {
+function $0cdb983a22a9860c$var$setClassSet(el, klassSet) {
     var klasses = [];
     for(var key in klassSet)if (klassSet.hasOwnProperty(key)) klasses.push(key);
     el.setAttribute("class", klasses.join(" "));
 }
-function $27d86c53abe24698$var$addGlobalClass(svg, klass) {
+function $0cdb983a22a9860c$var$addGlobalClass(svg, klass) {
     if (svg) {
-        var obj = $27d86c53abe24698$var$getClassSet(svg.svg);
+        var obj = $0cdb983a22a9860c$var$getClassSet(svg.svg);
         obj[klass] = true;
-        $27d86c53abe24698$var$setClassSet(svg.svg, obj);
+        $0cdb983a22a9860c$var$setClassSet(svg.svg, obj);
     }
 }
-function $27d86c53abe24698$var$removeGlobalClass(svg, klass) {
+function $0cdb983a22a9860c$var$removeGlobalClass(svg, klass) {
     if (svg) {
-        var obj = $27d86c53abe24698$var$getClassSet(svg.svg);
+        var obj = $0cdb983a22a9860c$var$getClassSet(svg.svg);
         delete obj[klass];
-        $27d86c53abe24698$var$setClassSet(svg.svg, obj);
+        $0cdb983a22a9860c$var$setClassSet(svg.svg, obj);
     }
 }
-module.exports = $27d86c53abe24698$var$setupSelection;
+module.exports = $0cdb983a22a9860c$var$setupSelection;
 
 });
 
-parcelRequire.register("cByzt", function(module, exports) {
+parcelRegister("cByzt", function(module, exports) {
 
 var $bWf2L = parcelRequire("bWf2L");
 
-var $d0UO6 = parcelRequire("d0UO6");
+var $gLuLS = parcelRequire("gLuLS");
 
-var $c4HDc = parcelRequire("c4HDc");
+var $b58rs = parcelRequire("b58rs");
 
 var $kafHv = parcelRequire("kafHv");
-var $92d3c1d61b12c0cc$var$layout = function(renderer, abctune, width, space) {
+var $92d3c1d61b12c0cc$var$layout = function(renderer, abctune, width, space, expandToWidest) {
     var i;
     var abcLine;
     // Adjust the x-coordinates to their absolute positions
@@ -45614,8 +46101,14 @@ var $92d3c1d61b12c0cc$var$layout = function(renderer, abctune, width, space) {
     for(i = 0; i < abctune.lines.length; i++){
         abcLine = abctune.lines[i];
         if (abcLine.staff) {
-            $92d3c1d61b12c0cc$var$setXSpacing(renderer, width, space, abcLine.staffGroup, abctune.formatting, i === abctune.lines.length - 1, false);
-            if (abcLine.staffGroup.w > maxWidth) maxWidth = abcLine.staffGroup.w;
+            // console.log("=== line", i)
+            var thisWidth = $92d3c1d61b12c0cc$var$setXSpacing(renderer, maxWidth, space, abcLine.staffGroup, abctune.formatting, i === abctune.lines.length - 1, false);
+            // console.log(thisWidth, maxWidth)
+            if (Math.round(thisWidth) > Math.round(maxWidth)) {
+                maxWidth = thisWidth;
+                if (expandToWidest) i = -1 // do the calculations over with the new width
+                ;
+            }
         }
     }
     // Layout the beams and add the stems to the beamed notes.
@@ -45623,7 +46116,7 @@ var $92d3c1d61b12c0cc$var$layout = function(renderer, abctune, width, space) {
         abcLine = abctune.lines[i];
         if (abcLine.staffGroup && abcLine.staffGroup.voices) {
             for(var j = 0; j < abcLine.staffGroup.voices.length; j++)$bWf2L(abcLine.staffGroup.voices[j]);
-            $d0UO6(renderer, abcLine.staffGroup);
+            $gLuLS(renderer, abcLine.staffGroup);
         }
     }
     // Set the staff spacing
@@ -45639,13 +46132,36 @@ var $92d3c1d61b12c0cc$var$setXSpacing = function(renderer, width, space, staffGr
     var leftEdge = $kafHv(renderer, staffGroup.getTextSize, staffGroup.voices, staffGroup.brace, staffGroup.bracket);
     var newspace = space;
     for(var it = 0; it < 8; it++){
-        var ret = $c4HDc(newspace, renderer, debug, staffGroup, leftEdge);
+        // console.log("iteration", it)
+        // dumpGroup("before", staffGroup)
+        var ret = $b58rs(newspace, renderer, debug, staffGroup, leftEdge);
+        // dumpGroup("after",staffGroup)
         newspace = $92d3c1d61b12c0cc$var$calcHorizontalSpacing(isLastLine, formatting.stretchlast, width + renderer.padding.left, staffGroup.w, newspace, ret.spacingUnits, ret.minSpace, renderer.padding.left + renderer.padding.right);
         if (debug) console.log("setXSpace", it, staffGroup.w, newspace, staffGroup.minspace);
         if (newspace === null) break;
     }
     $92d3c1d61b12c0cc$var$centerWholeRests(staffGroup.voices);
+    return staffGroup.w - leftEdge;
 };
+// function dumpGroup(label, staffGroup) {
+// 	var output = {
+// 		line: staffGroup.line,
+// 		w: staffGroup.w,
+// 		voice: {
+// 			i: staffGroup.voices[0].i,
+// 			minx: staffGroup.voices[0].minx,
+// 			nextx: staffGroup.voices[0].nextx,
+// 			spacingduration: staffGroup.voices[0].spacingduration,
+// 			w: staffGroup.voices[0].w,
+// 			children: [],
+// 		}
+// 	}
+// 	for (var i = 0; i < staffGroup.voices[0].children.length; i++) {
+// 		var child = staffGroup.voices[0].children[i]
+// 		output.voice.children.push({ fixedW: child.fixed.w, w: child.w, x: child.x, type: child.type })
+// 	}
+// 	console.log(label,output)
+// }
 function $92d3c1d61b12c0cc$var$calcHorizontalSpacing(isLastLine, stretchLast, targetWidth, lineWidth, spacing, spacingUnits, minSpace, padding) {
     if (isLastLine) {
         if (stretchLast === undefined) {
@@ -45686,11 +46202,11 @@ function $92d3c1d61b12c0cc$var$centerWholeRests(voices) {
 module.exports = $92d3c1d61b12c0cc$var$layout;
 
 });
-parcelRequire.register("bWf2L", function(module, exports) {
+parcelRegister("bWf2L", function(module, exports) {
 
 var $f9fRo = parcelRequire("f9fRo");
 
-var $f9toJ = parcelRequire("f9toJ");
+var $92FAM = parcelRequire("92FAM");
 
 var $fTJT6 = parcelRequire("fTJT6");
 var $8b10c7d507e7a2bf$var$layoutVoice = function(voice) {
@@ -45806,18 +46322,18 @@ function $8b10c7d507e7a2bf$var$setLane(absElems, numLanesAbove, numLanesBelow) {
 }
 function $8b10c7d507e7a2bf$var$yAtNote(element, beam) {
     beam = beam.beams[0];
-    return $f9toJ(beam.startX, beam.startY, beam.endX, beam.endY, element.x);
+    return $92FAM(beam.startX, beam.startY, beam.endX, beam.endY, element.x);
 }
 module.exports = $8b10c7d507e7a2bf$var$layoutVoice;
 
 });
-parcelRequire.register("f9fRo", function(module, exports) {
+parcelRegister("f9fRo", function(module, exports) {
 
-var $ilOzb = parcelRequire("ilOzb");
+var $59E7k = parcelRequire("59E7k");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
-var $f9toJ = parcelRequire("f9toJ");
+var $92FAM = parcelRequire("92FAM");
 var $b073ffc47e0da607$var$layoutBeam = function(beam) {
     if (beam.elems.length === 0 || beam.allrests) return;
     var dy = $b073ffc47e0da607$var$calcDy(beam.stemsUp, beam.isgrace); // This is the width of the beam line.
@@ -45872,7 +46388,7 @@ function $b073ffc47e0da607$var$calcSlant(leftAveragePitch, rightAveragePitch, nu
     return slant;
 }
 function $b073ffc47e0da607$var$calcDy(asc, isGrace) {
-    var dy = asc ? $f4yIj.STEP : -$f4yIj.STEP;
+    var dy = asc ? $6aPnV.STEP : -$6aPnV.STEP;
     if (isGrace) dy = dy * 0.4;
     return dy;
 }
@@ -45923,16 +46439,16 @@ function $b073ffc47e0da607$var$createStems(elems, asc, beam, dy, mainNote) {
         var dx = asc ? furthestHead.w : 0; // down-pointing stems start on the left side of the note, up-pointing stems start on the right side, so we offset by the note width.
         if (!isGrace) dx += furthestHead.dx;
         var x = furthestHead.x + dx; // this is now the actual x location in pixels.
-        var bary = $f9toJ(beam.startX, beam.startY, beam.endX, beam.endY, x);
+        var bary = $92FAM(beam.startX, beam.startY, beam.endX, beam.endY, x);
         var lineWidth = asc ? -0.6 : 0.6;
-        if (!asc) bary -= dy / 2 / $f4yIj.STEP; // TODO-PER: This is just a fudge factor so the down-pointing stems don't overlap.
+        if (!asc) bary -= dy / 2 / $6aPnV.STEP; // TODO-PER: This is just a fudge factor so the down-pointing stems don't overlap.
         if (isGrace) dx += elem.heads[0].dx;
         // TODO-PER-HACK: One type of note head has a different placement of the stem. This should be more generically calculated:
         if (furthestHead.c === "noteheads.slash.quarter") {
             if (asc) pitch += 1;
             else pitch -= 1;
         }
-        var stem = new $ilOzb(null, dx, 0, pitch, {
+        var stem = new $59E7k(null, dx, 0, pitch, {
             "type": "stem",
             "pitch2": bary,
             linewidth: lineWidth
@@ -45949,7 +46465,7 @@ function $b073ffc47e0da607$var$createAdditionalBeams(elems, asc, beam, isGrace, 
         if (elem.abcelem.rest) continue;
         var furthestHead = elem.heads[asc ? 0 : elem.heads.length - 1];
         var x = furthestHead.x + (asc ? furthestHead.w : 0);
-        var bary = $f9toJ(beam.startX, beam.startY, beam.endX, beam.endY, x);
+        var bary = $92FAM(beam.startX, beam.startY, beam.endX, beam.endY, x);
         var sy = asc ? -1.5 : 1.5;
         if (isGrace) sy = sy * 2 / 3; // This makes the second beam on grace notes closer to the first one.
         var duration = elem.abcelem.duration; // get the duration via abcelem because of triplets
@@ -45979,7 +46495,7 @@ function $b073ffc47e0da607$var$createAdditionalBeams(elems, asc, beam, isGrace, 
             var auxBeamEndY = bary + sy * (j + 1);
             if (auxBeams[j].single) {
                 auxBeamEndX = i === 0 ? x + 5 : x - 5;
-                auxBeamEndY = $f9toJ(beam.startX, beam.startY, beam.endX, beam.endY, auxBeamEndX) + sy * (j + 1);
+                auxBeamEndY = $92FAM(beam.startX, beam.startY, beam.endX, beam.endY, auxBeamEndX) + sy * (j + 1);
             }
             var b = {
                 startX: auxBeams[j].x,
@@ -46004,18 +46520,18 @@ function $b073ffc47e0da607$var$createAdditionalBeams(elems, asc, beam, isGrace, 
 module.exports = $b073ffc47e0da607$var$layoutBeam;
 
 });
-parcelRequire.register("f9toJ", function(module, exports) {
-function $b07e8011fd42296c$var$getBarYAt(startx, starty, endx, endy, x) {
+parcelRegister("92FAM", function(module, exports) {
+function $6954904b516143a0$var$getBarYAt(startx, starty, endx, endy, x) {
     return starty + (endy - starty) / (endx - startx) * (x - startx);
 }
-module.exports = $b07e8011fd42296c$var$getBarYAt;
+module.exports = $6954904b516143a0$var$getBarYAt;
 
 });
 
 
-parcelRequire.register("fTJT6", function(module, exports) {
+parcelRegister("fTJT6", function(module, exports) {
 
-var $f9toJ = parcelRequire("f9toJ");
+var $92FAM = parcelRequire("92FAM");
 function $b92f9665998e493d$var$layoutTriplet(element) {
     // TODO end and beginning of line (PER: P.S. I'm not sure this can happen: I think the parser will always specify both the start and end points.)
     if (element.anchor1 && element.anchor2) {
@@ -46070,7 +46586,7 @@ function $b92f9665998e493d$var$heightAtMidpoint(startX, endX, beam) {
     if (beam.beams.length === 0) return 0;
     beam = beam.beams[0];
     var midPoint = startX + (endX - startX) / 2;
-    return $f9toJ(beam.startX, beam.startY, beam.endX, beam.endY, midPoint);
+    return $92FAM(beam.startX, beam.startY, beam.endX, beam.endY, midPoint);
 }
 function $b92f9665998e493d$var$xAtMidpoint(startX, endX) {
     return startX + (endX - startX) / 2;
@@ -46080,10 +46596,10 @@ module.exports = $b92f9665998e493d$var$layoutTriplet;
 });
 
 
-parcelRequire.register("d0UO6", function(module, exports) {
+parcelRegister("gLuLS", function(module, exports) {
 
-var $f4yIj = parcelRequire("f4yIj");
-var $97975727e51868fe$var$setUpperAndLowerElements = function(renderer, staffGroup) {
+var $6aPnV = parcelRequire("6aPnV");
+var $c348e7a55a1ca5d9$var$setUpperAndLowerElements = function(renderer, staffGroup) {
     // Each staff already has the top and bottom set, now we see if there are elements that are always on top and bottom, and resolve their pitch.
     // Also, get the overall height of all the staves in this group.
     var lastStaffBottom;
@@ -46108,56 +46624,56 @@ var $97975727e51868fe$var$setUpperAndLowerElements = function(renderer, staffGro
             staff.originalTop = staff.top; // This is just being stored for debugging purposes.
             staff.originalBottom = staff.bottom; // This is just being stored for debugging purposes.
         }
-        $97975727e51868fe$var$incTop(staff, positionY, "lyricHeightAbove");
-        $97975727e51868fe$var$incTop(staff, positionY, "chordHeightAbove", staff.specialY.chordLines.above);
+        $c348e7a55a1ca5d9$var$incTop(staff, positionY, "lyricHeightAbove");
+        $c348e7a55a1ca5d9$var$incTop(staff, positionY, "chordHeightAbove", staff.specialY.chordLines.above);
         if (staff.specialY.endingHeightAbove) {
             if (staff.specialY.chordHeightAbove) staff.top += 2;
-            else staff.top += staff.specialY.endingHeightAbove + $97975727e51868fe$var$margin;
+            else staff.top += staff.specialY.endingHeightAbove + $c348e7a55a1ca5d9$var$margin;
             positionY.endingHeightAbove = staff.top;
         }
         if (staff.specialY.dynamicHeightAbove && staff.specialY.volumeHeightAbove) {
-            staff.top += Math.max(staff.specialY.dynamicHeightAbove, staff.specialY.volumeHeightAbove) + $97975727e51868fe$var$margin;
+            staff.top += Math.max(staff.specialY.dynamicHeightAbove, staff.specialY.volumeHeightAbove) + $c348e7a55a1ca5d9$var$margin;
             positionY.dynamicHeightAbove = staff.top;
             positionY.volumeHeightAbove = staff.top;
         } else {
-            $97975727e51868fe$var$incTop(staff, positionY, "dynamicHeightAbove");
-            $97975727e51868fe$var$incTop(staff, positionY, "volumeHeightAbove");
+            $c348e7a55a1ca5d9$var$incTop(staff, positionY, "dynamicHeightAbove");
+            $c348e7a55a1ca5d9$var$incTop(staff, positionY, "volumeHeightAbove");
         }
-        $97975727e51868fe$var$incTop(staff, positionY, "partHeightAbove");
-        $97975727e51868fe$var$incTop(staff, positionY, "tempoHeightAbove");
+        $c348e7a55a1ca5d9$var$incTop(staff, positionY, "partHeightAbove");
+        $c348e7a55a1ca5d9$var$incTop(staff, positionY, "tempoHeightAbove");
         if (staff.specialY.lyricHeightBelow) {
-            staff.specialY.lyricHeightBelow += renderer.spacing.vocal / $f4yIj.STEP;
+            staff.specialY.lyricHeightBelow += renderer.spacing.vocal / $6aPnV.STEP;
             positionY.lyricHeightBelow = staff.bottom;
-            staff.bottom -= staff.specialY.lyricHeightBelow + $97975727e51868fe$var$margin;
+            staff.bottom -= staff.specialY.lyricHeightBelow + $c348e7a55a1ca5d9$var$margin;
         }
         if (staff.specialY.chordHeightBelow) {
             positionY.chordHeightBelow = staff.bottom;
             var hgt = staff.specialY.chordHeightBelow;
             if (staff.specialY.chordLines.below) hgt *= staff.specialY.chordLines.below;
-            staff.bottom -= hgt + $97975727e51868fe$var$margin;
+            staff.bottom -= hgt + $c348e7a55a1ca5d9$var$margin;
         }
         if (staff.specialY.volumeHeightBelow && staff.specialY.dynamicHeightBelow) {
             positionY.volumeHeightBelow = staff.bottom;
             positionY.dynamicHeightBelow = staff.bottom;
-            staff.bottom -= Math.max(staff.specialY.volumeHeightBelow, staff.specialY.dynamicHeightBelow) + $97975727e51868fe$var$margin;
+            staff.bottom -= Math.max(staff.specialY.volumeHeightBelow, staff.specialY.dynamicHeightBelow) + $c348e7a55a1ca5d9$var$margin;
         } else if (staff.specialY.volumeHeightBelow) {
             positionY.volumeHeightBelow = staff.bottom;
-            staff.bottom -= staff.specialY.volumeHeightBelow + $97975727e51868fe$var$margin;
+            staff.bottom -= staff.specialY.volumeHeightBelow + $c348e7a55a1ca5d9$var$margin;
         } else if (staff.specialY.dynamicHeightBelow) {
             positionY.dynamicHeightBelow = staff.bottom;
-            staff.bottom -= staff.specialY.dynamicHeightBelow + $97975727e51868fe$var$margin;
+            staff.bottom -= staff.specialY.dynamicHeightBelow + $c348e7a55a1ca5d9$var$margin;
         }
         if (renderer.showDebug && renderer.showDebug.indexOf("box") >= 0) staff.positionY = positionY; // This is just being stored for debugging purposes.
         for(var j = 0; j < staff.voices.length; j++){
             var voice = staffGroup.voices[staff.voices[j]];
-            $97975727e51868fe$var$setUpperAndLowerVoiceElements(positionY, voice, renderer.spacing);
+            $c348e7a55a1ca5d9$var$setUpperAndLowerVoiceElements(positionY, voice, renderer.spacing);
         }
         // We might need a little space in between staves if the staves haven't been pushed far enough apart by notes or extra vertical stuff.
         // Only try to put in extra space if this isn't the top staff.
         if (lastStaffBottom !== undefined) {
             var thisStaffTop = staff.top - 10;
             var forcedSpacingBetween = lastStaffBottom + thisStaffTop;
-            var minSpacingInPitches = renderer.spacing.systemStaffSeparation / $f4yIj.STEP;
+            var minSpacingInPitches = renderer.spacing.systemStaffSeparation / $6aPnV.STEP;
             var addedSpace = minSpacingInPitches - forcedSpacingBetween;
             if (addedSpace > 0) staff.top += addedSpace;
         }
@@ -46168,33 +46684,33 @@ var $97975727e51868fe$var$setUpperAndLowerElements = function(renderer, staffGro
     }
 //console.log("Staff Height: ",heightInPitches,this.height);
 };
-var $97975727e51868fe$var$margin = 1;
-function $97975727e51868fe$var$incTop(staff, positionY, item, count) {
+var $c348e7a55a1ca5d9$var$margin = 1;
+function $c348e7a55a1ca5d9$var$incTop(staff, positionY, item, count) {
     if (staff.specialY[item]) {
         var height = staff.specialY[item];
         if (count) height *= count;
-        staff.top += height + $97975727e51868fe$var$margin;
+        staff.top += height + $c348e7a55a1ca5d9$var$margin;
         positionY[item] = staff.top;
     }
 }
-function $97975727e51868fe$var$setUpperAndLowerVoiceElements(positionY, voice, spacing1) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerVoiceElements(positionY, voice, spacing) {
     var i;
     var abselem;
     for(i = 0; i < voice.children.length; i++){
         abselem = voice.children[i];
-        $97975727e51868fe$var$setUpperAndLowerAbsoluteElements(positionY, abselem, spacing1);
+        $c348e7a55a1ca5d9$var$setUpperAndLowerAbsoluteElements(positionY, abselem, spacing);
     }
     for(i = 0; i < voice.otherchildren.length; i++){
         abselem = voice.otherchildren[i];
         switch(abselem.type){
             case "CrescendoElem":
-                $97975727e51868fe$var$setUpperAndLowerCrescendoElements(positionY, abselem);
+                $c348e7a55a1ca5d9$var$setUpperAndLowerCrescendoElements(positionY, abselem);
                 break;
             case "DynamicDecoration":
-                $97975727e51868fe$var$setUpperAndLowerDynamicElements(positionY, abselem);
+                $c348e7a55a1ca5d9$var$setUpperAndLowerDynamicElements(positionY, abselem);
                 break;
             case "EndingElem":
-                $97975727e51868fe$var$setUpperAndLowerEndingElements(positionY, abselem);
+                $c348e7a55a1ca5d9$var$setUpperAndLowerEndingElements(positionY, abselem);
                 break;
         }
     }
@@ -46203,7 +46719,7 @@ function $97975727e51868fe$var$setUpperAndLowerVoiceElements(positionY, voice, s
 // else on the line), this iterates through them and sets their pitch. By the time this is called, specialYResolved contains a
 // hash with the vertical placement (in pitch units) for each type.
 // TODO-PER: I think this needs to be separated by "above" and "below". How do we know that for dynamics at the point where they are being defined, though? We need a pass through all the relative elements to set "above" and "below".
-function $97975727e51868fe$var$setUpperAndLowerAbsoluteElements(specialYResolved, element, spacing2) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerAbsoluteElements(specialYResolved, element, spacing) {
     // specialYResolved contains the actual pitch for each of the classes of elements.
     for(var i = 0; i < element.children.length; i++){
         var child = element.children[i];
@@ -46212,8 +46728,8 @@ function $97975727e51868fe$var$setUpperAndLowerAbsoluteElements(specialYResolved
                 if (child[key]) {
                     child.pitch = specialYResolved[key];
                     if (child.top === undefined) {
-                        if (child.type === "TempoElement") $97975727e51868fe$var$setUpperAndLowerTempoElement(specialYResolved, child);
-                        else $97975727e51868fe$var$setUpperAndLowerRelativeElements(specialYResolved, child, spacing2);
+                        if (child.type === "TempoElement") $c348e7a55a1ca5d9$var$setUpperAndLowerTempoElement(specialYResolved, child);
+                        else $c348e7a55a1ca5d9$var$setUpperAndLowerRelativeElements(specialYResolved, child, spacing);
                         element.pushTop(child.top);
                         element.pushBottom(child.bottom);
                     }
@@ -46222,18 +46738,18 @@ function $97975727e51868fe$var$setUpperAndLowerAbsoluteElements(specialYResolved
         }
     }
 }
-function $97975727e51868fe$var$setUpperAndLowerCrescendoElements(positionY, element) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerCrescendoElements(positionY, element) {
     if (element.dynamicHeightAbove) element.pitch = positionY.dynamicHeightAbove;
     else element.pitch = positionY.dynamicHeightBelow;
 }
-function $97975727e51868fe$var$setUpperAndLowerDynamicElements(positionY, element) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerDynamicElements(positionY, element) {
     if (element.volumeHeightAbove) element.pitch = positionY.volumeHeightAbove;
     else element.pitch = positionY.volumeHeightBelow;
 }
-function $97975727e51868fe$var$setUpperAndLowerEndingElements(positionY, element) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerEndingElements(positionY, element) {
     element.pitch = positionY.endingHeightAbove - 2;
 }
-function $97975727e51868fe$var$setUpperAndLowerTempoElement(positionY, element) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerTempoElement(positionY, element) {
     element.pitch = positionY.tempoHeightAbove;
     element.top = positionY.tempoHeightAbove;
     element.bottom = positionY.tempoHeightAbove;
@@ -46250,7 +46766,7 @@ function $97975727e51868fe$var$setUpperAndLowerTempoElement(positionY, element) 
         }
     }
 }
-function $97975727e51868fe$var$setUpperAndLowerRelativeElements(positionY, element, renderSpacing) {
+function $c348e7a55a1ca5d9$var$setUpperAndLowerRelativeElements(positionY, element, renderSpacing) {
     switch(element.type){
         case "part":
             element.top = positionY.partHeightAbove + element.height;
@@ -46271,9 +46787,9 @@ function $97975727e51868fe$var$setUpperAndLowerRelativeElements(positionY, eleme
                 element.top = positionY.lyricHeightAbove;
                 element.bottom = positionY.lyricHeightAbove;
             } else {
-                element.top = positionY.lyricHeightBelow + renderSpacing.vocal / $f4yIj.STEP;
-                element.bottom = positionY.lyricHeightBelow + renderSpacing.vocal / $f4yIj.STEP;
-                element.pitch -= renderSpacing.vocal / $f4yIj.STEP;
+                element.top = positionY.lyricHeightBelow + renderSpacing.vocal / $6aPnV.STEP;
+                element.bottom = positionY.lyricHeightBelow + renderSpacing.vocal / $6aPnV.STEP;
+                element.pitch -= renderSpacing.vocal / $6aPnV.STEP;
             }
             break;
         case "debug":
@@ -46283,14 +46799,14 @@ function $97975727e51868fe$var$setUpperAndLowerRelativeElements(positionY, eleme
     }
     if (element.pitch === undefined || element.top === undefined) console.error("RelativeElement position not set.", element.type, element.pitch, element.top, positionY);
 }
-module.exports = $97975727e51868fe$var$setUpperAndLowerElements;
+module.exports = $c348e7a55a1ca5d9$var$setUpperAndLowerElements;
 
 });
 
-parcelRequire.register("c4HDc", function(module, exports) {
+parcelRegister("b58rs", function(module, exports) {
 
-var $cUyXf = parcelRequire("cUyXf");
-function $8ca7b40218200f47$var$checkLastBarX(voices) {
+var $7dQiW = parcelRequire("7dQiW");
+function $8116b5b94da148e5$var$checkLastBarX(voices) {
     var maxX = 0;
     for(var i = 0; i < voices.length; i++){
         var curVoice = voices[i];
@@ -46305,7 +46821,7 @@ function $8ca7b40218200f47$var$checkLastBarX(voices) {
         }
     }
 }
-var $8ca7b40218200f47$var$layoutStaffGroup = function(spacing, renderer, debug, staffGroup, leftEdge) {
+var $8116b5b94da148e5$var$layoutStaffGroup = function(spacing, renderer, debug, staffGroup, leftEdge) {
     var epsilon = 0.0000001; // Fudging for inexactness of floating point math.
     var spacingunits = 0; // number of times we will have ended up using the spacing distance (as opposed to fixed width distances)
     var minspace = 1000; // a big number to start off with - used to find out what the smallest space between two notes is -- GD 2014.1.7
@@ -46314,17 +46830,17 @@ var $8ca7b40218200f47$var$layoutStaffGroup = function(spacing, renderer, debug, 
     var i;
     var currentduration = 0;
     if (debug) console.log("init layout", spacing);
-    for(i = 0; i < staffGroup.voices.length; i++)$cUyXf.beginLayout(x, staffGroup.voices[i]);
+    for(i = 0; i < staffGroup.voices.length; i++)$7dQiW.beginLayout(x, staffGroup.voices[i]);
     var spacingunit = 0; // number of spacingunits coming from the previously laid out element to this one
-    while(!$8ca7b40218200f47$var$finished(staffGroup.voices)){
+    while(!$8116b5b94da148e5$var$finished(staffGroup.voices)){
         // find first duration level to be laid out among candidates across voices
         currentduration = null; // candidate smallest duration level
-        for(i = 0; i < staffGroup.voices.length; i++)if (!$cUyXf.layoutEnded(staffGroup.voices[i]) && (!currentduration || $8ca7b40218200f47$var$getDurationIndex(staffGroup.voices[i]) < currentduration)) currentduration = $8ca7b40218200f47$var$getDurationIndex(staffGroup.voices[i]);
+        for(i = 0; i < staffGroup.voices.length; i++)if (!$7dQiW.layoutEnded(staffGroup.voices[i]) && (!currentduration || $8116b5b94da148e5$var$getDurationIndex(staffGroup.voices[i]) < currentduration)) currentduration = $8116b5b94da148e5$var$getDurationIndex(staffGroup.voices[i]);
         // isolate voices at current duration level
         var currentvoices = [];
         var othervoices = [];
         for(i = 0; i < staffGroup.voices.length; i++){
-            var durationIndex = $8ca7b40218200f47$var$getDurationIndex(staffGroup.voices[i]);
+            var durationIndex = $8116b5b94da148e5$var$getDurationIndex(staffGroup.voices[i]);
             // PER: Because of the inexactness of JS floating point math, we just get close.
             if (durationIndex - currentduration > epsilon) othervoices.push(staffGroup.voices[i]);
             else currentvoices.push(staffGroup.voices[i]);
@@ -46333,9 +46849,9 @@ var $8ca7b40218200f47$var$layoutStaffGroup = function(spacing, renderer, debug, 
         spacingunit = 0; // number of spacingunits coming from the previously laid out element to this one
         var spacingduration = 0;
         for(i = 0; i < currentvoices.length; i++)//console.log("greatest spacing unit", x, layoutVoiceElements.getNextX(currentvoices[i]), layoutVoiceElements.getSpacingUnits(currentvoices[i]), currentvoices[i].spacingduration);
-        if ($cUyXf.getNextX(currentvoices[i]) > x) {
-            x = $cUyXf.getNextX(currentvoices[i]);
-            spacingunit = $cUyXf.getSpacingUnits(currentvoices[i]);
+        if ($7dQiW.getNextX(currentvoices[i]) > x) {
+            x = $7dQiW.getNextX(currentvoices[i]);
+            spacingunit = $7dQiW.getSpacingUnits(currentvoices[i]);
             spacingduration = currentvoices[i].spacingduration;
         }
         spacingunits += spacingunit;
@@ -46346,32 +46862,32 @@ var $8ca7b40218200f47$var$layoutStaffGroup = function(spacing, renderer, debug, 
             var v = currentvoices[i];
             if (v.voicenumber === 0) lastTopVoice = i;
             var topVoice = lastTopVoice !== undefined && currentvoices[lastTopVoice].voicenumber !== v.voicenumber ? currentvoices[lastTopVoice] : undefined;
-            if (!$8ca7b40218200f47$var$isSameStaff(v, topVoice)) topVoice = undefined;
-            var voicechildx = $cUyXf.layoutOneItem(x, spacing, v, renderer.minPadding, topVoice);
+            if (!$8116b5b94da148e5$var$isSameStaff(v, topVoice)) topVoice = undefined;
+            var voicechildx = $7dQiW.layoutOneItem(x, spacing, v, renderer.minPadding, topVoice);
             var dx = voicechildx - x;
             if (dx > 0) {
                 x = voicechildx; //update x
-                for(var j = 0; j < i; j++)$cUyXf.shiftRight(dx, currentvoices[j]);
+                for(var j = 0; j < i; j++)$7dQiW.shiftRight(dx, currentvoices[j]);
             }
         }
         // remove the value of already counted spacing units in other voices (e.g. if a voice had planned to use up 5 spacing units but is not in line to be laid out at this duration level - where we've used 2 spacing units - then we must use up 3 spacing units, not 5)
         for(i = 0; i < othervoices.length; i++){
             othervoices[i].spacingduration -= spacingduration;
-            $cUyXf.updateNextX(x, spacing, othervoices[i]); // adjust other voices expectations
+            $7dQiW.updateNextX(x, spacing, othervoices[i]); // adjust other voices expectations
         }
         // update indexes of currently laid out elems
         for(i = 0; i < currentvoices.length; i++){
             var voice = currentvoices[i];
-            $cUyXf.updateIndices(voice);
+            $7dQiW.updateIndices(voice);
         }
     } // finished laying out
     // find the greatest remaining x as a base for the width
-    for(i = 0; i < staffGroup.voices.length; i++)if ($cUyXf.getNextX(staffGroup.voices[i]) > x) {
-        x = $cUyXf.getNextX(staffGroup.voices[i]);
-        spacingunit = $cUyXf.getSpacingUnits(staffGroup.voices[i]);
+    for(i = 0; i < staffGroup.voices.length; i++)if ($7dQiW.getNextX(staffGroup.voices[i]) > x) {
+        x = $7dQiW.getNextX(staffGroup.voices[i]);
+        spacingunit = $7dQiW.getSpacingUnits(staffGroup.voices[i]);
     }
     // adjust lastBar when needed (multi staves)
-    $8ca7b40218200f47$var$checkLastBarX(staffGroup.voices);
+    $8116b5b94da148e5$var$checkLastBarX(staffGroup.voices);
     //console.log("greatest remaining",spacingunit,x);
     spacingunits += spacingunit;
     staffGroup.setWidth(x);
@@ -46380,26 +46896,26 @@ var $8ca7b40218200f47$var$layoutStaffGroup = function(spacing, renderer, debug, 
         minSpace: minspace
     };
 };
-function $8ca7b40218200f47$var$finished(voices) {
+function $8116b5b94da148e5$var$finished(voices) {
     for(var i = 0; i < voices.length; i++){
-        if (!$cUyXf.layoutEnded(voices[i])) return false;
+        if (!$7dQiW.layoutEnded(voices[i])) return false;
     }
     return true;
 }
-function $8ca7b40218200f47$var$getDurationIndex(element) {
+function $8116b5b94da148e5$var$getDurationIndex(element) {
     return element.durationindex - (element.children[element.i] && element.children[element.i].duration > 0 ? 0 : 0.0000005); // if the ith element doesn't have a duration (is not a note), its duration index is fractionally before. This enables CLEF KEYSIG TIMESIG PART, etc. to be laid out before we get to the first note of other voices
 }
-function $8ca7b40218200f47$var$isSameStaff(voice1, voice2) {
+function $8116b5b94da148e5$var$isSameStaff(voice1, voice2) {
     if (!voice1 || !voice1.staff || !voice1.staff.voices || voice1.staff.voices.length === 0) return false;
     if (!voice2 || !voice2.staff || !voice2.staff.voices || voice2.staff.voices.length === 0) return false;
     return voice1.staff.voices[0] === voice2.staff.voices[0];
 }
-module.exports = $8ca7b40218200f47$var$layoutStaffGroup;
+module.exports = $8116b5b94da148e5$var$layoutStaffGroup;
 
 });
-parcelRequire.register("cUyXf", function(module, exports) {
-var $9665d44602de8225$var$VoiceElement = function VoiceElements() {};
-$9665d44602de8225$var$VoiceElement.beginLayout = function(startx, voice) {
+parcelRegister("7dQiW", function(module, exports) {
+var $542251e4b9175811$var$VoiceElement = function VoiceElements() {};
+$542251e4b9175811$var$VoiceElement.beginLayout = function(startx, voice) {
     voice.i = 0;
     voice.durationindex = 0;
     //this.ii=this.children.length;
@@ -46408,21 +46924,21 @@ $9665d44602de8225$var$VoiceElement.beginLayout = function(startx, voice) {
     voice.nextx = startx; // x position where the next element of this voice should be placed assuming no other voices and no fixed width constraints
     voice.spacingduration = 0; // duration left to be laid out in current iteration (omitting additional spacing due to other aspects, such as bars, dots, sharps and flats)
 };
-$9665d44602de8225$var$VoiceElement.layoutEnded = function(voice) {
+$542251e4b9175811$var$VoiceElement.layoutEnded = function(voice) {
     return voice.i >= voice.children.length;
 };
-$9665d44602de8225$var$VoiceElement.getNextX = function(voice) {
+$542251e4b9175811$var$VoiceElement.getNextX = function(voice) {
     return Math.max(voice.minx, voice.nextx);
 };
 // number of spacing units expected for next positioning
-$9665d44602de8225$var$VoiceElement.getSpacingUnits = function(voice) {
+$542251e4b9175811$var$VoiceElement.getSpacingUnits = function(voice) {
     return Math.sqrt(voice.spacingduration * 8);
 };
 // Try to layout the element at index this.i
 // x - position to try to layout the element at
 // spacing - base spacing
 // can't call this function more than once per iteration
-$9665d44602de8225$var$VoiceElement.layoutOneItem = function(x, spacing, voice, minPadding, firstVoice) {
+$542251e4b9175811$var$VoiceElement.layoutOneItem = function(x, spacing, voice, minPadding, firstVoice) {
     var child = voice.children[voice.i];
     if (!child) return 0;
     var er = x - voice.minx; // available extrawidth to the left
@@ -46451,7 +46967,7 @@ $9665d44602de8225$var$VoiceElement.layoutOneItem = function(x, spacing, voice, m
             }
         }
     }
-    var extraWidth = $9665d44602de8225$var$getExtraWidth(child, pad);
+    var extraWidth = $542251e4b9175811$var$getExtraWidth(child, pad);
     if (er < extraWidth) // There's an exception if a bar element is after a Part element, there is no shift.
     {
         if (voice.i === 0 || child.type !== "bar" || voice.children[voice.i - 1].type !== "part" && voice.children[voice.i - 1].type !== "tempo") x += extraWidth - er;
@@ -46459,7 +46975,7 @@ $9665d44602de8225$var$VoiceElement.layoutOneItem = function(x, spacing, voice, m
     child.setX(x);
     voice.spacingduration = child.duration;
     //update minx
-    voice.minx = x + $9665d44602de8225$var$getMinWidth(child); // add necessary layout space
+    voice.minx = x + $542251e4b9175811$var$getMinWidth(child); // add necessary layout space
     if (voice.i !== voice.children.length - 1) voice.minx += child.minspacing; // add minimumspacing except on last elem
     this.updateNextX(x, spacing, voice);
     // contribute to staff y position
@@ -46467,7 +46983,7 @@ $9665d44602de8225$var$VoiceElement.layoutOneItem = function(x, spacing, voice, m
     //this.staff.bottom = Math.min(child.bottom,this.staff.bottom);
     return x; // where we end up having placed the child
 };
-$9665d44602de8225$var$VoiceElement.shiftRight = function(dx, voice) {
+$542251e4b9175811$var$VoiceElement.shiftRight = function(dx, voice) {
     var child = voice.children[voice.i];
     if (!child) return;
     child.setX(child.x + dx);
@@ -46475,30 +46991,30 @@ $9665d44602de8225$var$VoiceElement.shiftRight = function(dx, voice) {
     voice.nextx += dx;
 };
 // call when spacingduration has been updated
-$9665d44602de8225$var$VoiceElement.updateNextX = function(x, spacing, voice) {
+$542251e4b9175811$var$VoiceElement.updateNextX = function(x, spacing, voice) {
     voice.nextx = x + spacing * Math.sqrt(voice.spacingduration * 8);
 };
-$9665d44602de8225$var$VoiceElement.updateIndices = function(voice) {
+$542251e4b9175811$var$VoiceElement.updateIndices = function(voice) {
     if (!this.layoutEnded(voice)) {
         voice.durationindex += voice.children[voice.i].duration;
         if (voice.children[voice.i].type === "bar") voice.durationindex = Math.round(voice.durationindex * 64) / 64; // everytime we meet a barline, do rounding to nearest 64th
         voice.i++;
     }
 };
-function $9665d44602de8225$var$getExtraWidth(child, minPadding) {
+function $542251e4b9175811$var$getExtraWidth(child, minPadding) {
     var padding = 0;
     if (child.type === "note" || child.type === "bar") padding = minPadding;
     return -child.extraw + padding;
 }
-function $9665d44602de8225$var$getMinWidth(child) {
+function $542251e4b9175811$var$getMinWidth(child) {
     return child.w;
 }
-module.exports = $9665d44602de8225$var$VoiceElement;
+module.exports = $542251e4b9175811$var$VoiceElement;
 
 });
 
 
-parcelRequire.register("kafHv", function(module, exports) {
+parcelRegister("kafHv", function(module, exports) {
 function $eae0eba4b8d548f6$var$getLeftEdgeOfStaff(renderer, getTextSize, voices, brace, bracket) {
     var x = renderer.padding.left;
     // find out how much space will be taken up by voice headers
@@ -46546,57 +47062,57 @@ module.exports = $eae0eba4b8d548f6$var$getLeftEdgeOfStaff;
 });
 
 
-parcelRequire.register("ddldS", function(module, exports) {
-var $99ecf3aa3f600cfe$var$Classes = function Classes(options) {
+parcelRegister("eTUPz", function(module, exports) {
+var $ad92492550bbadf8$var$Classes = function Classes(options) {
     this.shouldAddClasses = options.shouldAddClasses;
     this.reset();
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.reset = function() {
+$ad92492550bbadf8$var$Classes.prototype.reset = function() {
     this.lineNumber = null;
     this.voiceNumber = null;
     this.measureNumber = null;
     this.measureTotalPerLine = [];
     this.noteNumber = null;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.incrLine = function() {
+$ad92492550bbadf8$var$Classes.prototype.incrLine = function() {
     if (this.lineNumber === null) this.lineNumber = 0;
     else this.lineNumber++;
     this.voiceNumber = null;
     this.measureNumber = null;
     this.noteNumber = null;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.incrVoice = function() {
+$ad92492550bbadf8$var$Classes.prototype.incrVoice = function() {
     if (this.voiceNumber === null) this.voiceNumber = 0;
     else this.voiceNumber++;
     this.measureNumber = null;
     this.noteNumber = null;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.isInMeasure = function() {
+$ad92492550bbadf8$var$Classes.prototype.isInMeasure = function() {
     return this.measureNumber !== null;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.newMeasure = function() {
+$ad92492550bbadf8$var$Classes.prototype.newMeasure = function() {
     if (this.measureNumber) this.measureTotalPerLine[this.lineNumber] = this.measureNumber;
     this.measureNumber = null;
     this.noteNumber = null;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.startMeasure = function() {
+$ad92492550bbadf8$var$Classes.prototype.startMeasure = function() {
     this.measureNumber = 0;
     this.noteNumber = 0;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.incrMeasure = function() {
+$ad92492550bbadf8$var$Classes.prototype.incrMeasure = function() {
     this.measureNumber++;
     this.noteNumber = 0;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.incrNote = function() {
+$ad92492550bbadf8$var$Classes.prototype.incrNote = function() {
     this.noteNumber++;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.measureTotal = function() {
+$ad92492550bbadf8$var$Classes.prototype.measureTotal = function() {
     var total = 0;
     for(var i = 0; i < this.lineNumber; i++)total += this.measureTotalPerLine[i] ? this.measureTotalPerLine[i] : 0; // This can be null when non-music things are present.
     if (this.measureNumber) total += this.measureNumber;
     return total;
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.getCurrent = function(c) {
+$ad92492550bbadf8$var$Classes.prototype.getCurrent = function(c) {
     return {
         line: this.lineNumber,
         measure: this.measureNumber,
@@ -46605,10 +47121,12 @@ $99ecf3aa3f600cfe$var$Classes.prototype.getCurrent = function(c) {
         note: this.noteNumber
     };
 };
-$99ecf3aa3f600cfe$var$Classes.prototype.generate = function(c) {
+$ad92492550bbadf8$var$Classes.prototype.generate = function(c) {
     if (!this.shouldAddClasses) return "";
     var ret = [];
     if (c && c.length > 0) ret.push(c);
+    if (c === "abcjs-tab-number") return ret.join(" ");
+    if (c === "text instrument-name") return "abcjs-text abcjs-instrument-name";
     if (this.lineNumber !== null) ret.push("l" + this.lineNumber);
     if (this.measureNumber !== null) ret.push("m" + this.measureNumber);
     if (this.measureNumber !== null) ret.push("mm" + this.measureTotal()); // measureNumber is null between measures so this is still the test for measureTotal
@@ -46622,22 +47140,26 @@ $99ecf3aa3f600cfe$var$Classes.prototype.generate = function(c) {
     }
     return ret.join(" ");
 };
-module.exports = $99ecf3aa3f600cfe$var$Classes;
+module.exports = $ad92492550bbadf8$var$Classes;
 
 });
 
-parcelRequire.register("dlOy7", function(module, exports) {
-var $9b84728a9c8f7ee3$var$GetFontAndAttr = function GetFontAndAttr(formatting, classes) {
+parcelRegister("kPEZn", function(module, exports) {
+var $f2a85da1d13819c1$var$GetFontAndAttr = function GetFontAndAttr(formatting, classes) {
     this.formatting = formatting;
     this.classes = classes;
 };
-$9b84728a9c8f7ee3$var$GetFontAndAttr.prototype.updateFonts = function(fontOverrides) {
+$f2a85da1d13819c1$var$GetFontAndAttr.prototype.updateFonts = function(fontOverrides) {
     if (fontOverrides.gchordfont) this.formatting.gchordfont = fontOverrides.gchordfont;
     if (fontOverrides.tripletfont) this.formatting.tripletfont = fontOverrides.tripletfont;
     if (fontOverrides.annotationfont) this.formatting.annotationfont = fontOverrides.annotationfont;
     if (fontOverrides.vocalfont) this.formatting.vocalfont = fontOverrides.vocalfont;
 };
-$9b84728a9c8f7ee3$var$GetFontAndAttr.prototype.calc = function(type, klass) {
+$f2a85da1d13819c1$var$GetFontAndAttr.prototype.getFamily = function(type) {
+    if (type[0] === '"' && type[type.length - 1] === '"') return type.substring(1, type.length - 1);
+    return type;
+};
+$f2a85da1d13819c1$var$GetFontAndAttr.prototype.calc = function(type, klass) {
     var font;
     if (typeof type === "string") {
         font = this.formatting[type];
@@ -46670,7 +47192,7 @@ $9b84728a9c8f7ee3$var$GetFontAndAttr.prototype.calc = function(type, klass) {
     var attr = {
         "font-size": font.size,
         "font-style": font.style,
-        "font-family": font.face,
+        "font-family": this.getFamily(font.face),
         "font-weight": font.weight,
         "text-decoration": font.decoration,
         "class": this.classes.generate(klass)
@@ -46680,22 +47202,26 @@ $9b84728a9c8f7ee3$var$GetFontAndAttr.prototype.calc = function(type, klass) {
         attr: attr
     };
 };
-module.exports = $9b84728a9c8f7ee3$var$GetFontAndAttr;
+module.exports = $f2a85da1d13819c1$var$GetFontAndAttr;
 
 });
 
-parcelRequire.register("4a2cO", function(module, exports) {
-var $3079ce99ed170983$var$GetTextSize = function GetTextSize(getFontAndAttr, svg) {
+parcelRegister("gwBDX", function(module, exports) {
+var $c07cd5b6c71908e5$var$GetTextSize = function GetTextSize(getFontAndAttr, svg) {
     this.getFontAndAttr = getFontAndAttr;
     this.svg = svg;
 };
-$3079ce99ed170983$var$GetTextSize.prototype.updateFonts = function(fontOverrides) {
+$c07cd5b6c71908e5$var$GetTextSize.prototype.updateFonts = function(fontOverrides) {
     this.getFontAndAttr.updateFonts(fontOverrides);
 };
-$3079ce99ed170983$var$GetTextSize.prototype.attr = function(type, klass) {
+$c07cd5b6c71908e5$var$GetTextSize.prototype.attr = function(type, klass) {
     return this.getFontAndAttr.calc(type, klass);
 };
-$3079ce99ed170983$var$GetTextSize.prototype.calc = function(text, type, klass, el) {
+$c07cd5b6c71908e5$var$GetTextSize.prototype.getFamily = function(type) {
+    if (type[0] === '"' && type[type.length - 1] === '"') return type.substring(1, type.length - 1);
+    return type;
+};
+$c07cd5b6c71908e5$var$GetTextSize.prototype.calc = function(text, type, klass, el) {
     var hash;
     // This can be passed in either a string or a font. If it is a string it names one of the standard fonts.
     if (typeof type === "string") hash = this.attr(type, klass);
@@ -46710,7 +47236,7 @@ $3079ce99ed170983$var$GetTextSize.prototype.calc = function(text, type, klass, e
         attr: {
             "font-size": type.size,
             "font-style": type.style,
-            "font-family": type.face,
+            "font-family": this.getFamily(type.face),
             "font-weight": type.weight,
             "text-decoration": type.decoration,
             "class": this.getFontAndAttr.classes.generate(klass)
@@ -46724,18 +47250,18 @@ $3079ce99ed170983$var$GetTextSize.prototype.calc = function(text, type, klass, e
     };
     return size;
 };
-$3079ce99ed170983$var$GetTextSize.prototype.baselineToCenter = function(text, type, klass, index, total) {
+$c07cd5b6c71908e5$var$GetTextSize.prototype.baselineToCenter = function(text, type, klass, index, total) {
     // This is for the case where SVG wants to use the baseline of the first line as the Y coordinate.
     // If there are multiple lines of text or there is an array of text then that will not be centered so this adjusts it.
     var height = this.calc(text, type, klass).height;
     var fontHeight = this.attr(type, klass).font.size;
     return height * 0.5 + (total - index - 2) * fontHeight;
 };
-module.exports = $3079ce99ed170983$var$GetTextSize;
+module.exports = $c07cd5b6c71908e5$var$GetTextSize;
 
 });
 
-parcelRequire.register("aY89U", function(module, exports) {
+parcelRegister("aY89U", function(module, exports) {
 
 var $2DZla = parcelRequire("2DZla");
 
@@ -46743,30 +47269,45 @@ var $3d7nG = parcelRequire("3d7nG");
 
 var $4EPmA = parcelRequire("4EPmA");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
 var $g4v6R = parcelRequire("g4v6R");
 function $7fc5d624ef7289e9$var$draw(renderer, classes, abcTune, width, maxWidth, responsive, scale, selectTypes, tuneNumber, lineOffset) {
     var selectables = new $g4v6R(renderer.paper, selectTypes, tuneNumber);
+    var groupClasses = {};
+    if (classes.shouldAddClasses) groupClasses.klass = "abcjs-meta-top";
+    renderer.paper.openGroup(groupClasses);
     renderer.moveY(renderer.padding.top);
     $4EPmA(renderer, abcTune.topText, selectables);
+    renderer.paper.closeGroup();
     renderer.moveY(renderer.spacing.music);
     var staffgroups = [];
     for(var line = 0; line < abcTune.lines.length; line++){
         classes.incrLine();
         var abcLine = abcTune.lines[line];
         if (abcLine.staff) {
+            if (classes.shouldAddClasses) groupClasses.klass = "abcjs-staff l" + classes.lineNumber;
+            renderer.paper.openGroup(groupClasses);
             if (abcLine.vskip) renderer.moveY(abcLine.vskip);
             if (staffgroups.length >= 1) $7fc5d624ef7289e9$var$addStaffPadding(renderer, renderer.spacing.staffSeparation, staffgroups[staffgroups.length - 1], abcLine.staffGroup);
             var staffgroup = $7fc5d624ef7289e9$var$engraveStaffLine(renderer, abcLine.staffGroup, selectables, line);
             staffgroup.line = lineOffset + line; // If there are non-music lines then the staffgroup array won't line up with the line array, so this keeps track.
             staffgroups.push(staffgroup);
-        } else if (abcLine.nonMusic) $4EPmA(renderer, abcLine.nonMusic, selectables);
+            renderer.paper.closeGroup();
+        } else if (abcLine.nonMusic) {
+            if (classes.shouldAddClasses) groupClasses.klass = "abcjs-non-music";
+            renderer.paper.openGroup(groupClasses);
+            $4EPmA(renderer, abcLine.nonMusic, selectables);
+            renderer.paper.closeGroup();
+        }
     }
     classes.reset();
     if (abcTune.bottomText && abcTune.bottomText.rows && abcTune.bottomText.rows.length > 0) {
+        if (classes.shouldAddClasses) groupClasses.klass = "abcjs-meta-bottom";
+        renderer.paper.openGroup(groupClasses);
         renderer.moveY(24); // TODO-PER: Empirically discovered. What variable should this be?
         $4EPmA(renderer, abcTune.bottomText, selectables);
+        renderer.paper.closeGroup();
     }
     $3d7nG(renderer, maxWidth, scale, responsive);
     return {
@@ -46776,7 +47317,7 @@ function $7fc5d624ef7289e9$var$draw(renderer, classes, abcTune, width, maxWidth,
 }
 function $7fc5d624ef7289e9$var$engraveStaffLine(renderer, staffGroup, selectables, lineNumber) {
     $2DZla(renderer, staffGroup, selectables, lineNumber);
-    var height = staffGroup.height * $f4yIj.STEP;
+    var height = staffGroup.height * $6aPnV.STEP;
     renderer.y += height;
     return staffGroup;
 }
@@ -46785,15 +47326,15 @@ function $7fc5d624ef7289e9$var$addStaffPadding(renderer, staffSeparation, lastSt
     var lastBottomLine = -(lastStaff.bottom - 2); // The 2 is because the scale goes to 2 below the last line.
     var nextTopLine = thisStaffGroup.staffs[0].top - 10; // Because 10 represents the top line.
     var naturalSeparation = nextTopLine + lastBottomLine; // This is how far apart they'd be without extra spacing
-    var separationInPixels = naturalSeparation * $f4yIj.STEP;
+    var separationInPixels = naturalSeparation * $6aPnV.STEP;
     if (separationInPixels < staffSeparation) renderer.moveY(staffSeparation - separationInPixels);
 }
 module.exports = $7fc5d624ef7289e9$var$draw;
 
 });
-parcelRequire.register("2DZla", function(module, exports) {
+parcelRegister("2DZla", function(module, exports) {
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
 var $gRbCQ = parcelRequire("gRbCQ");
 
@@ -46813,16 +47354,16 @@ function $1ecece3689f66c28$var$drawStaffGroup(renderer, params, selectables, lin
     // If there are multiple staves, then renderer.y will be incremented for each new staff.
     var colorIndex;
     // An invisible marker is useful to be able to find where each system starts.
-    $1ecece3689f66c28$var$addInvisibleMarker(renderer, "abcjs-top-of-system");
+    //addInvisibleMarker(renderer, "abcjs-top-of-system");
     var startY = renderer.y; // So that it can be restored after we're done.
     // Set the absolute Y position for each staff here, so the voice drawing below can just use if.
     for(var j = 0; j < params.staffs.length; j++){
         var staff1 = params.staffs[j];
         //renderer.printHorizontalLine(50, renderer.y, "start");
-        renderer.moveY($f4yIj.STEP, staff1.top);
+        renderer.moveY($6aPnV.STEP, staff1.top);
         staff1.absoluteY = renderer.y;
         if (renderer.showDebug) {
-            if (renderer.showDebug.indexOf("box") >= 0) $1ecece3689f66c28$var$boxAllElements(renderer, params.voices, staff1.voices);
+            if (renderer.showDebug.indexOf("box") >= 0 && staff1.voices) $1ecece3689f66c28$var$boxAllElements(renderer, params.voices, staff1.voices);
             if (renderer.showDebug.indexOf("grid") >= 0) {
                 renderer.paper.dottedLine({
                     x1: renderer.padding.left,
@@ -46855,7 +47396,7 @@ function $1ecece3689f66c28$var$drawStaffGroup(renderer, params, selectables, lin
                 debugPrintGridItem(staff1, "volumeHeightBelow");
             }
         }
-        renderer.moveY($f4yIj.STEP, -staff1.bottom);
+        renderer.moveY($6aPnV.STEP, -staff1.bottom);
         if (renderer.showDebug) {
             if (renderer.showDebug.indexOf("grid") >= 0) renderer.paper.dottedLine({
                 x1: renderer.padding.left,
@@ -46884,7 +47425,7 @@ function $1ecece3689f66c28$var$drawStaffGroup(renderer, params, selectables, lin
             if (staff.lines !== 0) {
                 if (staff.linePitch) linePitch = staff.linePitch;
                 renderer.controller.classes.newMeasure();
-                var lines = $lUJnX(renderer, params.startx, params.w, staff.lines, staff.linePitch, staff.dy);
+                var lines = $lUJnX(renderer, params.startx, params.w, staff.lines, staff.linePitch, 0.35);
                 bottomLine = lines[1];
                 staff.bottomLine = bottomLine;
                 staff.topLine = lines[0];
@@ -46904,7 +47445,7 @@ function $1ecece3689f66c28$var$drawStaffGroup(renderer, params, selectables, lin
         $1idWC(renderer, params.voices[i], bartop, selectables, {
             top: startY,
             zero: renderer.y,
-            height: params.height * $f4yIj.STEP
+            height: params.height * $6aPnV.STEP
         });
         var tabNameHeight = 0;
         if (tabName) {
@@ -46951,8 +47492,8 @@ function $1ecece3689f66c28$var$drawStaffGroup(renderer, params, selectables, lin
             "rgb(31,170,177)",
             "rgb(220,166,142)"
         ];
-        if (staff.positionY[key]) {
-            var height = staff.specialY[key] * $f4yIj.STEP;
+        if (staff.positionY && staff.positionY[key]) {
+            var height = staff.specialY[key] * $6aPnV.STEP;
             if (key === "chordHeightAbove" && staff.specialY.chordLines && staff.specialY.chordLines.above) height *= staff.specialY.chordLines.above;
             if (key === "chordHeightBelow" && staff.specialY.chordLines && staff.specialY.chordLines.below) height *= staff.specialY.chordLines.below;
             $lHVrP(renderer, {
@@ -46973,23 +47514,15 @@ function $1ecece3689f66c28$var$drawStaffGroup(renderer, params, selectables, lin
 function $1ecece3689f66c28$var$printBrace(renderer, absoluteY, brace, index, selectables) {
     if (brace) {
         for(var i = 0; i < brace.length; i++)if (brace[i].isStartVoice(index)) {
-            brace[i].startY = absoluteY - $f4yIj.STEP * 10;
+            brace[i].startY = absoluteY - $6aPnV.STEP * 10;
             brace[i].elemset = $gRbCQ(renderer, brace[i], selectables);
         }
     }
 }
-function $1ecece3689f66c28$var$addInvisibleMarker(renderer, className) {
-    var y = Math.round(renderer.y);
-    renderer.paper.pathToBack({
-        path: "M 0 " + y + " L 0 0",
-        stroke: "none",
-        fill: "none",
-        "stroke-opacity": 0,
-        "fill-opacity": 0,
-        "class": renderer.controller.classes.generate(className),
-        "data-vertical": y
-    });
-}
+// function addInvisibleMarker(renderer, className) {
+// 	var y = Math.round(renderer.y);
+// 	renderer.paper.pathToBack({path:"M 0 " + y + " L 0 0", stroke:"none", fill:"none", "stroke-opacity": 0, "fill-opacity": 0, 'class': renderer.controller.classes.generate(className), 'data-vertical': y });
+// }
 function $1ecece3689f66c28$var$boxAllElements(renderer, voices, which) {
     for(var i = 0; i < which.length; i++){
         var children = voices[which[i]].children;
@@ -46997,7 +47530,7 @@ function $1ecece3689f66c28$var$boxAllElements(renderer, voices, which) {
             var elem = children[j];
             var coords = elem.getFixedCoords();
             if (elem.invisible || coords.t === undefined || coords.b === undefined) continue;
-            var height = (coords.t - coords.b) * $f4yIj.STEP;
+            var height = (coords.t - coords.b) * $6aPnV.STEP;
             $lHVrP(renderer, {
                 x: coords.x,
                 y: renderer.calcY(coords.t),
@@ -47031,37 +47564,37 @@ function $1ecece3689f66c28$var$boxAllElements(renderer, voices, which) {
 module.exports = $1ecece3689f66c28$var$drawStaffGroup;
 
 });
-parcelRequire.register("gRbCQ", function(module, exports) {
+parcelRegister("gRbCQ", function(module, exports) {
 
 var $kqXn6 = parcelRequire("kqXn6");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
 var $fACaa = parcelRequire("fACaa");
 function $c45a9d2c32b41ce9$var$drawBrace(renderer, params, selectables) {
     // The absoluteY number is the spot where the note on the first ledger line is drawn (i.e. middle C if treble clef)
     // The STEP offset here moves it to the top and bottom lines
-    var startY = params.startVoice.staff.absoluteY - $f4yIj.STEP * 10;
-    if (params.endVoice && params.endVoice.staff) params.endY = params.endVoice.staff.absoluteY - $f4yIj.STEP * 2;
-    else if (params.lastContinuedVoice && params.lastContinuedVoice.staff) params.endY = params.lastContinuedVoice.staff.absoluteY - $f4yIj.STEP * 2;
-    else params.endY = params.startVoice.staff.absoluteY - $f4yIj.STEP * 2;
+    var startY = params.startVoice.staff.absoluteY - $6aPnV.STEP * 10;
+    if (params.endVoice && params.endVoice.staff) params.endY = params.endVoice.staff.absoluteY - $6aPnV.STEP * 2;
+    else if (params.lastContinuedVoice && params.lastContinuedVoice.staff) params.endY = params.lastContinuedVoice.staff.absoluteY - $6aPnV.STEP * 2;
+    else params.endY = params.startVoice.staff.absoluteY - $6aPnV.STEP * 2;
     return $c45a9d2c32b41ce9$var$draw(renderer, params.x, startY, params.endY, params.type, params.header, selectables);
 }
 function $c45a9d2c32b41ce9$var$straightPath(renderer, xLeft, yTop, yBottom, type) {
-    xLeft += $f4yIj.STEP;
-    var xLineWidth = $f4yIj.STEP * 0.75;
-    var yOverlap = $f4yIj.STEP * 0.75;
+    xLeft += $6aPnV.STEP;
+    var xLineWidth = $6aPnV.STEP * 0.75;
+    var yOverlap = $6aPnV.STEP * 0.75;
     var height = yBottom - yTop;
     // Straight line
     var pathString = $kqXn6("M %f %f l %f %f l %f %f l %f %f z", xLeft, yTop - yOverlap, 0, height + yOverlap * 2, xLineWidth, 0, 0, -(height + yOverlap * 2 // top right line
     ));
     // Top arm
-    var wCurve = $f4yIj.STEP * 2;
-    var hCurve = $f4yIj.STEP;
-    pathString += $kqXn6("M %f %f q %f %f %f %f q %f %f %f %f z", xLeft + xLineWidth, yTop - yOverlap, wCurve * 0.6, hCurve * 0.2, wCurve, -hCurve, -wCurve * 0.1, hCurve * 0.3, -wCurve, hCurve + $f4yIj.STEP // left bottom
+    var wCurve = $6aPnV.STEP * 2;
+    var hCurve = $6aPnV.STEP;
+    pathString += $kqXn6("M %f %f q %f %f %f %f q %f %f %f %f z", xLeft + xLineWidth, yTop - yOverlap, wCurve * 0.6, hCurve * 0.2, wCurve, -hCurve, -wCurve * 0.1, hCurve * 0.3, -wCurve, hCurve + $6aPnV.STEP // left bottom
     );
     // Bottom arm
-    pathString += $kqXn6("M %f %f q %f %f %f %f q %f %f %f %f z", xLeft + xLineWidth, yTop + yOverlap + height, wCurve * 0.6, -hCurve * 0.2, wCurve, hCurve, -wCurve * 0.1, -hCurve * 0.3, -wCurve, -hCurve - $f4yIj.STEP // left bottom
+    pathString += $kqXn6("M %f %f q %f %f %f %f q %f %f %f %f z", xLeft + xLineWidth, yTop + yOverlap + height, wCurve * 0.6, -hCurve * 0.2, wCurve, hCurve, -wCurve * 0.1, -hCurve * 0.3, -wCurve, -hCurve - $6aPnV.STEP // left bottom
     );
     return renderer.paper.path({
         path: pathString,
@@ -47150,7 +47683,7 @@ var $c45a9d2c32b41ce9$var$draw = function(renderer, xLeft, yTop, yBottom, type, 
 module.exports = $c45a9d2c32b41ce9$var$drawBrace;
 
 });
-parcelRequire.register("kqXn6", function(module, exports) {
+parcelRegister("kqXn6", function(module, exports) {
 /**
  * sprintf() for JavaScript v.0.4
  *
@@ -47220,7 +47753,7 @@ var $ee044a5908d03d1f$var$sprintf = function() {
                     break;
             }
             a = /[def]/.test(m[7]) && m[2] && a > 0 ? "+" + a : a;
-            c = m[3] ? m[3] == "0" ? "0" : m[3].charAt(1) : " ";
+            c = m[3] ? m[3] == "0" ? "0" : m[3][1] : " ";
             x = m[5] - String(a).length;
             p = m[5] ? str_repeat(c, x) : "";
             o.push(m[4] ? a + p : p + a);
@@ -47233,11 +47766,17 @@ module.exports = $ee044a5908d03d1f$var$sprintf;
 
 });
 
-parcelRequire.register("fACaa", function(module, exports) {
+parcelRegister("fACaa", function(module, exports) {
 
 var $fFp44 = parcelRequire("fFp44");
 function $b597d22a0da6d099$var$renderText(renderer, params, alreadyInGroup) {
     var y = params.y;
+    // TODO-PER: Probably need to merge the regular text and rich text better. At the least, rich text loses the font box.
+    if (params.phrases) {
+        //richTextLine = function (phrases, x, y, klass, anchor, target)
+        var elem = renderer.paper.richTextLine(params.phrases, params.x, params.y, params.klass, params.anchor);
+        return elem;
+    }
     if (params.lane) {
         var laneMargin = params.dim.font.size * 0.25;
         y += (params.dim.font.size + laneMargin) * params.lane;
@@ -47248,6 +47787,7 @@ function $b597d22a0da6d099$var$renderText(renderer, params, alreadyInGroup) {
         hash.attr.class = params.klass;
     } else hash = renderer.controller.getFontAndAttr.calc(params.type, params.klass);
     if (params.anchor) hash.attr["text-anchor"] = params.anchor;
+    if (params["dominant-baseline"]) hash.attr["dominant-baseline"] = params["dominant-baseline"];
     hash.attr.x = params.x;
     hash.attr.y = y;
     if (!params.centerVertically) hash.attr.y += hash.font.size;
@@ -47295,7 +47835,7 @@ function $b597d22a0da6d099$var$renderText(renderer, params, alreadyInGroup) {
 module.exports = $b597d22a0da6d099$var$renderText;
 
 });
-parcelRequire.register("fFp44", function(module, exports) {
+parcelRegister("fFp44", function(module, exports) {
 function $b67e20aacbc4521d$var$roundNumber(x) {
     return parseFloat(x.toFixed(2));
 }
@@ -47305,7 +47845,9 @@ module.exports = $b67e20aacbc4521d$var$roundNumber;
 
 
 
-parcelRequire.register("1idWC", function(module, exports) {
+parcelRegister("1idWC", function(module, exports) {
+
+var $7dP4Q = parcelRequire("7dP4Q");
 
 var $4vAoX = parcelRequire("4vAoX");
 
@@ -47325,6 +47867,8 @@ var $4o4cL = parcelRequire("4o4cL");
 function $0f1249f0cb231b44$var$drawVoice(renderer, params, bartop, selectables, staffPos) {
     var width = params.w - 1;
     renderer.staffbottom = params.staff.bottom;
+    var saveColor = renderer.foregroundColor;
+    if (params.color) renderer.foregroundColor = params.color;
     if (params.header) {
         var textEl = $fACaa(renderer, {
             x: renderer.padding.left,
@@ -47354,7 +47898,6 @@ function $0f1249f0cb231b44$var$drawVoice(renderer, params, bartop, selectables, 
             renderer.controller.classes.startMeasure();
             justInitializedMeasureNumber = true;
         }
-        child.type;
         if (params.staff.isTabStaff) {
             child.invisible = false;
             if (child.type == "bar") {
@@ -47376,6 +47919,9 @@ function $0f1249f0cb231b44$var$drawVoice(renderer, params, bartop, selectables, 
         child = params.otherchildren[i];
         if (child === "bar") renderer.controller.classes.incrMeasure();
         else switch(child.type){
+            case "GlissandoElem":
+                child.elemset = $7dP4Q(renderer, child, selectables);
+                break;
             case "CrescendoElem":
                 child.elemset = $4vAoX(renderer, child, selectables);
                 break;
@@ -47396,6 +47942,7 @@ function $0f1249f0cb231b44$var$drawVoice(renderer, params, bartop, selectables, 
                 $4o4cL(renderer, child, params.startx + 10, width, selectables, staffPos);
         }
     }
+    renderer.foregroundColor = saveColor;
 }
 function $0f1249f0cb231b44$var$isNonSpacerRest(elem) {
     if (elem.type !== "rest") return false;
@@ -47405,7 +47952,134 @@ function $0f1249f0cb231b44$var$isNonSpacerRest(elem) {
 module.exports = $0f1249f0cb231b44$var$drawVoice;
 
 });
-parcelRequire.register("4vAoX", function(module, exports) {
+parcelRegister("7dP4Q", function(module, exports) {
+
+var $kqXn6 = parcelRequire("kqXn6");
+
+var $2JIaU = parcelRequire("2JIaU");
+
+var $fFp44 = parcelRequire("fFp44");
+function $54215e23d519d08c$var$drawGlissando(renderer, params, selectables) {
+    if (!params.anchor1 || !params.anchor2 || !params.anchor1.heads || !params.anchor2.heads || params.anchor1.heads.length === 0 || params.anchor2.heads.length === 0) window.console.error("Glissando Element not set.");
+    var margin = 4;
+    var leftY = renderer.calcY(params.anchor1.heads[0].pitch);
+    var rightY = renderer.calcY(params.anchor2.heads[0].pitch);
+    var leftX = params.anchor1.x + params.anchor1.w / 2;
+    var rightX = params.anchor2.x + params.anchor2.w / 2;
+    var len = $54215e23d519d08c$var$lineLength(leftX, leftY, rightX, rightY);
+    var marginLeft = params.anchor1.w / 2 + margin;
+    var marginRight = params.anchor2.w / 2 + margin;
+    var s = $54215e23d519d08c$var$slope(leftX, leftY, rightX, rightY);
+    var leftYAdj = $54215e23d519d08c$var$getY(leftY, s, marginLeft);
+    var rightYAdj = $54215e23d519d08c$var$getY(rightY, s, -marginRight);
+    var num = $54215e23d519d08c$var$numSquigglies(len - marginLeft - marginRight);
+    var el = $54215e23d519d08c$var$drawSquiggly(renderer, leftX + marginLeft, leftYAdj, num, s);
+    selectables.wrapSvgEl({
+        el_type: "glissando",
+        startChar: -1,
+        endChar: -1
+    }, el);
+    return [
+        el
+    ];
+}
+function $54215e23d519d08c$var$lineLength(leftX, leftY, rightX, rightY) {
+    // The length from notehead center to notehead center.
+    var w = rightX - leftX;
+    var h = rightY - leftY;
+    return Math.sqrt(w * w + h * h);
+}
+function $54215e23d519d08c$var$slope(leftX, leftY, rightX, rightY) {
+    return (rightY - leftY) / (rightX - leftX);
+}
+function $54215e23d519d08c$var$getY(y, slope, xOfs) {
+    return $fFp44(y + xOfs * slope);
+}
+function $54215e23d519d08c$var$numSquigglies(length) {
+    var endLen = 5; // The width of the end - that is, the non repeating part
+    return Math.max(2, Math.floor((length - endLen * 2) / 6));
+}
+var $54215e23d519d08c$var$leftStart = [
+    [
+        3.5,
+        -4.8
+    ]
+];
+var $54215e23d519d08c$var$right = [
+    [
+        1.5,
+        -1
+    ],
+    [
+        .3,
+        -0.3
+    ],
+    [
+        -3.5,
+        3.8
+    ]
+];
+var $54215e23d519d08c$var$leftEnd = [
+    [
+        -1.5,
+        2
+    ]
+];
+var $54215e23d519d08c$var$top = [
+    [
+        3,
+        4
+    ],
+    [
+        3,
+        -4
+    ]
+];
+var $54215e23d519d08c$var$bottom = [
+    [
+        -3,
+        4
+    ],
+    [
+        -3,
+        -4
+    ]
+];
+function $54215e23d519d08c$var$segment(arr, slope) {
+    var ret = "";
+    for(var i = 0; i < arr.length; i++)ret += "l" + arr[i][0] + " " + $54215e23d519d08c$var$getY(arr[i][1], slope, arr[i][0]);
+    return ret;
+}
+var $54215e23d519d08c$var$drawSquiggly = function(renderer, x, y, num, slope) {
+    var p = $kqXn6("M %f %f", x, y);
+    p += $54215e23d519d08c$var$segment($54215e23d519d08c$var$leftStart, slope);
+    var i;
+    for(i = 0; i < num; i++)p += $54215e23d519d08c$var$segment($54215e23d519d08c$var$top, slope);
+    p += $54215e23d519d08c$var$segment($54215e23d519d08c$var$right, slope);
+    for(i = 0; i < num; i++)p += $54215e23d519d08c$var$segment($54215e23d519d08c$var$bottom, slope);
+    p += $54215e23d519d08c$var$segment($54215e23d519d08c$var$leftEnd, slope) + "z";
+    return $2JIaU(renderer, {
+        path: p,
+        highlight: "stroke",
+        stroke: renderer.foregroundColor,
+        "class": renderer.controller.classes.generate("decoration"),
+        "data-name": "glissando"
+    });
+};
+module.exports = $54215e23d519d08c$var$drawGlissando;
+
+});
+parcelRegister("2JIaU", function(module, exports) {
+function $1fe20cf4b9dbaca5$var$printPath(renderer, attrs, params) {
+    var ret = renderer.paper.path(attrs);
+    return ret;
+}
+module.exports = $1fe20cf4b9dbaca5$var$printPath;
+
+});
+
+
+parcelRegister("4vAoX", function(module, exports) {
 
 var $kqXn6 = parcelRequire("kqXn6");
 
@@ -47450,17 +48124,8 @@ var $34864b3ccf1ccba9$var$drawLine = function(renderer, y1, y2, y3, y4, left, ri
 module.exports = $34864b3ccf1ccba9$var$drawCrescendo;
 
 });
-parcelRequire.register("2JIaU", function(module, exports) {
-function $1fe20cf4b9dbaca5$var$printPath(renderer, attrs, params) {
-    var ret = renderer.paper.path(attrs);
-    return ret;
-}
-module.exports = $1fe20cf4b9dbaca5$var$printPath;
 
-});
-
-
-parcelRequire.register("vLj11", function(module, exports) {
+parcelRegister("vLj11", function(module, exports) {
 
 var $aRiVZ = parcelRequire("aRiVZ");
 function $05f7974ac5447466$var$drawDynamics(renderer, params, selectables) {
@@ -47488,11 +48153,11 @@ function $05f7974ac5447466$var$drawDynamics(renderer, params, selectables) {
 module.exports = $05f7974ac5447466$var$drawDynamics;
 
 });
-parcelRequire.register("aRiVZ", function(module, exports) {
+parcelRegister("aRiVZ", function(module, exports) {
 
 var $fACaa = parcelRequire("fACaa");
 
-var $qv6HX = parcelRequire("qv6HX");
+var $fJFPv = parcelRequire("fJFPv");
 
 var $73pMe = parcelRequire("73pMe");
 /**
@@ -47513,14 +48178,14 @@ var $73pMe = parcelRequire("73pMe");
         });
         var dx = 0;
         for(var i = 0; i < symbol.length; i++){
-            var s = symbol.charAt(i);
-            ycorr = $qv6HX.getYCorr(s);
-            el = $qv6HX.printSymbol(x + dx, renderer.calcY(offset + ycorr), s, renderer.paper, {
+            var s = symbol[i];
+            ycorr = $fJFPv.getYCorr(s);
+            el = $fJFPv.printSymbol(x + dx, renderer.calcY(offset + ycorr), s, renderer.paper, {
                 stroke: options.stroke,
                 fill: options.fill
             });
             if (el) {
-                if (i < symbol.length - 1) dx += $7e7d8a9a4a820679$var$kernSymbols(s, symbol.charAt(i + 1), $qv6HX.getSymbolWidth(s));
+                if (i < symbol.length - 1) dx += $7e7d8a9a4a820679$var$kernSymbols(s, symbol[i + 1], $fJFPv.getSymbolWidth(s));
             } else $fACaa(renderer, {
                 x: x,
                 y: renderer.y,
@@ -47533,11 +48198,11 @@ var $73pMe = parcelRequire("73pMe");
         var g = renderer.paper.closeGroup();
         return g;
     } else {
-        ycorr = $qv6HX.getYCorr(symbol);
-        if ($73pMe.isInGroup()) el = $qv6HX.printSymbol(x, renderer.calcY(offset + ycorr), symbol, renderer.paper, {
+        ycorr = $fJFPv.getYCorr(symbol);
+        if ($73pMe.isInGroup()) el = $fJFPv.printSymbol(x, renderer.calcY(offset + ycorr), symbol, renderer.paper, {
             "data-name": options.name
         });
-        else el = $qv6HX.printSymbol(x, renderer.calcY(offset + ycorr), symbol, renderer.paper, {
+        else el = $fJFPv.printSymbol(x, renderer.calcY(offset + ycorr), symbol, renderer.paper, {
             klass: options.klass,
             stroke: options.stroke,
             fill: options.fill,
@@ -47566,8 +48231,10 @@ function $7e7d8a9a4a820679$var$kernSymbols(lastSymbol, thisSymbol, lastSymbolWid
 module.exports = $7e7d8a9a4a820679$var$printSymbol;
 
 });
-parcelRequire.register("73pMe", function(module, exports) {
-
+parcelRegister("73pMe", function(module, exports) {
+/**
+ * Begin a group of glyphs that will always be moved, scaled and highlighted together
+ */ 
 var $fFp44 = parcelRequire("fFp44");
 function $522cceffdb3c0e9b$var$Group() {
     this.ingroup = false;
@@ -47604,8 +48271,8 @@ $522cceffdb3c0e9b$var$Group.prototype.addPath = function(path) {
     }
 };
 /**
-	 * End a group of glyphs that will always be moved, scaled and highlighted together
-	 */ $522cceffdb3c0e9b$var$Group.prototype.endGroup = function(klass, name) {
+ * End a group of glyphs that will always be moved, scaled and highlighted together
+ */ $522cceffdb3c0e9b$var$Group.prototype.endGroup = function(klass, name) {
     this.ingroup = false;
     //if (this.path.length === 0) return null;
     var path = "";
@@ -47628,7 +48295,7 @@ module.exports = $522cceffdb3c0e9b$var$elementGroup;
 
 
 
-parcelRequire.register("lY2e2", function(module, exports) {
+parcelRegister("lY2e2", function(module, exports) {
 
 var $kqXn6 = parcelRequire("kqXn6");
 
@@ -47694,7 +48361,7 @@ module.exports = $ffe0ed8074de9eb6$var$drawTriplet;
 
 });
 
-parcelRequire.register("7loem", function(module, exports) {
+parcelRegister("7loem", function(module, exports) {
 
 var $kqXn6 = parcelRequire("kqXn6");
 
@@ -47751,7 +48418,7 @@ module.exports = $558d4a4aaf19d761$var$drawEnding;
 
 });
 
-parcelRequire.register("5LEd2", function(module, exports) {
+parcelRegister("5LEd2", function(module, exports) {
 
 var $kqXn6 = parcelRequire("kqXn6");
 
@@ -47766,10 +48433,15 @@ function $4330884a464527f8$var$drawTie(renderer, params, linestartx, lineendx, s
     if (params.hint) klass = "abcjs-hint";
     var fudgeY = params.fixedY ? 1.5 : 0; // TODO-PER: This just compensates for drawArc, which contains too much knowledge of ties and slurs.
     var el = $4330884a464527f8$var$drawArc(renderer, params.startX, params.endX, params.startY + fudgeY, params.endY + fudgeY, params.above, klass, params.isTie, params.dotted);
+    var startChar = -1;
+    // This gets the start and end points of the contents of the slur. We assume that the parenthesis are just to the outside of that.
+    if (params.anchor1 && !params.isTie) startChar = params.anchor1.parent.abcelem.startChar - 1;
+    var endChar = -1;
+    if (params.anchor2 && !params.isTie) endChar = params.anchor2.parent.abcelem.endChar + 1;
     selectables.wrapSvgEl({
         el_type: "slur",
-        startChar: -1,
-        endChar: -1
+        startChar: startChar,
+        endChar: endChar
     }, el);
     return [
         el
@@ -47847,7 +48519,7 @@ module.exports = $4330884a464527f8$var$drawTie;
 
 });
 
-parcelRequire.register("ju48M", function(module, exports) {
+parcelRegister("ju48M", function(module, exports) {
 
 var $2JIaU = parcelRequire("2JIaU");
 
@@ -47904,15 +48576,15 @@ module.exports = $e2f407e1dfca0210$var$drawBeam;
 
 });
 
-parcelRequire.register("4o4cL", function(module, exports) {
+parcelRegister("4o4cL", function(module, exports) {
 
 var $8xUkN = parcelRequire("8xUkN");
 
 var $kvW2C = parcelRequire("kvW2C");
 
-var $f4yIj = parcelRequire("f4yIj");
+var $6aPnV = parcelRequire("6aPnV");
 
-var $gMcQ4 = parcelRequire("gMcQ4");
+var $iZjgH = parcelRequire("iZjgH");
 
 var $73pMe = parcelRequire("73pMe");
 function $331caa4c0f8fd65c$var$drawAbsolute(renderer, params, bartop, selectables, staffPos) {
@@ -47927,7 +48599,8 @@ function $331caa4c0f8fd65c$var$drawAbsolute(renderer, params, bartop, selectable
                 $8xUkN(renderer, child);
                 break;
             default:
-                $kvW2C(renderer, child, bartop);
+                var el = $kvW2C(renderer, child, bartop);
+                if (child.type === "symbol" && child.c && child.c.indexOf("notehead") >= 0) el.setAttribute("class", "abcjs-notehead");
         }
     }
     var klass = params.type;
@@ -47939,6 +48612,12 @@ function $331caa4c0f8fd65c$var$drawAbsolute(renderer, params, bartop, selectable
     }
     var g = $73pMe.endGroup(klass, params.type);
     if (g) {
+        // TODO-PER-HACK! This corrects the classes because the tablature is not being created at the right time.
+        if (params.cloned) params.cloned.overrideClasses = g.className.baseVal;
+        if (params.overrideClasses) {
+            var type = g.classList && g.classList.length > 0 ? g.classList[0] + " " : "";
+            g.setAttribute("class", type + params.overrideClasses);
+        }
         if (isTempo) {
             params.startChar = params.abcelem.startChar;
             params.endChar = params.abcelem.endChar;
@@ -47951,21 +48630,21 @@ function $331caa4c0f8fd65c$var$drawAbsolute(renderer, params, bartop, selectable
         }
     } else if (params.elemset.length > 0) selectables.add(params, params.elemset[0], params.type === "note", staffPos);
     // If there was no output, then don't add to the selectables. This happens when using the "y" spacer, for instance.
-    if (params.klass) $gMcQ4(params.elemset, "mark", "", "#00ff00");
-    if (params.hint) $gMcQ4(params.elemset, "abcjs-hint", "", null);
+    if (params.klass) $iZjgH(params.elemset, "mark", "", "#00ff00");
+    if (params.hint) $iZjgH(params.elemset, "abcjs-hint", "", null);
     params.abcelem.abselem = params;
     if (params.heads && params.heads.length > 0) {
         params.notePositions = [];
         for(var jj = 0; jj < params.heads.length; jj++)params.notePositions.push({
             x: params.heads[jj].x + params.heads[jj].w / 2,
-            y: staffPos.zero - params.heads[jj].pitch * $f4yIj.STEP
+            y: staffPos.zero - params.heads[jj].pitch * $6aPnV.STEP
         });
     }
 }
 module.exports = $331caa4c0f8fd65c$var$drawAbsolute;
 
 });
-parcelRequire.register("8xUkN", function(module, exports) {
+parcelRegister("8xUkN", function(module, exports) {
 
 var $kvW2C = parcelRequire("kvW2C");
 
@@ -47991,7 +48670,6 @@ function $638d1aa851ca362c$var$drawTempo(renderer, params) {
             klass: "abcjs-tempo",
             anchor: "start",
             noClass: true,
-            "dominant-baseline": "ideographic",
             name: "pre"
         }, true);
         size = renderer.controller.getTextSize.calc(params.tempo.preString, "tempofont", "tempo", text);
@@ -48036,7 +48714,7 @@ function $638d1aa851ca362c$var$drawTempo(renderer, params) {
 module.exports = $638d1aa851ca362c$var$drawTempo;
 
 });
-parcelRequire.register("kvW2C", function(module, exports) {
+parcelRegister("kvW2C", function(module, exports) {
 
 var $fACaa = parcelRequire("fACaa");
 
@@ -48077,7 +48755,7 @@ function $eef3b9ab813fb277$var$drawRelativeElement(renderer, params, bartop) {
         case "tabNumber":
             var hAnchor = "middle";
             var tabFont = "tabnumberfont";
-            var tabClass = "tab-number";
+            var tabClass = "abcjs-tab-number";
             if (params.isGrace) {
                 tabFont = "tabgracefont";
                 y += 2.5;
@@ -48140,7 +48818,7 @@ function $eef3b9ab813fb277$var$drawRelativeElement(renderer, params, bartop) {
                 text: params.c,
                 type: "annotationfont",
                 klass: renderer.controller.classes.generate("annotation"),
-                anchor: "middle",
+                anchor: params.anchor,
                 centerVertically: true,
                 dim: params.dim
             }, false);
@@ -48184,13 +48862,14 @@ function $eef3b9ab813fb277$var$drawRelativeElement(renderer, params, bartop) {
             }, true);
             break;
         case "bar":
-            params.graphelem = $jtXD9(renderer, params.x, params.linewidth, y, bartop ? bartop : renderer.calcY(params.pitch2), null, "bar");
+            params.graphelem = $jtXD9(renderer, params.x, params.linewidth + renderer.lineThickness, y, bartop ? bartop : renderer.calcY(params.pitch2), null, "bar");
             break; // bartop can't be 0
         case "stem":
-            params.graphelem = $jtXD9(renderer, params.x, params.linewidth, y, renderer.calcY(params.pitch2), "abcjs-stem", "stem");
+            var stemWidth = params.linewidth > 0 ? params.linewidth + renderer.lineThickness : params.linewidth - renderer.lineThickness;
+            params.graphelem = $jtXD9(renderer, params.x, stemWidth, y, renderer.calcY(params.pitch2), "abcjs-stem", "stem");
             break;
         case "ledger":
-            params.graphelem = $flt4G(renderer, params.x, params.x + params.w, params.pitch, "abcjs-ledger", "ledger");
+            params.graphelem = $flt4G(renderer, params.x, params.x + params.w, params.pitch, "abcjs-ledger", "ledger", 0.35 + renderer.lineThickness);
             break;
     }
     if (params.scalex !== 1 && params.graphelem) $eef3b9ab813fb277$var$scaleExistingElem(renderer.paper, params.graphelem, params.scalex, params.scaley, params.x, y);
@@ -48204,7 +48883,7 @@ function $eef3b9ab813fb277$var$scaleExistingElem(paper, elem, scaleX, scaleY, x,
 module.exports = $eef3b9ab813fb277$var$drawRelativeElement;
 
 });
-parcelRequire.register("jtXD9", function(module, exports) {
+parcelRegister("jtXD9", function(module, exports) {
 
 var $73pMe = parcelRequire("73pMe");
 
@@ -48220,6 +48899,21 @@ function $e2eefb1db662a7b0$var$printStem(renderer, x, dx, y1, y2, klass, name) {
     }
     x = $fFp44(x);
     var x2 = $fFp44(x + dx);
+    // TODO-PER: This fixes a firefox bug where it isn't displayed
+    if (renderer.firefox112) {
+        x += dx / 2; // Because the x coordinate is the edge of where the line goes but the width widens from the middle.
+        var attr = {
+            x1: x,
+            x2: x,
+            y1: y1,
+            y2: y2,
+            stroke: renderer.foregroundColor,
+            "stroke-width": Math.abs(dx)
+        };
+        if (klass) attr["class"] = klass;
+        if (name) attr["data-name"] = name;
+        return renderer.paper.lineToBack(attr);
+    }
     var pathArray = [
         [
             "M",
@@ -48261,7 +48955,7 @@ module.exports = $e2eefb1db662a7b0$var$printStem;
 
 });
 
-parcelRequire.register("flt4G", function(module, exports) {
+parcelRegister("flt4G", function(module, exports) {
 
 var $bCqgY = parcelRequire("bCqgY");
 function $b2bf5ec93e7ed4bc$var$printStaffLine(renderer, x1, x2, pitch, klass, name, dy) {
@@ -48271,18 +48965,32 @@ function $b2bf5ec93e7ed4bc$var$printStaffLine(renderer, x1, x2, pitch, klass, na
 module.exports = $b2bf5ec93e7ed4bc$var$printStaffLine;
 
 });
-parcelRequire.register("bCqgY", function(module, exports) {
+parcelRegister("bCqgY", function(module, exports) {
 
 var $kqXn6 = parcelRequire("kqXn6");
 
 var $fFp44 = parcelRequire("fFp44");
 function $87579f85d9b201a6$var$printLine(renderer, x1, x2, y, klass, name, dy) {
-    if (!dy) dy = 0.35;
     var fill = renderer.foregroundColor;
     x1 = $fFp44(x1);
     x2 = $fFp44(x2);
     var y1 = $fFp44(y - dy);
     var y2 = $fFp44(y + dy);
+    // TODO-PER: This fixes a firefox bug where it isn't displayed
+    if (renderer.firefox112) {
+        y += dy / 2; // Because the y coordinate is the edge of where the line goes but the width widens from the middle.
+        var attr = {
+            x1: x1,
+            x2: x2,
+            y1: y,
+            y2: y,
+            stroke: renderer.foregroundColor,
+            "stroke-width": Math.abs(dy * 2)
+        };
+        if (klass) attr["class"] = klass;
+        if (name) attr["data-name"] = name;
+        return renderer.paper.lineToBack(attr);
+    }
     var pathString = $kqXn6("M %f %f L %f %f L %f %f L %f %f z", x1, y1, x2, y1, x2, y2, x1, y2);
     var options = {
         path: pathString,
@@ -48303,7 +49011,7 @@ module.exports = $87579f85d9b201a6$var$printLine;
 
 
 
-parcelRequire.register("lUJnX", function(module, exports) {
+parcelRegister("lUJnX", function(module, exports) {
 
 var $flt4G = parcelRequire("flt4G");
 function $ff42088f41b450e1$var$printStaff(renderer, startx, endx, numLines, linePitch, dy) {
@@ -48318,14 +49026,14 @@ function $ff42088f41b450e1$var$printStaff(renderer, startx, endx, numLines, line
     var firstYLine = 0;
     var lastYLine = 0;
     if (numLines === 1) {
-        $flt4G(renderer, startx, endx, 6, klass);
+        $flt4G(renderer, startx, endx, 6, klass, null, dy + renderer.lineThickness);
         firstYLine = renderer.calcY(10);
         lastYLine = renderer.calcY(2);
     } else for(var i = numLines - 1; i >= 0; i--){
         var curpitch = (i + 1) * pitch;
         lastYLine = renderer.calcY(curpitch);
         if (firstYLine === 0) firstYLine = lastYLine;
-        $flt4G(renderer, startx, endx, curpitch, klass, null, dy);
+        $flt4G(renderer, startx, endx, curpitch, klass, null, dy + renderer.lineThickness);
         klass = undefined;
     }
     renderer.paper.closeGroup();
@@ -48338,7 +49046,7 @@ module.exports = $ff42088f41b450e1$var$printStaff;
 
 });
 
-parcelRequire.register("lHVrP", function(module, exports) {
+parcelRegister("lHVrP", function(module, exports) {
 function $fcda2d0d3e16d55d$var$printDebugBox(renderer, attr, comment) {
     var box = renderer.paper.rectBeneath(attr);
     if (comment) renderer.paper.text(comment, {
@@ -48355,7 +49063,7 @@ module.exports = $fcda2d0d3e16d55d$var$printDebugBox;
 
 });
 
-parcelRequire.register("4EPmA", function(module, exports) {
+parcelRegister("4EPmA", function(module, exports) {
 
 var $8TfmJ = parcelRequire("8TfmJ");
 
@@ -48365,12 +49073,14 @@ function $3642bd8bc84794c0$var$nonMusic(renderer, obj, selectables) {
         var row = obj.rows[i];
         if (row.absmove) renderer.absolutemoveY(row.absmove);
         else if (row.move) renderer.moveY(row.move);
-        else if (row.text) {
+        else if (row.text || row.phrases) {
             var x = row.left ? row.left : 0;
             var el = $fACaa(renderer, {
                 x: x,
                 y: renderer.y,
                 text: row.text,
+                phrases: row.phrases,
+                "dominant-baseline": row["dominant-baseline"],
                 type: row.font,
                 klass: row.klass,
                 name: row.name,
@@ -48404,7 +49114,7 @@ function $3642bd8bc84794c0$var$nonMusic(renderer, obj, selectables) {
 module.exports = $3642bd8bc84794c0$var$nonMusic;
 
 });
-parcelRequire.register("8TfmJ", function(module, exports) {
+parcelRegister("8TfmJ", function(module, exports) {
 function $678f611812d4ad3d$var$drawSeparator(renderer, width) {
     var fill = "rgba(0,0,0,255)";
     var stroke = "rgba(0,0,0,0)";
@@ -48426,9 +49136,9 @@ module.exports = $678f611812d4ad3d$var$drawSeparator;
 
 
 
-parcelRequire.register("3d7nG", function(module, exports) {
+parcelRegister("3d7nG", function(module, exports) {
 function $25684fb999781459$var$setPaperSize(renderer, maxwidth, scale, responsive) {
-    var w = (maxwidth + renderer.padding.right) * scale;
+    var w = (maxwidth + renderer.padding.left + renderer.padding.right) * scale;
     var h = (renderer.y + renderer.padding.bottom) * scale;
     if (renderer.isPrint) h = Math.max(h, 1056); // 11in x 72pt/in x 1.33px/pt
     // TODO-PER: We are letting the page get as long as it needs now, but eventually that should go to a second page.
@@ -48469,11 +49179,11 @@ module.exports = $25684fb999781459$var$setPaperSize;
 
 });
 
-parcelRequire.register("g4v6R", function(module, exports) {
+parcelRegister("g4v6R", function(module, exports) {
 
-var $6kCEW = parcelRequire("6kCEW");
+var $fydHO = parcelRequire("fydHO");
 
-var $OtlJZ = parcelRequire("OtlJZ");
+var $Ebu4P = parcelRequire("Ebu4P");
 function $bb3526d0fd7cce24$var$Selectables(paper, selectTypes, tuneNumber) {
     this.elements = [];
     this.paper = paper;
@@ -48522,8 +49232,8 @@ $bb3526d0fd7cce24$var$Selectables.prototype.wrapSvgEl = function(abcelem, el) {
         elemset: [
             el
         ],
-        highlight: $6kCEW,
-        unhighlight: $OtlJZ
+        highlight: $fydHO,
+        unhighlight: $Ebu4P
     };
     this.add(absEl, el, false);
 };
@@ -48534,7 +49244,53 @@ module.exports = $bb3526d0fd7cce24$var$Selectables;
 
 
 
-parcelRequire.register("2DpCT", function(module, exports) {
+parcelRegister("2DpCT", function(module, exports) {
+// window.ABCJS.Editor:
+//
+// constructor(editarea, params)
+//		if editarea is a string, then it is an HTML id of a textarea control.
+//		Otherwise, it should be an instantiation of an object that expresses the EditArea interface.
+//
+//		params is a hash of:
+//		canvas_id: or paper_id: HTML id to draw in. If not present, then the drawing happens just below the editor.
+//		generate_midi: if present, then midi is generated.
+//		midi_id: if present, the HTML id to place the midi control. Otherwise it is placed in the same div as the paper.
+//		midi_download_id: if present, the HTML id to place the midi download link. Otherwise it is placed in the same div as the paper.
+//		generate_warnings: if present, then parser warnings are displayed on the page.
+//		warnings_id: if present, the HTML id to place the warnings. Otherwise they are placed in the same div as the paper.
+//		onchange: if present, the callback function to call whenever there has been a change.
+//		gui: if present, the paper can send changes back to the editor (presumably because the user changed something directly.)
+//		parser_options: options to send to the parser engine.
+//		midi_options: options to send to the midi engine.
+//		render_options: options to send to the render engine.
+//		indicate_changed: the dirty flag is set if this is true.
+//
+// - setReadOnly(bool)
+//		adds or removes the class abc_textarea_readonly, and adds or removes the attribute readonly=yes
+// - setDirtyStyle(bool)
+//		adds or removes the class abc_textarea_dirty
+// - modelChanged()
+//		Called when the model has been changed to trigger re-rendering
+// - parseABC()
+//		Called internally by fireChanged()
+//		returns true if there has been a change since last call.
+// - updateSelection()
+//		Called when the user has changed the selection. This calls the engraver to show the selection.
+// - fireSelectionChanged()
+//		Called by the textarea object when the user has changed the selection.
+// - paramChanged(engraverparams)
+//		Called to signal that the engraver params have changed, so re-rendering should occur.
+// - fireChanged()
+//		Called by the textarea object when the user has changed something.
+// - setNotDirty()
+//		Called by the client app to reset the dirty flag
+// - isDirty()
+//		Returns true or false, whether the textarea contains the same text that it started with.
+// - highlight(abcelem)
+//		Called by the engraver to highlight an area.
+// - pause(bool)
+//		Stops the automatic rendering when the user is typing.
+//
 
 var $3fSeU = parcelRequire("3fSeU");
 
@@ -48622,13 +49378,13 @@ var $1eb31a2672013dc9$var$Editor = function(editarea, params) {
     this.bReentry = false;
     this.parseABC();
     this.modelChanged();
-    this.addClassName = function(element1, className1) {
+    this.addClassName = function(element, className) {
         var hasClassName = function(element, className) {
             var elementClassName = element.className;
             return elementClassName.length > 0 && (elementClassName === className || new RegExp("(^|\\s)" + className + "(\\s|$)").test(elementClassName));
         };
-        if (!hasClassName(element1, className1)) element1.className += (element1.className ? " " : "") + className1;
-        return element1;
+        if (!hasClassName(element, className)) element.className += (element.className ? " " : "") + className;
+        return element;
     };
     this.removeClassName = function(element, className) {
         element.className = $3fSeU.strip(element.className.replace(new RegExp("(^|\\s+)" + className + "(\\s+|$)"), " "));
@@ -48726,13 +49482,13 @@ $1eb31a2672013dc9$var$Editor.prototype.fireSelectionChanged = function() {
 };
 $1eb31a2672013dc9$var$Editor.prototype.setDirtyStyle = function(isDirty) {
     if (this.indicate_changed === undefined) return;
-    var addClassName = function(element2, className2) {
+    var addClassName = function(element, className) {
         var hasClassName = function(element, className) {
             var elementClassName = element.className;
             return elementClassName.length > 0 && (elementClassName === className || new RegExp("(^|\\s)" + className + "(\\s|$)").test(elementClassName));
         };
-        if (!hasClassName(element2, className2)) element2.className += (element2.className ? " " : "") + className2;
-        return element2;
+        if (!hasClassName(element, className)) element.className += (element.className ? " " : "") + className;
+        return element;
     };
     var removeClassName = function(element, className) {
         element.className = $3fSeU.strip(element.className.replace(new RegExp("(^|\\s+)" + className + "(\\s+|$)"), " "));
@@ -48791,7 +49547,7 @@ $1eb31a2672013dc9$var$Editor.prototype.pauseMidi = function(shouldPause) {
 module.exports = $1eb31a2672013dc9$var$Editor;
 
 });
-parcelRequire.register("b5ox6", function(module, exports) {
+parcelRegister("b5ox6", function(module, exports) {
 
 var $bS0RV = parcelRequire("bS0RV");
 
@@ -48816,6 +49572,8 @@ function $8123310fd097717f$var$SynthController() {
     self.isLoading = false;
     self.load = function(selector, cursorControl, visualOptions) {
         if (!visualOptions) visualOptions = {};
+        if (visualOptions.displayPlay === undefined) visualOptions.displayPlay = true;
+        if (visualOptions.displayProgress === undefined) visualOptions.displayProgress = true;
         self.control = new $bS0RV(selector, {
             loopHandler: visualOptions.displayLoop ? self.toggleLoop : undefined,
             restartHandler: visualOptions.displayRestart ? self.restart : undefined,
@@ -48833,7 +49591,7 @@ function $8123310fd097717f$var$SynthController() {
     self.setTune = function(visualObj, userAction, audioParams) {
         self.visualObj = visualObj;
         self.disable(false);
-        self.options = audioParams;
+        self.options = audioParams ? audioParams : {};
         if (self.control) {
             self.pause();
             self.setProgress(0, 1);
@@ -48957,7 +49715,7 @@ function $8123310fd097717f$var$SynthController() {
     };
     self._randomAccess = function(ev) {
         var background = ev.target.classList.contains("abcjs-midi-progress-indicator") ? ev.target.parentNode : ev.target;
-        var percent = (ev.x - background.offsetLeft) / background.offsetWidth;
+        var percent = (ev.x - background.getBoundingClientRect().left) / background.offsetWidth;
         if (percent < 0) percent = 0;
         if (percent > 1) percent = 1;
         self.seek(percent);
@@ -49048,7 +49806,7 @@ function $8123310fd097717f$var$SynthController() {
 module.exports = $8123310fd097717f$var$SynthController;
 
 });
-parcelRequire.register("bS0RV", function(module, exports) {
+parcelRegister("bS0RV", function(module, exports) {
 
 var $fm2OZ = parcelRequire("fm2OZ");
 
@@ -49237,7 +49995,7 @@ function $8a45696037bf51dd$var$attachListeners(self) {
 module.exports = $8a45696037bf51dd$var$CreateSynthControl;
 
 });
-parcelRequire.register("fm2OZ", function(module, exports) {
+parcelRegister("fm2OZ", function(module, exports) {
 
 var $as8qu = parcelRequire("as8qu");
 //
@@ -49257,7 +50015,7 @@ function $b2db1958f96d70e1$var$supportsAudio() {
 module.exports = $b2db1958f96d70e1$var$supportsAudio;
 
 });
-parcelRequire.register("as8qu", function(module, exports) {
+parcelRegister("as8qu", function(module, exports) {
 
 var $hIbmF = parcelRequire("hIbmF");
 function $79c30e34539f240d$var$activeAudioContext() {
@@ -49267,7 +50025,7 @@ function $79c30e34539f240d$var$activeAudioContext() {
 module.exports = $79c30e34539f240d$var$activeAudioContext;
 
 });
-parcelRequire.register("hIbmF", function(module, exports) {
+parcelRegister("hIbmF", function(module, exports) {
 // Call this when it is safe for the abcjs to produce sound. This is after the first user gesture on the page.
 // If you call it with no parameters, then an AudioContext is created and stored.
 // If you call it with a parameter, that is used as an already created AudioContext.
@@ -49288,7 +50046,7 @@ module.exports = $ce4f5c85ffa0137f$var$registerAudioContext;
 
 
 
-parcelRequire.register("4d4Pr", function(module, exports) {
+parcelRegister("4d4Pr", function(module, exports) {
 var $310c1f31973ec3ff$var$svg = `
 <svg version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700" preserveAspectRatio="xMidYMid meet">
 	<g transform="translate(0,700) scale(0.1,-0.1)" >
@@ -49356,7 +50114,7 @@ module.exports = $310c1f31973ec3ff$var$svg;
 
 });
 
-parcelRequire.register("7slMR", function(module, exports) {
+parcelRegister("7slMR", function(module, exports) {
 var $56dc0c65bca8673d$var$svg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="abcjs-play-svg">
     <g>
@@ -49368,7 +50126,7 @@ module.exports = $56dc0c65bca8673d$var$svg;
 
 });
 
-parcelRequire.register("ikRAJ", function(module, exports) {
+parcelRegister("ikRAJ", function(module, exports) {
 var $d593aa5f40354b06$var$svg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25" class="abcjs-pause-svg">
   <g>
@@ -49381,7 +50139,7 @@ module.exports = $d593aa5f40354b06$var$svg;
 
 });
 
-parcelRequire.register("895hZ", function(module, exports) {
+parcelRegister("895hZ", function(module, exports) {
 var $5ee3444e6c7c6eea$var$svg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="abcjs-loading-svg">
     <circle cx="50" cy="50" fill="none" stroke-width="20" r="35" stroke-dasharray="160 55"></circle>
@@ -49391,7 +50149,7 @@ module.exports = $5ee3444e6c7c6eea$var$svg;
 
 });
 
-parcelRequire.register("fshXe", function(module, exports) {
+parcelRegister("fshXe", function(module, exports) {
 var $b40765e932e0a70e$var$svg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 25">
   <g>
@@ -49405,7 +50163,7 @@ module.exports = $b40765e932e0a70e$var$svg;
 });
 
 
-parcelRequire.register("6dENQ", function(module, exports) {
+parcelRegister("6dENQ", function(module, exports) {
 
 var $hbSVV = parcelRequire("hbSVV");
 
@@ -49441,9 +50199,11 @@ function $48739b9d1d20ae09$var$CreateSynth() {
     self.audioBuffers = []; // cache of the buffers so starting play can be fast.
     self.duration = undefined; // the duration of the tune in seconds.
     self.isRunning = false; // whether there is currently a sound buffer running.
+    //	self.options = undefined
     // Load and cache all needed sounds
     self.init = function(options) {
         if (!options) options = {};
+        //		self.options = options
         $hIbmF(options.audioContext); // This works no matter what - if there is already an ac it is a nop; if the context is not passed in, then it creates one.
         var startTime = $as8qu().currentTime;
         self.debugCallback = options.debugCallback;
@@ -49560,6 +50320,7 @@ function $48739b9d1d20ae09$var$CreateSynth() {
                 });
             });
         });
+        if (self.debugCallback) self.debugCallback("notes " + JSON.stringify(notes));
         // If there are lots of notes, load them in batches
         var batches = [];
         var CHUNK = 256;
@@ -49572,7 +50333,9 @@ function $48739b9d1d20ae09$var$CreateSynth() {
             };
             var index = 0;
             var next = function() {
+                if (self.debugCallback) self.debugCallback("loadBatch idx=" + index + " len=" + batches.length);
                 if (index < batches.length) self._loadBatch(batches[index], self.soundFontUrl, startTime).then(function(data) {
+                    if (self.debugCallback) self.debugCallback("loadBatch then");
                     startTime = $as8qu().currentTime;
                     if (data) {
                         if (data.error) results.error = results.error.concat(data.error);
@@ -49581,7 +50344,10 @@ function $48739b9d1d20ae09$var$CreateSynth() {
                     index++;
                     next();
                 }, reject);
-                else resolve(results);
+                else {
+                    if (self.debugCallback) self.debugCallback("resolve init");
+                    resolve(results);
+                }
             };
             next();
         });
@@ -49590,23 +50356,25 @@ function $48739b9d1d20ae09$var$CreateSynth() {
         // This is called recursively to see if the sounds have loaded. The "delay" parameter is how long it has been since the original call.
         var promises = [];
         batch.forEach(function(item) {
+            if (self.debugCallback) self.debugCallback("getNote " + item.instrument + ":" + item.note);
             promises.push($hbSVV(soundFontUrl, item.instrument, item.note, $as8qu()));
         });
-        return Promise.all(promises).then(function(response1) {
+        return Promise.all(promises).then(function(response) {
             if (self.debugCallback) self.debugCallback("mp3 load time = " + Math.floor(($as8qu().currentTime - startTime) * 1000) + "ms");
             var loaded = [];
             var cached = [];
             var pending = [];
-            var error1 = [];
-            for(var i = 0; i < response1.length; i++){
-                var oneResponse = response1[i];
+            var error = [];
+            for(var i = 0; i < response.length; i++){
+                var oneResponse = response[i];
                 var which = oneResponse.instrument + ":" + oneResponse.name;
                 if (oneResponse.status === "loaded") loaded.push(which);
                 else if (oneResponse.status === "pending") pending.push(which);
                 else if (oneResponse.status === "cached") cached.push(which);
-                else error1.push(which + " " + oneResponse.message);
+                else error.push(which + " " + oneResponse.message);
             }
             if (pending.length > 0) {
+                if (self.debugCallback) self.debugCallback("pending " + JSON.stringify(pending));
                 // There was probably a second call for notes before the first one finished, so just retry a few times to see if they stop being pending.
                 // Retry quickly at first so that there isn't an unnecessary delay, but increase the delay each time.
                 if (!delay) delay = 50;
@@ -49621,6 +50389,7 @@ function $48739b9d1d20ae09$var$CreateSynth() {
                                 note: which[1]
                             });
                         }
+                        if (self.debugCallback) self.debugCallback("retry " + JSON.stringify(newBatch));
                         self._loadBatch(newBatch, soundFontUrl, startTime, delay).then(function(response) {
                             resolve(response);
                         }).catch(function(error) {
@@ -49631,14 +50400,20 @@ function $48739b9d1d20ae09$var$CreateSynth() {
                 else {
                     var list = [];
                     for(var j = 0; j < batch.length; j++)list.push(batch[j].instrument + "/" + batch[j].note);
+                    if (self.debugCallback) self.debugCallback("loadBatch timeout");
                     return Promise.reject(new Error("timeout attempting to load: " + list.join(", ")));
                 }
-            } else return Promise.resolve({
-                loaded: loaded,
-                cached: cached,
-                error: error1
-            });
-        }).catch(function(error) {});
+            } else {
+                if (self.debugCallback) self.debugCallback("loadBatch resolve");
+                return Promise.resolve({
+                    loaded: loaded,
+                    cached: cached,
+                    error: error
+                });
+            }
+        }).catch(function(error) {
+            if (self.debugCallback) self.debugCallback("loadBatch catch " + error.message);
+        });
     };
     self.prime = function() {
         // At this point all of the notes are loaded. This function writes them into the output buffer.
@@ -49664,6 +50439,8 @@ function $48739b9d1d20ae09$var$CreateSynth() {
             // There might be a previous run that needs to be turned off.
             self.stop();
             var noteMapTracks = $a4kuN(self.flattened);
+            // if (self.options.swing)
+            // 	addSwing(noteMapTracks, self.options.swing, self.beatsPerMeasure)
             if (self.sequenceCallback) self.sequenceCallback(noteMapTracks, self.callbackContext);
             var panDistances = setPan(noteMapTracks.length, self.pan);
             // Create a simple list of all the unique sounds in this music and where they should be placed.
@@ -49673,6 +50450,7 @@ function $48739b9d1d20ae09$var$CreateSynth() {
                 var panDistance = panDistances && panDistances.length > trackNumber ? panDistances[trackNumber] : 0;
                 noteMap.forEach(function(note) {
                     var key = note.instrument + ":" + note.pitch + ":" + note.volume + ":" + Math.round((note.end - note.start) * 1000) / 1000 + ":" + panDistance + ":" + tempoMultiplier + ":" + (note.cents ? note.cents : 0);
+                    if (self.debugCallback) self.debugCallback("noteMapTrack " + key);
                     if (!uniqueSounds[key]) uniqueSounds[key] = [];
                     uniqueSounds[key].push(note.start);
                 });
@@ -49693,7 +50471,7 @@ function $48739b9d1d20ae09$var$CreateSynth() {
                     tempoMultiplier: parseFloat(parts[5]),
                     cents: cents
                 };
-                allPromises.push($lkfW2(audioBuffer, $as8qu().sampleRate, parts, uniqueSounds[k], self.soundFontVolumeMultiplier, self.programOffsets[parts.instrument], fadeTimeSec, self.noteEnd / 1000));
+                allPromises.push($lkfW2(audioBuffer, $as8qu().sampleRate, parts, uniqueSounds[k], self.soundFontVolumeMultiplier, self.programOffsets[parts.instrument], fadeTimeSec, self.noteEnd / 1000, self.debugCallback));
             }
             self.audioBuffers = [
                 audioBuffer
@@ -49830,6 +50608,12 @@ function $48739b9d1d20ae09$var$CreateSynth() {
     self.download = function() {
         return $4HGXE(self);
     };
+    self.getAudioBuffer = function() {
+        return self.audioBuffers[0];
+    };
+    self.getIsRunning = function() {
+        return self.isRunning;
+    };
     /////////////// Private functions //////////////
     self._deviceCapable = function() {
         if (!$fm2OZ()) {
@@ -49854,11 +50638,47 @@ function $48739b9d1d20ae09$var$CreateSynth() {
             self.onEnded(self.callbackContext);
         };
     };
+// // this is a first attempt at adding a little bit of swing to the output, but the algorithm isn't correct.
+// function addSwing(noteMapTracks, swing, beatsPerMeasure) {
+// 	console.log("addSwing", noteMapTracks, swing, beatsPerMeasure)
+// 	// Swing should be between -0.9 and 0.9. Make sure the input is between them.
+// 	// Then that is the percentage to add to the first beat, so a negative number moves the second beat earlier.
+// 	// A value of zero is the same as no swing at all.
+// 	// This only works when there are an even number of beats in a measure.
+// 	if (beatsPerMeasure % 2 !== 0)
+// 		return;
+// 	swing = parseFloat(swing)
+// 	if (isNaN(swing))
+// 		return
+// 	if (swing < -0.9)
+// 		swing = -0.9
+// 	if (swing > 0.9)
+// 		swing = 0.9
+// 	var beatLength = (1 / beatsPerMeasure)*2
+// 	swing = beatLength * swing
+// 	for (var t = 0; t < noteMapTracks.length; t++) {
+// 		var track = noteMapTracks[t];
+// 		for (var i = 0; i < track.length; i++) {
+// 			var event = track[i];
+// 			if (event.start % beatLength) {
+// 				// This is the off beat
+// 				event.start += swing;
+// 			} else {
+// 				// This is the beat
+// 				event.end += swing;
+// 			}
+// 		}
+// 	}
+// }
 }
 module.exports = $48739b9d1d20ae09$var$CreateSynth;
 
 });
-parcelRequire.register("hbSVV", function(module, exports) {
+parcelRegister("hbSVV", function(module, exports) {
+// Load one mp3 file for one note.
+// url = the base url for the soundfont
+// instrument = the instrument name (e.g. "acoustic_grand_piano")
+// name = the pitch name (e.g. "A3")
 
 var $jD68x = parcelRequire("jD68x");
 var $c83e1359447ff59d$var$getNote = function(url, instrument, name, audioContext) {
@@ -49871,7 +50691,7 @@ var $c83e1359447ff59d$var$getNote = function(url, instrument, name, audioContext
         xhr.responseType = "arraybuffer";
         xhr.onload = function() {
             if (xhr.status !== 200) {
-                reject(Error("Can't load sound at " + noteUrl));
+                reject(Error("Can't load sound at " + noteUrl + " status=" + xhr.status));
                 return;
             }
             var noteDecoded = function(audioBuffer) {
@@ -49901,19 +50721,20 @@ var $c83e1359447ff59d$var$getNote = function(url, instrument, name, audioContext
 module.exports = $c83e1359447ff59d$var$getNote;
 
 });
-parcelRequire.register("jD68x", function(module, exports) {
+parcelRegister("jD68x", function(module, exports) {
 var $e4a66b7864f855dc$var$soundsCache = {};
 module.exports = $e4a66b7864f855dc$var$soundsCache;
 
 });
 
 
-parcelRequire.register("a4kuN", function(module, exports) {
+parcelRegister("a4kuN", function(module, exports) {
+// Convert the input structure to a more useful structure where each item has a length of its own.
 
 var $huFdi = parcelRequire("huFdi");
 var $754a2d1eb3943f73$var$createNoteMap = function(sequence) {
     var map = [];
-    for(var i1 = 0; i1 < sequence.tracks.length; i1++)map.push([]);
+    for(var i = 0; i < sequence.tracks.length; i++)map.push([]);
     // TODO-PER: handle more than one note in a track
     var nextNote = {};
     var currentInstrument = $huFdi[0];
@@ -49936,6 +50757,8 @@ var $754a2d1eb3943f73$var$createNoteMap = function(sequence) {
                             end: Math.round((ev.start + len - gap) * 1000000) / 1000000,
                             volume: ev.volume
                         };
+                        if (ev.startChar) obj.startChar = ev.startChar;
+                        if (ev.endChar) obj.endChar = ev.endChar;
                         if (ev.style) obj.style = ev.style;
                         if (ev.cents) obj.cents = ev.cents;
                         map[i].push(obj);
@@ -49957,7 +50780,7 @@ var $754a2d1eb3943f73$var$createNoteMap = function(sequence) {
 module.exports = $754a2d1eb3943f73$var$createNoteMap;
 
 });
-parcelRequire.register("huFdi", function(module, exports) {
+parcelRegister("huFdi", function(module, exports) {
 var $cbc5352479093b07$var$instrumentIndexToName = [
     "acoustic_grand_piano",
     "bright_acoustic_piano",
@@ -50094,7 +50917,7 @@ module.exports = $cbc5352479093b07$var$instrumentIndexToName;
 });
 
 
-parcelRequire.register("37oT4", function(module, exports) {
+parcelRegister("37oT4", function(module, exports) {
 var $245554a1abf2a307$var$pitchToNoteName = {
     21: "A0",
     22: "Bb0",
@@ -50202,7 +51025,7 @@ module.exports = $245554a1abf2a307$var$pitchToNoteName;
 
 });
 
-parcelRequire.register("4HGXE", function(module, exports) {
+parcelRegister("4HGXE", function(module, exports) {
 var $36cc80c6f5ffc0c1$var$downloadBuffer = function(buffer) {
     return window.URL.createObjectURL($36cc80c6f5ffc0c1$var$bufferToWave(buffer.audioBuffers));
 };
@@ -50262,14 +51085,14 @@ module.exports = $36cc80c6f5ffc0c1$var$downloadBuffer;
 
 });
 
-parcelRequire.register("lkfW2", function(module, exports) {
+parcelRegister("lkfW2", function(module, exports) {
 
 var $jD68x = parcelRequire("jD68x");
 
 var $37oT4 = parcelRequire("37oT4");
 
 var $78bI8 = parcelRequire("78bI8");
-function $f867d39c4699bb16$var$placeNote(outputAudioBuffer, sampleRate, sound, startArray, volumeMultiplier, ofsMs, fadeTimeSec, noteEndSec) {
+function $f867d39c4699bb16$var$placeNote(outputAudioBuffer, sampleRate, sound, startArray, volumeMultiplier, ofsMs, fadeTimeSec, noteEndSec, debugCallback) {
     // sound contains { instrument, pitch, volume, len, pan, tempoMultiplier
     // len is in whole notes. Multiply by tempoMultiplier to get seconds.
     // ofsMs is an offset to subtract from the note to line up programs that have different length onsets.
@@ -50280,9 +51103,17 @@ function $f867d39c4699bb16$var$placeNote(outputAudioBuffer, sampleRate, sound, s
     if (len < 0) len = 0.005; // Have some small audible length no matter how short the note is.
     var offlineCtx = new OfflineAC(2, Math.floor((len + fadeTimeSec) * sampleRate), sampleRate);
     var noteName = $37oT4[sound.pitch];
+    if (!$jD68x[sound.instrument]) {
+        // It shouldn't happen that the entire instrument cache wasn't created, but this has been seen in practice, so guard against it.
+        if (debugCallback) debugCallback("placeNote skipped (instrument empty): " + sound.instrument + ":" + noteName);
+        return Promise.resolve();
+    }
     var noteBufferPromise = $jD68x[sound.instrument][noteName];
-    if (!noteBufferPromise) // if the note isn't present then just skip it - it will leave a blank spot in the audio.
-    return Promise.resolve();
+    if (!noteBufferPromise) {
+        // if the note isn't present then just skip it - it will leave a blank spot in the audio.
+        if (debugCallback) debugCallback("placeNote skipped: " + sound.instrument + ":" + noteName);
+        return Promise.resolve();
+    }
     return noteBufferPromise.then(function(response) {
         // create audio buffer
         var source = offlineCtx.createBufferSource();
@@ -50314,7 +51145,7 @@ function $f867d39c4699bb16$var$placeNote(outputAudioBuffer, sampleRate, sound, s
         else source.stop(len + fadeTimeSec);
         var fnResolve;
         offlineCtx.oncomplete = function(e) {
-            if (e.renderedBuffer) for(var i = 0; i < startArray.length; i++){
+            if (e.renderedBuffer && e.renderedBuffer.getChannelData) for(var i = 0; i < startArray.length; i++){
                 //Math.floor(startArray[i] * sound.tempoMultiplier * sampleRate)
                 var start = startArray[i] * sound.tempoMultiplier;
                 if (ofsMs) start -= ofsMs / 1000;
@@ -50322,13 +51153,17 @@ function $f867d39c4699bb16$var$placeNote(outputAudioBuffer, sampleRate, sound, s
                 start = Math.floor(start * sampleRate);
                 $f867d39c4699bb16$var$copyToChannel(outputAudioBuffer, e.renderedBuffer, start);
             }
+            if (debugCallback) debugCallback("placeNote: " + sound.instrument + ":" + noteName);
             fnResolve();
         };
         offlineCtx.startRendering();
         return new Promise(function(resolve) {
             fnResolve = resolve;
         });
-    }).catch(function() {});
+    }).catch(function(error) {
+        if (debugCallback) debugCallback("placeNote catch: " + error.message);
+        return Promise.resolve();
+    });
 }
 var $f867d39c4699bb16$var$copyToChannel = function(toBuffer, fromBuffer, start) {
     for(var ch = 0; ch < 2; ch++){
@@ -50341,7 +51176,7 @@ var $f867d39c4699bb16$var$copyToChannel = function(toBuffer, fromBuffer, start) 
 module.exports = $f867d39c4699bb16$var$placeNote;
 
 });
-parcelRequire.register("78bI8", function(module, exports) {
+parcelRegister("78bI8", function(module, exports) {
 // This turns the number of cents to detune into a value that is convenient to use in pitch calculations
 // A cent is 1/100 of a musical half step and is calculated exponentially over the course of an octave.
 // The equation is:
@@ -50356,7 +51191,7 @@ module.exports = $53125d46d0b498a0$var$centsToFactor;
 
 
 
-parcelRequire.register("OBR2R", function(module, exports) {
+parcelRegister("OBR2R", function(module, exports) {
 // abc_editor.js
 // window.ABCJS.Editor is the interface class for the area that contains the ABC text. It is responsible for
 // holding the text of the tune and calling the parser and the rendering engines.
@@ -50441,11 +51276,11 @@ $098208c1320e2801$var$EditArea.prototype.setSelection = function(start, end) {
     if (this.textarea.setSelectionRange) this.textarea.setSelectionRange(start, end);
     else if (this.textarea.createTextRange) {
         // For IE8
-        var e1 = this.textarea.createTextRange();
-        e1.collapse(true);
-        e1.moveEnd("character", end);
-        e1.moveStart("character", start);
-        e1.select();
+        var e = this.textarea.createTextRange();
+        e.collapse(true);
+        e.moveEnd("character", end);
+        e.moveStart("character", start);
+        e.select();
     }
     this.textarea.focus();
 };
@@ -50465,13 +51300,5862 @@ module.exports = $098208c1320e2801$var$EditArea;
 });
 
 
+var $4d57b36fc7cd1cbc$exports = {};
+/**
+@license @nocompile
+Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/ (function() {
+    "use strict";
+    var v;
+    function ba(a1) {
+        var b = 0;
+        return function() {
+            return b < a1.length ? {
+                done: !1,
+                value: a1[b++]
+            } : {
+                done: !0
+            };
+        };
+    }
+    var ca = "function" == typeof Object.defineProperties ? Object.defineProperty : function(a1, b, c) {
+        if (a1 == Array.prototype || a1 == Object.prototype) return a1;
+        a1[b] = c.value;
+        return a1;
+    };
+    function da(a1) {
+        a1 = [
+            "object" == typeof globalThis && globalThis,
+            a1,
+            "object" == typeof window && window,
+            "object" == typeof self && self,
+            "object" == typeof $parcel$global && $parcel$global
+        ];
+        for(var b = 0; b < a1.length; ++b){
+            var c = a1[b];
+            if (c && c.Math == Math) return c;
+        }
+        throw Error("Cannot find global object");
+    }
+    var ea = da(this);
+    function fa(a1, b) {
+        if (b) a: {
+            var c = ea;
+            a1 = a1.split(".");
+            for(var d = 0; d < a1.length - 1; d++){
+                var e = a1[d];
+                if (!(e in c)) break a;
+                c = c[e];
+            }
+            a1 = a1[a1.length - 1];
+            d = c[a1];
+            b = b(d);
+            b != d && null != b && ca(c, a1, {
+                configurable: !0,
+                writable: !0,
+                value: b
+            });
+        }
+    }
+    fa("Symbol", function(a1) {
+        function b(e) {
+            if (this instanceof b) throw new TypeError("Symbol is not a constructor");
+            return new c("jscomp_symbol_" + (e || "") + "_" + d++, e);
+        }
+        function c(e, f) {
+            this.g = e;
+            ca(this, "description", {
+                configurable: !0,
+                writable: !0,
+                value: f
+            });
+        }
+        if (a1) return a1;
+        c.prototype.toString = function() {
+            return this.g;
+        };
+        var d = 0;
+        return b;
+    });
+    fa("Symbol.iterator", function(a1) {
+        if (a1) return a1;
+        a1 = Symbol("Symbol.iterator");
+        for(var b = "Array Int8Array Uint8Array Uint8ClampedArray Int16Array Uint16Array Int32Array Uint32Array Float32Array Float64Array".split(" "), c = 0; c < b.length; c++){
+            var d = ea[b[c]];
+            "function" === typeof d && "function" != typeof d.prototype[a1] && ca(d.prototype, a1, {
+                configurable: !0,
+                writable: !0,
+                value: function() {
+                    return ja(ba(this));
+                }
+            });
+        }
+        return a1;
+    });
+    function ja(a1) {
+        a1 = {
+            next: a1
+        };
+        a1[Symbol.iterator] = function() {
+            return this;
+        };
+        return a1;
+    }
+    function ka(a1) {
+        var b = "undefined" != typeof Symbol && Symbol.iterator && a1[Symbol.iterator];
+        return b ? b.call(a1) : {
+            next: ba(a1)
+        };
+    }
+    function w(a1) {
+        if (!(a1 instanceof Array)) {
+            a1 = ka(a1);
+            for(var b, c = []; !(b = a1.next()).done;)c.push(b.value);
+            a1 = c;
+        }
+        return a1;
+    }
+    var la;
+    if ("function" == typeof Object.setPrototypeOf) la = Object.setPrototypeOf;
+    else {
+        var na;
+        a: {
+            var oa = {
+                a: !0
+            }, pa = {};
+            try {
+                pa.__proto__ = oa;
+                na = pa.a;
+                break a;
+            } catch (a1) {}
+            na = !1;
+        }
+        la = na ? function(a1, b) {
+            a1.__proto__ = b;
+            if (a1.__proto__ !== b) throw new TypeError(a1 + " is not extensible");
+            return a1;
+        } : null;
+    }
+    var qa = la;
+    function ra() {
+        this.u = !1;
+        this.h = null;
+        this.Oa = void 0;
+        this.g = 1;
+        this.ea = 0;
+        this.i = null;
+    }
+    function ua(a1) {
+        if (a1.u) throw new TypeError("Generator is already running");
+        a1.u = !0;
+    }
+    ra.prototype.O = function(a1) {
+        this.Oa = a1;
+    };
+    function wa(a1, b) {
+        a1.i = {
+            ab: b,
+            fb: !0
+        };
+        a1.g = a1.ea;
+    }
+    ra.prototype.return = function(a1) {
+        this.i = {
+            return: a1
+        };
+        this.g = this.ea;
+    };
+    function ya(a1, b) {
+        a1.g = 3;
+        return {
+            value: b
+        };
+    }
+    function za(a1) {
+        this.g = new ra;
+        this.h = a1;
+    }
+    function Aa(a1, b) {
+        ua(a1.g);
+        var c = a1.g.h;
+        if (c) return Ba(a1, "return" in c ? c["return"] : function(d) {
+            return {
+                value: d,
+                done: !0
+            };
+        }, b, a1.g.return);
+        a1.g.return(b);
+        return Ca(a1);
+    }
+    function Ba(a1, b, c, d) {
+        try {
+            var e = b.call(a1.g.h, c);
+            if (!(e instanceof Object)) throw new TypeError("Iterator result " + e + " is not an object");
+            if (!e.done) return a1.g.u = !1, e;
+            var f = e.value;
+        } catch (g) {
+            return a1.g.h = null, wa(a1.g, g), Ca(a1);
+        }
+        a1.g.h = null;
+        d.call(a1.g, f);
+        return Ca(a1);
+    }
+    function Ca(a1) {
+        for(; a1.g.g;)try {
+            var b = a1.h(a1.g);
+            if (b) return a1.g.u = !1, {
+                value: b.value,
+                done: !1
+            };
+        } catch (c) {
+            a1.g.Oa = void 0, wa(a1.g, c);
+        }
+        a1.g.u = !1;
+        if (a1.g.i) {
+            b = a1.g.i;
+            a1.g.i = null;
+            if (b.fb) throw b.ab;
+            return {
+                value: b.return,
+                done: !0
+            };
+        }
+        return {
+            value: void 0,
+            done: !0
+        };
+    }
+    function Da(a1) {
+        this.next = function(b) {
+            ua(a1.g);
+            a1.g.h ? b = Ba(a1, a1.g.h.next, b, a1.g.O) : (a1.g.O(b), b = Ca(a1));
+            return b;
+        };
+        this.throw = function(b) {
+            ua(a1.g);
+            a1.g.h ? b = Ba(a1, a1.g.h["throw"], b, a1.g.O) : (wa(a1.g, b), b = Ca(a1));
+            return b;
+        };
+        this.return = function(b) {
+            return Aa(a1, b);
+        };
+        this[Symbol.iterator] = function() {
+            return this;
+        };
+    }
+    function Ea(a1, b) {
+        b = new Da(new za(b));
+        qa && a1.prototype && qa(b, a1.prototype);
+        return b;
+    }
+    Array.from || (Array.from = function(a1) {
+        return [].slice.call(a1);
+    });
+    Object.assign || (Object.assign = function(a1) {
+        for(var b = [].slice.call(arguments, 1), c = 0, d; c < b.length; c++)if (d = b[c]) for(var e = a1, f = Object.keys(d), g = 0; g < f.length; g++){
+            var h = f[g];
+            e[h] = d[h];
+        }
+        return a1;
+    });
+    var Fa = setTimeout;
+    function Ga() {}
+    function Ha(a1, b) {
+        return function() {
+            a1.apply(b, arguments);
+        };
+    }
+    function A(a1) {
+        if (!(this instanceof A)) throw new TypeError("Promises must be constructed via new");
+        if ("function" !== typeof a1) throw new TypeError("not a function");
+        this.N = 0;
+        this.Ha = !1;
+        this.I = void 0;
+        this.ba = [];
+        Ia(a1, this);
+    }
+    function Ja(a1, b) {
+        for(; 3 === a1.N;)a1 = a1.I;
+        0 === a1.N ? a1.ba.push(b) : (a1.Ha = !0, Ka(function() {
+            var c = 1 === a1.N ? b.hb : b.ib;
+            if (null === c) (1 === a1.N ? La : Ma)(b.promise, a1.I);
+            else {
+                try {
+                    var d = c(a1.I);
+                } catch (e) {
+                    Ma(b.promise, e);
+                    return;
+                }
+                La(b.promise, d);
+            }
+        }));
+    }
+    function La(a1, b) {
+        try {
+            if (b === a1) throw new TypeError("A promise cannot be resolved with itself.");
+            if (b && ("object" === typeof b || "function" === typeof b)) {
+                var c = b.then;
+                if (b instanceof A) {
+                    a1.N = 3;
+                    a1.I = b;
+                    Na(a1);
+                    return;
+                }
+                if ("function" === typeof c) {
+                    Ia(Ha(c, b), a1);
+                    return;
+                }
+            }
+            a1.N = 1;
+            a1.I = b;
+            Na(a1);
+        } catch (d) {
+            Ma(a1, d);
+        }
+    }
+    function Ma(a1, b) {
+        a1.N = 2;
+        a1.I = b;
+        Na(a1);
+    }
+    function Na(a1) {
+        2 === a1.N && 0 === a1.ba.length && Ka(function() {
+            a1.Ha || "undefined" !== typeof console && console && console.warn("Possible Unhandled Promise Rejection:", a1.I);
+        });
+        for(var b = 0, c = a1.ba.length; b < c; b++)Ja(a1, a1.ba[b]);
+        a1.ba = null;
+    }
+    function Oa(a1, b, c) {
+        this.hb = "function" === typeof a1 ? a1 : null;
+        this.ib = "function" === typeof b ? b : null;
+        this.promise = c;
+    }
+    function Ia(a1, b) {
+        var c = !1;
+        try {
+            a1(function(d) {
+                c || (c = !0, La(b, d));
+            }, function(d) {
+                c || (c = !0, Ma(b, d));
+            });
+        } catch (d) {
+            c || (c = !0, Ma(b, d));
+        }
+    }
+    A.prototype["catch"] = function(a1) {
+        return this.then(null, a1);
+    };
+    A.prototype.then = function(a1, b) {
+        var c = new this.constructor(Ga);
+        Ja(this, new Oa(a1, b, c));
+        return c;
+    };
+    A.prototype["finally"] = function(a1) {
+        var b = this.constructor;
+        return this.then(function(c) {
+            return b.resolve(a1()).then(function() {
+                return c;
+            });
+        }, function(c) {
+            return b.resolve(a1()).then(function() {
+                return b.reject(c);
+            });
+        });
+    };
+    function Pa(a1) {
+        return new A(function(b, c) {
+            function d(h, k) {
+                try {
+                    if (k && ("object" === typeof k || "function" === typeof k)) {
+                        var l = k.then;
+                        if ("function" === typeof l) {
+                            l.call(k, function(m) {
+                                d(h, m);
+                            }, c);
+                            return;
+                        }
+                    }
+                    e[h] = k;
+                    0 === --f && b(e);
+                } catch (m) {
+                    c(m);
+                }
+            }
+            if (!a1 || "undefined" === typeof a1.length) return c(new TypeError("Promise.all accepts an array"));
+            var e = Array.prototype.slice.call(a1);
+            if (0 === e.length) return b([]);
+            for(var f = e.length, g = 0; g < e.length; g++)d(g, e[g]);
+        });
+    }
+    function Qa(a1) {
+        return a1 && "object" === typeof a1 && a1.constructor === A ? a1 : new A(function(b) {
+            b(a1);
+        });
+    }
+    function Ra(a1) {
+        return new A(function(b, c) {
+            c(a1);
+        });
+    }
+    function Sa(a1) {
+        return new A(function(b, c) {
+            if (!a1 || "undefined" === typeof a1.length) return c(new TypeError("Promise.race accepts an array"));
+            for(var d = 0, e = a1.length; d < e; d++)Qa(a1[d]).then(b, c);
+        });
+    }
+    var Ka = "function" === typeof setImmediate && function(a1) {
+        setImmediate(a1);
+    } || function(a1) {
+        Fa(a1, 0);
+    }; /*
+
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at
+http://polymer.github.io/LICENSE.txt The complete set of authors may be found at
+http://polymer.github.io/AUTHORS.txt The complete set of contributors may be
+found at http://polymer.github.io/CONTRIBUTORS.txt Code distributed by Google as
+part of the polymer project is also subject to an additional IP rights grant
+found at http://polymer.github.io/PATENTS.txt
+*/ 
+    if (!window.Promise) {
+        window.Promise = A;
+        A.prototype.then = A.prototype.then;
+        A.all = Pa;
+        A.race = Sa;
+        A.resolve = Qa;
+        A.reject = Ra;
+        var Ta = document.createTextNode(""), Ua = [];
+        new MutationObserver(function() {
+            for(var a1 = Ua.length, b = 0; b < a1; b++)Ua[b]();
+            Ua.splice(0, a1);
+        }).observe(Ta, {
+            characterData: !0
+        });
+        Ka = function(a1) {
+            Ua.push(a1);
+            Ta.textContent = 0 < Ta.textContent.length ? "" : "a";
+        };
+    }
+    (function(a1, b) {
+        if (!(b in a1)) {
+            var c = typeof $parcel$global === typeof c ? window : $parcel$global, d = 0, e = String(Math.random()), f = "__\x01symbol@@" + e, g = a1.getOwnPropertyNames, h = a1.getOwnPropertyDescriptor, k = a1.create, l = a1.keys, m = a1.freeze || a1, q = a1.defineProperty, H = a1.defineProperties, C = h(a1, "getOwnPropertyNames"), t1 = a1.prototype, F = t1.hasOwnProperty, E = t1.propertyIsEnumerable, N = t1.toString, y = function(I, u, G) {
+                F.call(I, f) || q(I, f, {
+                    enumerable: !1,
+                    configurable: !1,
+                    writable: !1,
+                    value: {}
+                });
+                I[f]["@@" + u] = G;
+            }, X = function(I, u) {
+                var G = k(I);
+                g(u).forEach(function(p) {
+                    sa.call(u, p) && Va(G, p, u[p]);
+                });
+                return G;
+            }, x = function() {}, ta = function(I) {
+                return I != f && !F.call(ha, I);
+            }, ia = function(I) {
+                return I != f && F.call(ha, I);
+            }, sa = function(I) {
+                var u = String(I);
+                return ia(u) ? F.call(this, u) && !!this[f] && this[f]["@@" + u] : E.call(this, I);
+            }, n = function(I) {
+                q(t1, I, {
+                    enumerable: !1,
+                    configurable: !0,
+                    get: x,
+                    set: function(u) {
+                        xa(this, I, {
+                            enumerable: !1,
+                            configurable: !0,
+                            writable: !0,
+                            value: u
+                        });
+                        y(this, I, !0);
+                    }
+                });
+                ha[I] = q(a1(I), "constructor", kc);
+                return m(ha[I]);
+            }, J = function G(u) {
+                if (this instanceof G) throw new TypeError("Symbol is not a constructor");
+                return n("__\x01symbol:".concat(u || "", e, ++d));
+            }, ha = k(null), kc = {
+                value: J
+            }, ib = function(u) {
+                return ha[u];
+            }, Va = function(u, G, p) {
+                var r = String(G);
+                if (ia(r)) {
+                    G = xa;
+                    if (p.enumerable) {
+                        var B = k(p);
+                        B.enumerable = !1;
+                    } else B = p;
+                    G(u, r, B);
+                    y(u, r, !!p.enumerable);
+                } else q(u, G, p);
+                return u;
+            }, jb = function(u) {
+                return g(u).filter(ia).map(ib);
+            };
+            C.value = Va;
+            q(a1, "defineProperty", C);
+            C.value = jb;
+            q(a1, b, C);
+            C.value = function(u) {
+                return g(u).filter(ta);
+            };
+            q(a1, "getOwnPropertyNames", C);
+            C.value = function(u, G) {
+                var p = jb(G);
+                p.length ? l(G).concat(p).forEach(function(r) {
+                    sa.call(G, r) && Va(u, r, G[r]);
+                }) : H(u, G);
+                return u;
+            };
+            q(a1, "defineProperties", C);
+            C.value = sa;
+            q(t1, "propertyIsEnumerable", C);
+            C.value = J;
+            q(c, "Symbol", C);
+            C.value = function(u) {
+                u = "__\x01symbol:".concat("__\x01symbol:", u, e);
+                return u in t1 ? ha[u] : n(u);
+            };
+            q(J, "for", C);
+            C.value = function(u) {
+                if (ta(u)) throw new TypeError(u + " is not a symbol");
+                if (F.call(ha, u) && (u = u.slice(10), "__\x01symbol:" === u.slice(0, 10) && (u = u.slice(10), u !== e))) return u = u.slice(0, u.length - e.length), 0 < u.length ? u : void 0;
+            };
+            q(J, "keyFor", C);
+            C.value = function(u, G) {
+                var p = h(u, G);
+                p && ia(G) && (p.enumerable = sa.call(u, G));
+                return p;
+            };
+            q(a1, "getOwnPropertyDescriptor", C);
+            C.value = function(u, G) {
+                return 1 === arguments.length || "undefined" === typeof G ? k(u) : X(u, G);
+            };
+            q(a1, "create", C);
+            C.value = function() {
+                var u = N.call(this);
+                return "[object String]" === u && ia(this) ? "[object Symbol]" : u;
+            };
+            q(t1, "toString", C);
+            try {
+                if (!0 === k(q({}, "__\x01symbol:", {
+                    get: function() {
+                        return q(this, "__\x01symbol:", {
+                            value: !0
+                        })["__\x01symbol:"];
+                    }
+                }))["__\x01symbol:"]) var xa = q;
+                else throw "IE11";
+            } catch (u) {
+                xa = function(G, p, r) {
+                    var B = h(t1, p);
+                    delete t1[p];
+                    q(G, p, r);
+                    q(t1, p, B);
+                };
+            }
+        }
+    })(Object, "getOwnPropertySymbols");
+    (function(a1, b) {
+        var c = a1.defineProperty, d = a1.prototype, e = d.toString, f;
+        "iterator match replace search split hasInstance isConcatSpreadable unscopables species toPrimitive toStringTag".split(" ").forEach(function(g) {
+            g in b || (c(b, g, {
+                value: b(g)
+            }), "toStringTag" === g && (f = a1.getOwnPropertyDescriptor(d, "toString"), f.value = function() {
+                var h = e.call(this), k = null == this ? this : this[b.toStringTag];
+                return null == k ? h : "[object " + k + "]";
+            }, c(d, "toString", f)));
+        });
+    })(Object, Symbol);
+    (function(a1, b, c) {
+        function d() {
+            return this;
+        }
+        b[a1] || (b[a1] = function() {
+            var e = 0, f = this, g = {
+                next: function() {
+                    var h = f.length <= e;
+                    return h ? {
+                        done: h
+                    } : {
+                        done: h,
+                        value: f[e++]
+                    };
+                }
+            };
+            g[a1] = d;
+            return g;
+        });
+        c[a1] || (c[a1] = function() {
+            var e = String.fromCodePoint, f = this, g = 0, h = f.length, k = {
+                next: function() {
+                    var l = h <= g, m = l ? "" : e(f.codePointAt(g));
+                    g += m.length;
+                    return l ? {
+                        done: l
+                    } : {
+                        done: l,
+                        value: m
+                    };
+                }
+            };
+            k[a1] = d;
+            return k;
+        });
+    })(Symbol.iterator, Array.prototype, String.prototype); /*
+
+Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at
+http://polymer.github.io/LICENSE.txt The complete set of authors may be found at
+http://polymer.github.io/AUTHORS.txt The complete set of contributors may be
+found at http://polymer.github.io/CONTRIBUTORS.txt Code distributed by Google as
+part of the polymer project is also subject to an additional IP rights grant
+found at http://polymer.github.io/PATENTS.txt
+*/ 
+    var Wa = Object.prototype.toString;
+    Object.prototype.toString = function() {
+        return void 0 === this ? "[object Undefined]" : null === this ? "[object Null]" : Wa.call(this);
+    };
+    Object.keys = function(a1) {
+        return Object.getOwnPropertyNames(a1).filter(function(b) {
+            return (b = Object.getOwnPropertyDescriptor(a1, b)) && b.enumerable;
+        });
+    };
+    String.prototype[Symbol.iterator] && String.prototype.codePointAt || (String.prototype[Symbol.iterator] = function Xa() {
+        var b, c = this;
+        return Ea(Xa, function(d) {
+            1 == d.g && (b = 0);
+            if (3 != d.g) return b < c.length ? d = ya(d, c[b]) : (d.g = 0, d = void 0), d;
+            b++;
+            d.g = 2;
+        });
+    });
+    Set.prototype[Symbol.iterator] || (Set.prototype[Symbol.iterator] = function Ya() {
+        var b, c = this, d;
+        return Ea(Ya, function(e) {
+            1 == e.g && (b = [], c.forEach(function(f) {
+                b.push(f);
+            }), d = 0);
+            if (3 != e.g) return d < b.length ? e = ya(e, b[d]) : (e.g = 0, e = void 0), e;
+            d++;
+            e.g = 2;
+        });
+    });
+    Map.prototype[Symbol.iterator] || (Map.prototype[Symbol.iterator] = function Za() {
+        var b, c = this, d;
+        return Ea(Za, function(e) {
+            1 == e.g && (b = [], c.forEach(function(f, g) {
+                b.push([
+                    g,
+                    f
+                ]);
+            }), d = 0);
+            if (3 != e.g) return d < b.length ? e = ya(e, b[d]) : (e.g = 0, e = void 0), e;
+            d++;
+            e.g = 2;
+        });
+    }); /*
+
+Copyright (c) 2020 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/ 
+    var $a = document.createEvent("Event");
+    $a.initEvent("foo", !0, !0);
+    $a.preventDefault();
+    if (!$a.defaultPrevented) {
+        var ab = Event.prototype.preventDefault;
+        Event.prototype.preventDefault = function() {
+            this.cancelable && (ab.call(this), Object.defineProperty(this, "defaultPrevented", {
+                get: function() {
+                    return !0;
+                },
+                configurable: !0
+            }));
+        };
+    }
+    var bb = /Trident/.test(navigator.userAgent);
+    if (!window.Event || bb && "function" !== typeof window.Event) {
+        var cb = window.Event;
+        window.Event = function(a1, b) {
+            b = b || {};
+            var c = document.createEvent("Event");
+            c.initEvent(a1, !!b.bubbles, !!b.cancelable);
+            return c;
+        };
+        if (cb) {
+            for(var db in cb)window.Event[db] = cb[db];
+            window.Event.prototype = cb.prototype;
+        }
+    }
+    if (!window.CustomEvent || bb && "function" !== typeof window.CustomEvent) window.CustomEvent = function(a1, b) {
+        b = b || {};
+        var c = document.createEvent("CustomEvent");
+        c.initCustomEvent(a1, !!b.bubbles, !!b.cancelable, b.detail);
+        return c;
+    }, window.CustomEvent.prototype = window.Event.prototype;
+    if (!window.MouseEvent || bb && "function" !== typeof window.MouseEvent) {
+        var eb = window.MouseEvent;
+        window.MouseEvent = function(a1, b) {
+            b = b || {};
+            var c = document.createEvent("MouseEvent");
+            c.initMouseEvent(a1, !!b.bubbles, !!b.cancelable, b.view || window, b.detail, b.screenX, b.screenY, b.clientX, b.clientY, b.ctrlKey, b.altKey, b.shiftKey, b.metaKey, b.button, b.relatedTarget);
+            return c;
+        };
+        if (eb) for(var fb in eb)window.MouseEvent[fb] = eb[fb];
+        window.MouseEvent.prototype = eb.prototype;
+    }
+    var gb, hb = function() {
+        function a1() {
+            e++;
+        }
+        var b = !1, c = !1, d = {
+            get capture () {
+                return b = !0;
+            },
+            get once () {
+                return c = !0;
+            }
+        }, e = 0, f = document.createElement("div");
+        f.addEventListener("click", a1, d);
+        var g = b && c;
+        g && (f.dispatchEvent(new Event("click")), f.dispatchEvent(new Event("click")), g = 1 == e);
+        f.removeEventListener("click", a1, d);
+        return g;
+    }(), kb = null !== (gb = window.EventTarget) && void 0 !== gb ? gb : window.Node;
+    if (!hb && "addEventListener" in kb.prototype) {
+        var lb = function(a1) {
+            if (!a1 || "object" !== typeof a1 && "function" !== typeof a1) {
+                var b = !!a1;
+                a1 = !1;
+            } else b = !!a1.capture, a1 = !!a1.once;
+            return {
+                capture: b,
+                once: a1
+            };
+        }, mb = kb.prototype.addEventListener, nb = kb.prototype.removeEventListener, qb = new WeakMap, rb = new WeakMap, sb = function(a1, b, c) {
+            var d = c ? qb : rb;
+            c = d.get(a1);
+            void 0 === c && d.set(a1, c = new Map);
+            a1 = c.get(b);
+            void 0 === a1 && c.set(b, a1 = new WeakMap);
+            return a1;
+        };
+        kb.prototype.addEventListener = function(a1, b, c) {
+            var d = this;
+            if (null != b) {
+                c = lb(c);
+                var e = c.capture;
+                c = c.once;
+                var f = sb(this, a1, e);
+                if (!f.has(b)) {
+                    var g = c ? function(h) {
+                        f.delete(b);
+                        nb.call(d, a1, g, e);
+                        if ("function" === typeof b) return b.call(d, h);
+                        if ("function" === typeof (null === b || void 0 === b ? void 0 : b.handleEvent)) return b.handleEvent(h);
+                    } : null;
+                    f.set(b, g);
+                    mb.call(this, a1, null !== g && void 0 !== g ? g : b, e);
+                }
+            }
+        };
+        kb.prototype.removeEventListener = function(a1, b, c) {
+            if (null != b) {
+                c = lb(c).capture;
+                var d = sb(this, a1, c), e = d.get(b);
+                void 0 !== e && (d.delete(b), nb.call(this, a1, null !== e && void 0 !== e ? e : b, c));
+            }
+        };
+    }
+    Object.getOwnPropertyDescriptor(Node.prototype, "baseURI") || Object.defineProperty(Node.prototype, "baseURI", {
+        get: function() {
+            var a1 = (this.ownerDocument || this).querySelector("base[href]");
+            return a1 && a1.href || window.location.href;
+        },
+        configurable: !0,
+        enumerable: !0
+    }); /*
+
+Copyright (c) 2020 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at
+http://polymer.github.io/LICENSE.txt The complete set of authors may be found at
+http://polymer.github.io/AUTHORS.txt The complete set of contributors may be
+found at http://polymer.github.io/CONTRIBUTORS.txt Code distributed by Google as
+part of the polymer project is also subject to an additional IP rights grant
+found at http://polymer.github.io/PATENTS.txt
+*/ 
+    var tb, ub, vb = Element.prototype, wb = null !== (tb = Object.getOwnPropertyDescriptor(vb, "attributes")) && void 0 !== tb ? tb : Object.getOwnPropertyDescriptor(Node.prototype, "attributes"), xb = null !== (ub = null === wb || void 0 === wb ? void 0 : wb.get) && void 0 !== ub ? ub : function() {
+        return this.attributes;
+    }, yb = Array.prototype.map;
+    vb.hasOwnProperty("getAttributeNames") || (vb.getAttributeNames = function() {
+        return yb.call(xb.call(this), function(a1) {
+            return a1.name;
+        });
+    });
+    var zb, Ab = Element.prototype;
+    Ab.hasOwnProperty("matches") || (Ab.matches = null !== (zb = Ab.webkitMatchesSelector) && void 0 !== zb ? zb : Ab.msMatchesSelector);
+    var Bb = Node.prototype.appendChild;
+    function Cb(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("append") || Object.defineProperty(a1, "append", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function(b) {
+                for(var c = [], d = 0; d < arguments.length; ++d)c[d] = arguments[d];
+                c = ka(c);
+                for(d = c.next(); !d.done; d = c.next())d = d.value, Bb.call(this, "string" === typeof d ? document.createTextNode(d) : d);
+            }
+        });
+    }
+    Cb(Document);
+    Cb(DocumentFragment);
+    Cb(Element);
+    var Db, Eb, Fb = Node.prototype.insertBefore, Gb = null !== (Eb = null === (Db = Object.getOwnPropertyDescriptor(Node.prototype, "firstChild")) || void 0 === Db ? void 0 : Db.get) && void 0 !== Eb ? Eb : function() {
+        return this.firstChild;
+    };
+    function Hb(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("prepend") || Object.defineProperty(a1, "prepend", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function(b) {
+                for(var c = [], d = 0; d < arguments.length; ++d)c[d] = arguments[d];
+                d = Gb.call(this);
+                c = ka(c);
+                for(var e = c.next(); !e.done; e = c.next())e = e.value, Fb.call(this, "string" === typeof e ? document.createTextNode(e) : e, d);
+            }
+        });
+    }
+    Hb(Document);
+    Hb(DocumentFragment);
+    Hb(Element);
+    var Ib, Jb, Kb = Node.prototype.appendChild, Lb = Node.prototype.removeChild, Mb = null !== (Jb = null === (Ib = Object.getOwnPropertyDescriptor(Node.prototype, "firstChild")) || void 0 === Ib ? void 0 : Ib.get) && void 0 !== Jb ? Jb : function() {
+        return this.firstChild;
+    };
+    function Nb(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("replaceChildren") || Object.defineProperty(a1, "replaceChildren", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function(b) {
+                for(var c = [], d = 0; d < arguments.length; ++d)c[d] = arguments[d];
+                for(; null !== (d = Mb.call(this));)Lb.call(this, d);
+                c = ka(c);
+                for(d = c.next(); !d.done; d = c.next())d = d.value, Kb.call(this, "string" === typeof d ? document.createTextNode(d) : d);
+            }
+        });
+    }
+    Nb(Document);
+    Nb(DocumentFragment);
+    Nb(Element);
+    var Ob, Pb, Qb, Rb, Sb = Node.prototype.insertBefore, Tb = null !== (Pb = null === (Ob = Object.getOwnPropertyDescriptor(Node.prototype, "parentNode")) || void 0 === Ob ? void 0 : Ob.get) && void 0 !== Pb ? Pb : function() {
+        return this.parentNode;
+    }, Ub = null !== (Rb = null === (Qb = Object.getOwnPropertyDescriptor(Node.prototype, "nextSibling")) || void 0 === Qb ? void 0 : Qb.get) && void 0 !== Rb ? Rb : function() {
+        return this.nextSibling;
+    };
+    function Vb(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("after") || Object.defineProperty(a1, "after", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function(b) {
+                for(var c = [], d = 0; d < arguments.length; ++d)c[d] = arguments[d];
+                d = Tb.call(this);
+                if (null !== d) {
+                    var e = Ub.call(this);
+                    c = ka(c);
+                    for(var f = c.next(); !f.done; f = c.next())f = f.value, Sb.call(d, "string" === typeof f ? document.createTextNode(f) : f, e);
+                }
+            }
+        });
+    }
+    Vb(CharacterData);
+    Vb(Element);
+    var Wb, Xb, Yb = Node.prototype.insertBefore, Zb = null !== (Xb = null === (Wb = Object.getOwnPropertyDescriptor(Node.prototype, "parentNode")) || void 0 === Wb ? void 0 : Wb.get) && void 0 !== Xb ? Xb : function() {
+        return this.parentNode;
+    };
+    function $b(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("before") || Object.defineProperty(a1, "before", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function(b) {
+                for(var c = [], d = 0; d < arguments.length; ++d)c[d] = arguments[d];
+                d = Zb.call(this);
+                if (null !== d) {
+                    c = ka(c);
+                    for(var e = c.next(); !e.done; e = c.next())e = e.value, Yb.call(d, "string" === typeof e ? document.createTextNode(e) : e, this);
+                }
+            }
+        });
+    }
+    $b(CharacterData);
+    $b(Element);
+    var ac, bc, cc = Node.prototype.removeChild, dc = null !== (bc = null === (ac = Object.getOwnPropertyDescriptor(Node.prototype, "parentNode")) || void 0 === ac ? void 0 : ac.get) && void 0 !== bc ? bc : function() {
+        return this.parentNode;
+    };
+    function ec(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("remove") || Object.defineProperty(a1, "remove", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function() {
+                var b = dc.call(this);
+                b && cc.call(b, this);
+            }
+        });
+    }
+    ec(CharacterData);
+    ec(Element);
+    var fc, gc, hc = Node.prototype.insertBefore, ic = Node.prototype.removeChild, jc = null !== (gc = null === (fc = Object.getOwnPropertyDescriptor(Node.prototype, "parentNode")) || void 0 === fc ? void 0 : fc.get) && void 0 !== gc ? gc : function() {
+        return this.parentNode;
+    };
+    function lc(a1) {
+        a1 = a1.prototype;
+        a1.hasOwnProperty("replaceWith") || Object.defineProperty(a1, "replaceWith", {
+            configurable: !0,
+            enumerable: !0,
+            writable: !0,
+            value: function(b) {
+                for(var c = [], d = 0; d < arguments.length; ++d)c[d] = arguments[d];
+                d = jc.call(this);
+                if (null !== d) {
+                    c = ka(c);
+                    for(var e = c.next(); !e.done; e = c.next())e = e.value, hc.call(d, "string" === typeof e ? document.createTextNode(e) : e, this);
+                    ic.call(d, this);
+                }
+            }
+        });
+    }
+    lc(CharacterData);
+    lc(Element);
+    var mc = window.Element.prototype, nc = window.HTMLElement.prototype, oc = window.SVGElement.prototype;
+    !nc.hasOwnProperty("classList") || mc.hasOwnProperty("classList") || oc.hasOwnProperty("classList") || Object.defineProperty(mc, "classList", Object.getOwnPropertyDescriptor(nc, "classList"));
+    var pc = Element.prototype, qc = Element.prototype.hasAttribute, rc = Element.prototype.setAttribute, sc = Element.prototype.removeAttribute;
+    pc.hasOwnProperty("toggleAttribute") || (pc.toggleAttribute = function(a1, b) {
+        if (void 0 === b) {
+            if (qc.call(this, a1)) return sc.call(this, a1), !1;
+            rc.call(this, a1, "");
+            return !0;
+        }
+        if (b) return qc.call(this, a1) || rc.call(this, a1, ""), !0;
+        sc.call(this, a1);
+        return !1;
+    }); /*
+
+ Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
+ This code may only be used under the BSD style license found at
+ http://polymer.github.io/LICENSE.txt The complete set of authors may be found
+ at http://polymer.github.io/AUTHORS.txt The complete set of contributors may
+ be found at http://polymer.github.io/CONTRIBUTORS.txt Code distributed by
+ Google as part of the polymer project is also subject to an additional IP
+ rights grant found at http://polymer.github.io/PATENTS.txt
+*/ 
+    var tc = document.createElement("style");
+    tc.textContent = "body {transition: opacity ease-in 0.2s; } \nbody[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } \n";
+    var uc = document.querySelector("head");
+    uc.insertBefore(tc, uc.firstChild);
+    var vc = window;
+    vc.WebComponents = vc.WebComponents || {
+        flags: {}
+    };
+    var wc = document.querySelector('script[src*="webcomponents-bundle"]'), xc = /wc-(.+)/, yc = {};
+    if (!yc.noOpts) {
+        location.search.slice(1).split("&").forEach(function(a1) {
+            a1 = a1.split("=");
+            var b;
+            a1[0] && (b = a1[0].match(xc)) && (yc[b[1]] = a1[1] || !0);
+        });
+        if (wc) for(var zc = 0, Ac = void 0; Ac = wc.attributes[zc]; zc++)"src" !== Ac.name && (yc[Ac.name] = Ac.value || !0);
+        var Bc = {};
+        yc.log && yc.log.split && yc.log.split(",").forEach(function(a1) {
+            Bc[a1] = !0;
+        });
+        yc.log = Bc;
+    }
+    vc.WebComponents.flags = yc;
+    var Cc = yc.shadydom;
+    if (Cc) {
+        vc.ShadyDOM = vc.ShadyDOM || {};
+        vc.ShadyDOM.force = Cc;
+        var Dc = yc.noPatch;
+        vc.ShadyDOM.noPatch = "true" === Dc ? !0 : Dc;
+    }
+    var Ec = yc.register || yc.ce;
+    Ec && window.customElements && (vc.customElements.forcePolyfill = Ec); /*
+
+ Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+ This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+ The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+ Code distributed by Google as part of the polymer project is also
+ subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/ 
+    (function() {
+        function a1() {}
+        function b(p, r) {
+            if (!p.childNodes.length) return [];
+            switch(p.nodeType){
+                case Node.DOCUMENT_NODE:
+                    return F.call(p, r);
+                case Node.DOCUMENT_FRAGMENT_NODE:
+                    return E.call(p, r);
+                default:
+                    return t1.call(p, r);
+            }
+        }
+        var c = "undefined" === typeof HTMLTemplateElement, d = !(document.createDocumentFragment().cloneNode() instanceof DocumentFragment), e = !1;
+        /Trident/.test(navigator.userAgent) && function() {
+            function p(z, R) {
+                if (z instanceof DocumentFragment) for(var ob; ob = z.firstChild;)B.call(this, ob, R);
+                else B.call(this, z, R);
+                return z;
+            }
+            e = !0;
+            var r = Node.prototype.cloneNode;
+            Node.prototype.cloneNode = function(z) {
+                z = r.call(this, z);
+                this instanceof DocumentFragment && (z.__proto__ = DocumentFragment.prototype);
+                return z;
+            };
+            DocumentFragment.prototype.querySelectorAll = HTMLElement.prototype.querySelectorAll;
+            DocumentFragment.prototype.querySelector = HTMLElement.prototype.querySelector;
+            Object.defineProperties(DocumentFragment.prototype, {
+                nodeType: {
+                    get: function() {
+                        return Node.DOCUMENT_FRAGMENT_NODE;
+                    },
+                    configurable: !0
+                },
+                localName: {
+                    get: function() {},
+                    configurable: !0
+                },
+                nodeName: {
+                    get: function() {
+                        return "#document-fragment";
+                    },
+                    configurable: !0
+                }
+            });
+            var B = Node.prototype.insertBefore;
+            Node.prototype.insertBefore = p;
+            var K = Node.prototype.appendChild;
+            Node.prototype.appendChild = function(z) {
+                z instanceof DocumentFragment ? p.call(this, z, null) : K.call(this, z);
+                return z;
+            };
+            var aa = Node.prototype.removeChild, ma = Node.prototype.replaceChild;
+            Node.prototype.replaceChild = function(z, R) {
+                z instanceof DocumentFragment ? (p.call(this, z, R), aa.call(this, R)) : ma.call(this, z, R);
+                return R;
+            };
+            Document.prototype.createDocumentFragment = function() {
+                var z = this.createElement("df");
+                z.__proto__ = DocumentFragment.prototype;
+                return z;
+            };
+            var va = Document.prototype.importNode;
+            Document.prototype.importNode = function(z, R) {
+                R = va.call(this, z, R || !1);
+                z instanceof DocumentFragment && (R.__proto__ = DocumentFragment.prototype);
+                return R;
+            };
+        }();
+        var f = Node.prototype.cloneNode, g = Document.prototype.createElement, h = Document.prototype.importNode, k = Node.prototype.removeChild, l = Node.prototype.appendChild, m = Node.prototype.replaceChild, q = DOMParser.prototype.parseFromString, H = Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, "innerHTML") || {
+            get: function() {
+                return this.innerHTML;
+            },
+            set: function(p) {
+                this.innerHTML = p;
+            }
+        }, C = Object.getOwnPropertyDescriptor(window.Node.prototype, "childNodes") || {
+            get: function() {
+                return this.childNodes;
+            }
+        }, t1 = Element.prototype.querySelectorAll, F = Document.prototype.querySelectorAll, E = DocumentFragment.prototype.querySelectorAll, N = function() {
+            if (!c) {
+                var p = document.createElement("template"), r = document.createElement("template");
+                r.content.appendChild(document.createElement("div"));
+                p.content.appendChild(r);
+                p = p.cloneNode(!0);
+                return 0 === p.content.childNodes.length || 0 === p.content.firstChild.content.childNodes.length || d;
+            }
+        }();
+        if (c) {
+            var y = document.implementation.createHTMLDocument("template"), X = !0, x = document.createElement("style");
+            x.textContent = "template{display:none;}";
+            var ta = document.head;
+            ta.insertBefore(x, ta.firstElementChild);
+            a1.prototype = Object.create(HTMLElement.prototype);
+            var ia = !document.createElement("div").hasOwnProperty("innerHTML");
+            a1.Z = function(p) {
+                if (!p.content && p.namespaceURI === document.documentElement.namespaceURI) {
+                    p.content = y.createDocumentFragment();
+                    for(var r; r = p.firstChild;)l.call(p.content, r);
+                    if (ia) p.__proto__ = a1.prototype;
+                    else if (p.cloneNode = function(B) {
+                        return a1.va(this, B);
+                    }, X) try {
+                        n(p), J(p);
+                    } catch (B) {
+                        X = !1;
+                    }
+                    a1.bootstrap(p.content);
+                }
+            };
+            var sa = {
+                option: [
+                    "select"
+                ],
+                thead: [
+                    "table"
+                ],
+                col: [
+                    "colgroup",
+                    "table"
+                ],
+                tr: [
+                    "tbody",
+                    "table"
+                ],
+                th: [
+                    "tr",
+                    "tbody",
+                    "table"
+                ],
+                td: [
+                    "tr",
+                    "tbody",
+                    "table"
+                ]
+            }, n = function(p) {
+                Object.defineProperty(p, "innerHTML", {
+                    get: function() {
+                        return xa(this);
+                    },
+                    set: function(r) {
+                        var B = sa[(/<([a-z][^/\0>\x20\t\r\n\f]+)/i.exec(r) || [
+                            "",
+                            ""
+                        ])[1].toLowerCase()];
+                        if (B) for(var K = 0; K < B.length; K++)r = "<" + B[K] + ">" + r + "</" + B[K] + ">";
+                        y.body.innerHTML = r;
+                        for(a1.bootstrap(y); this.content.firstChild;)k.call(this.content, this.content.firstChild);
+                        r = y.body;
+                        if (B) for(K = 0; K < B.length; K++)r = r.lastChild;
+                        for(; r.firstChild;)l.call(this.content, r.firstChild);
+                    },
+                    configurable: !0
+                });
+            }, J = function(p) {
+                Object.defineProperty(p, "outerHTML", {
+                    get: function() {
+                        return "<template>" + this.innerHTML + "</template>";
+                    },
+                    set: function(r) {
+                        if (this.parentNode) {
+                            y.body.innerHTML = r;
+                            for(r = this.ownerDocument.createDocumentFragment(); y.body.firstChild;)l.call(r, y.body.firstChild);
+                            m.call(this.parentNode, r, this);
+                        } else throw Error("Failed to set the 'outerHTML' property on 'Element': This element has no parent node.");
+                    },
+                    configurable: !0
+                });
+            };
+            n(a1.prototype);
+            J(a1.prototype);
+            a1.bootstrap = function(p) {
+                p = b(p, "template");
+                for(var r = 0, B = p.length, K; r < B && (K = p[r]); r++)a1.Z(K);
+            };
+            document.addEventListener("DOMContentLoaded", function() {
+                a1.bootstrap(document);
+            });
+            Document.prototype.createElement = function() {
+                var p = g.apply(this, arguments);
+                "template" === p.localName && a1.Z(p);
+                return p;
+            };
+            DOMParser.prototype.parseFromString = function() {
+                var p = q.apply(this, arguments);
+                a1.bootstrap(p);
+                return p;
+            };
+            Object.defineProperty(HTMLElement.prototype, "innerHTML", {
+                get: function() {
+                    return xa(this);
+                },
+                set: function(p) {
+                    H.set.call(this, p);
+                    a1.bootstrap(this);
+                },
+                configurable: !0,
+                enumerable: !0
+            });
+            var ha = /[&\u00A0"]/g, kc = /[&\u00A0<>]/g, ib = function(p) {
+                switch(p){
+                    case "&":
+                        return "&amp;";
+                    case "<":
+                        return "&lt;";
+                    case ">":
+                        return "&gt;";
+                    case '"':
+                        return "&quot;";
+                    case "\xa0":
+                        return "&nbsp;";
+                }
+            };
+            x = function(p) {
+                for(var r = {}, B = 0; B < p.length; B++)r[p[B]] = !0;
+                return r;
+            };
+            var Va = x("area base br col command embed hr img input keygen link meta param source track wbr".split(" ")), jb = x("style script xmp iframe noembed noframes plaintext noscript".split(" ")), xa = function(p, r) {
+                "template" === p.localName && (p = p.content);
+                for(var B = "", K = r ? r(p) : C.get.call(p), aa = 0, ma = K.length, va; aa < ma && (va = K[aa]); aa++){
+                    a: {
+                        var z = va;
+                        var R = p;
+                        var ob = r;
+                        switch(z.nodeType){
+                            case Node.ELEMENT_NODE:
+                                for(var Kc = z.localName, pb = "<" + Kc, Zh = z.attributes, He = 0; R = Zh[He]; He++)pb += " " + R.name + '="' + R.value.replace(ha, ib) + '"';
+                                pb += ">";
+                                z = Va[Kc] ? pb : pb + xa(z, ob) + "</" + Kc + ">";
+                                break a;
+                            case Node.TEXT_NODE:
+                                z = z.data;
+                                z = R && jb[R.localName] ? z : z.replace(kc, ib);
+                                break a;
+                            case Node.COMMENT_NODE:
+                                z = "<!--" + z.data + "-->";
+                                break a;
+                            default:
+                                throw window.console.error(z), Error("not implemented");
+                        }
+                    }
+                    B += z;
+                }
+                return B;
+            };
+        }
+        if (c || N) {
+            a1.va = function(p, r) {
+                var B = f.call(p, !1);
+                this.Z && this.Z(B);
+                r && (l.call(B.content, f.call(p.content, !0)), I(B.content, p.content));
+                return B;
+            };
+            var I = function(p, r) {
+                if (r.querySelectorAll && (r = b(r, "template"), 0 !== r.length)) {
+                    p = b(p, "template");
+                    for(var B = 0, K = p.length, aa, ma; B < K; B++)ma = r[B], aa = p[B], a1 && a1.Z && a1.Z(ma), m.call(aa.parentNode, u.call(ma, !0), aa);
+                }
+            }, u = Node.prototype.cloneNode = function(p) {
+                if (!e && d && this instanceof DocumentFragment) {
+                    if (p) var r = G.call(this.ownerDocument, this, !0);
+                    else return this.ownerDocument.createDocumentFragment();
+                } else this.nodeType === Node.ELEMENT_NODE && "template" === this.localName && this.namespaceURI == document.documentElement.namespaceURI ? r = a1.va(this, p) : r = f.call(this, p);
+                p && I(r, this);
+                return r;
+            }, G = Document.prototype.importNode = function(p, r) {
+                r = r || !1;
+                if ("template" === p.localName) return a1.va(p, r);
+                var B = h.call(this, p, r);
+                if (r) {
+                    I(B, p);
+                    p = b(B, 'script:not([type]),script[type="application/javascript"],script[type="text/javascript"]');
+                    for(var K, aa = 0; aa < p.length; aa++){
+                        K = p[aa];
+                        r = g.call(document, "script");
+                        r.textContent = K.textContent;
+                        for(var ma = K.attributes, va = 0, z; va < ma.length; va++)z = ma[va], r.setAttribute(z.name, z.value);
+                        m.call(K.parentNode, r, K);
+                    }
+                }
+                return B;
+            };
+        }
+        c && (window.HTMLTemplateElement = a1);
+    })(); /*
+
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/ 
+    function Fc() {}
+    Fc.prototype.toJSON = function() {
+        return {};
+    };
+    function D(a1) {
+        a1.__shady || (a1.__shady = new Fc);
+        return a1.__shady;
+    }
+    function L(a1) {
+        return a1 && a1.__shady;
+    }
+    var M = window.ShadyDOM || {};
+    M.cb = !(!Element.prototype.attachShadow || !Node.prototype.getRootNode);
+    var Gc = Object.getOwnPropertyDescriptor(Node.prototype, "firstChild");
+    M.D = !!(Gc && Gc.configurable && Gc.get);
+    M.Ba = M.force || !M.cb;
+    M.J = M.noPatch || !1;
+    M.ha = M.preferPerformance;
+    M.Da = "on-demand" === M.J;
+    var Hc;
+    var Ic = M.querySelectorImplementation;
+    Hc = -1 < [
+        "native",
+        "selectorEngine"
+    ].indexOf(Ic) ? Ic : void 0;
+    M.wb = Hc;
+    M.Ra = navigator.userAgent.match("Trident");
+    function Jc() {
+        return Document.prototype.msElementsFromPoint ? "msElementsFromPoint" : "elementsFromPoint";
+    }
+    function Lc(a1) {
+        return (a1 = L(a1)) && void 0 !== a1.firstChild;
+    }
+    function O(a1) {
+        return a1 instanceof ShadowRoot;
+    }
+    function Mc(a1) {
+        return (a1 = (a1 = L(a1)) && a1.root) && Nc(a1);
+    }
+    var Oc = Element.prototype, Pc = Oc.matches || Oc.matchesSelector || Oc.mozMatchesSelector || Oc.msMatchesSelector || Oc.oMatchesSelector || Oc.webkitMatchesSelector, Qc = document.createTextNode(""), Rc = 0, Sc = [];
+    new MutationObserver(function() {
+        for(; Sc.length;)try {
+            Sc.shift()();
+        } catch (a1) {
+            throw Qc.textContent = Rc++, a1;
+        }
+    }).observe(Qc, {
+        characterData: !0
+    });
+    function Tc(a1) {
+        Sc.push(a1);
+        Qc.textContent = Rc++;
+    }
+    var Uc = document.contains ? function(a1, b) {
+        return a1.__shady_native_contains(b);
+    } : function(a1, b) {
+        return a1 === b || a1.documentElement && a1.documentElement.__shady_native_contains(b);
+    };
+    function Vc(a1, b) {
+        for(; b;){
+            if (b == a1) return !0;
+            b = b.__shady_parentNode;
+        }
+        return !1;
+    }
+    function Wc(a1) {
+        for(var b = a1.length - 1; 0 <= b; b--){
+            var c = a1[b], d = c.getAttribute("id") || c.getAttribute("name");
+            d && "length" !== d && isNaN(d) && (a1[d] = c);
+        }
+        a1.item = function(e) {
+            return a1[e];
+        };
+        a1.namedItem = function(e) {
+            if ("length" !== e && isNaN(e) && a1[e]) return a1[e];
+            for(var f = ka(a1), g = f.next(); !g.done; g = f.next())if (g = g.value, (g.getAttribute("id") || g.getAttribute("name")) == e) return g;
+            return null;
+        };
+        return a1;
+    }
+    function Xc(a1) {
+        var b = [];
+        for(a1 = a1.__shady_native_firstChild; a1; a1 = a1.__shady_native_nextSibling)b.push(a1);
+        return b;
+    }
+    function Yc(a1) {
+        var b = [];
+        for(a1 = a1.__shady_firstChild; a1; a1 = a1.__shady_nextSibling)b.push(a1);
+        return b;
+    }
+    function Zc(a1, b, c) {
+        c.configurable = !0;
+        if (c.value) a1[b] = c.value;
+        else try {
+            Object.defineProperty(a1, b, c);
+        } catch (d) {}
+    }
+    function P(a1, b, c, d) {
+        c = void 0 === c ? "" : c;
+        for(var e in b)d && 0 <= d.indexOf(e) || Zc(a1, c + e, b[e]);
+    }
+    function $c(a1, b) {
+        for(var c in b)c in a1 && Zc(a1, c, b[c]);
+    }
+    function Q(a1) {
+        var b = {};
+        Object.getOwnPropertyNames(a1).forEach(function(c) {
+            b[c] = Object.getOwnPropertyDescriptor(a1, c);
+        });
+        return b;
+    }
+    function ad(a1, b) {
+        for(var c = Object.getOwnPropertyNames(b), d = 0, e; d < c.length; d++)e = c[d], a1[e] = b[e];
+    }
+    function bd(a1) {
+        return a1 instanceof Node ? a1 : document.createTextNode("" + a1);
+    }
+    function cd(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        if (1 === b.length) return bd(b[0]);
+        c = document.createDocumentFragment();
+        b = ka(b);
+        for(var d = b.next(); !d.done; d = b.next())c.appendChild(bd(d.value));
+        return c;
+    }
+    function dd(a1) {
+        var b;
+        for(b = void 0 === b ? 1 : b; 0 < b; b--)a1 = a1.reduce(function(c, d) {
+            Array.isArray(d) ? c.push.apply(c, w(d)) : c.push(d);
+            return c;
+        }, []);
+        return a1;
+    }
+    function ed(a1) {
+        var b = [], c = new Set;
+        a1 = ka(a1);
+        for(var d = a1.next(); !d.done; d = a1.next())d = d.value, c.has(d) || (b.push(d), c.add(d));
+        return b;
+    }
+    var fd = [], gd;
+    function hd(a1) {
+        gd || (gd = !0, Tc(id));
+        fd.push(a1);
+    }
+    function id() {
+        gd = !1;
+        for(var a1 = !!fd.length; fd.length;)fd.shift()();
+        return a1;
+    }
+    id.list = fd;
+    function jd() {
+        this.g = !1;
+        this.addedNodes = [];
+        this.removedNodes = [];
+        this.qa = new Set;
+    }
+    function kd(a1) {
+        a1.g || (a1.g = !0, Tc(function() {
+            a1.flush();
+        }));
+    }
+    jd.prototype.flush = function() {
+        if (this.g) {
+            this.g = !1;
+            var a1 = this.takeRecords();
+            a1.length && this.qa.forEach(function(b) {
+                b(a1);
+            });
+        }
+    };
+    jd.prototype.takeRecords = function() {
+        if (this.addedNodes.length || this.removedNodes.length) {
+            var a1 = [
+                {
+                    addedNodes: this.addedNodes,
+                    removedNodes: this.removedNodes
+                }
+            ];
+            this.addedNodes = [];
+            this.removedNodes = [];
+            return a1;
+        }
+        return [];
+    };
+    function ld(a1, b) {
+        var c = D(a1);
+        c.ga || (c.ga = new jd);
+        c.ga.qa.add(b);
+        var d = c.ga;
+        return {
+            Va: b,
+            X: d,
+            Wa: a1,
+            takeRecords: function() {
+                return d.takeRecords();
+            }
+        };
+    }
+    function md(a1) {
+        var b = a1 && a1.X;
+        b && (b.qa.delete(a1.Va), b.qa.size || (D(a1.Wa).ga = null));
+    }
+    function nd(a1, b) {
+        var c = b.getRootNode();
+        return a1.map(function(d) {
+            var e = c === d.target.getRootNode();
+            if (e && d.addedNodes) {
+                if (e = [].slice.call(d.addedNodes).filter(function(f) {
+                    return c === f.getRootNode();
+                }), e.length) return d = Object.create(d), Object.defineProperty(d, "addedNodes", {
+                    value: e,
+                    configurable: !0
+                }), d;
+            } else if (e) return d;
+        }).filter(function(d) {
+            return d;
+        });
+    }
+    var od = /[&\u00A0"]/g, pd = /[&\u00A0<>]/g;
+    function qd(a1) {
+        switch(a1){
+            case "&":
+                return "&amp;";
+            case "<":
+                return "&lt;";
+            case ">":
+                return "&gt;";
+            case '"':
+                return "&quot;";
+            case "\xa0":
+                return "&nbsp;";
+        }
+    }
+    function rd(a1) {
+        for(var b = {}, c = 0; c < a1.length; c++)b[a1[c]] = !0;
+        return b;
+    }
+    var sd = rd("area base br col command embed hr img input keygen link meta param source track wbr".split(" ")), td = rd("style script xmp iframe noembed noframes plaintext noscript".split(" "));
+    function ud(a1, b) {
+        "template" === a1.localName && (a1 = a1.content);
+        for(var c = "", d = b ? b(a1) : a1.childNodes, e = 0, f = d.length, g = void 0; e < f && (g = d[e]); e++){
+            a: {
+                var h = g;
+                var k = a1, l = b;
+                switch(h.nodeType){
+                    case Node.ELEMENT_NODE:
+                        k = h.localName;
+                        for(var m = "<" + k, q = h.attributes, H = 0, C; C = q[H]; H++)m += " " + C.name + '="' + C.value.replace(od, qd) + '"';
+                        m += ">";
+                        h = sd[k] ? m : m + ud(h, l) + "</" + k + ">";
+                        break a;
+                    case Node.TEXT_NODE:
+                        h = h.data;
+                        h = k && td[k.localName] ? h : h.replace(pd, qd);
+                        break a;
+                    case Node.COMMENT_NODE:
+                        h = "<!--" + h.data + "-->";
+                        break a;
+                    default:
+                        throw window.console.error(h), Error("not implemented");
+                }
+            }
+            c += h;
+        }
+        return c;
+    }
+    var vd = M.D, wd = {
+        querySelector: function(a1) {
+            return this.__shady_native_querySelector(a1);
+        },
+        querySelectorAll: function(a1) {
+            return this.__shady_native_querySelectorAll(a1);
+        }
+    }, xd = {};
+    function yd(a1) {
+        xd[a1] = function(b) {
+            return b["__shady_native_" + a1];
+        };
+    }
+    function zd(a1, b) {
+        P(a1, b, "__shady_native_");
+        for(var c in b)yd(c);
+    }
+    function S(a1, b) {
+        b = void 0 === b ? [] : b;
+        for(var c = 0; c < b.length; c++){
+            var d = b[c], e = Object.getOwnPropertyDescriptor(a1, d);
+            e && (Object.defineProperty(a1, "__shady_native_" + d, e), e.value ? wd[d] || (wd[d] = e.value) : yd(d));
+        }
+    }
+    var Ad = document.createTreeWalker(document, NodeFilter.SHOW_ALL, null, !1), Bd = document.createTreeWalker(document, NodeFilter.SHOW_ELEMENT, null, !1), Cd = document.implementation.createHTMLDocument("inert");
+    function Dd(a1) {
+        for(var b; b = a1.__shady_native_firstChild;)a1.__shady_native_removeChild(b);
+    }
+    var Ed = [
+        "firstElementChild",
+        "lastElementChild",
+        "children",
+        "childElementCount"
+    ], Fd = [
+        "querySelector",
+        "querySelectorAll",
+        "append",
+        "prepend",
+        "replaceChildren"
+    ];
+    function Gd() {
+        var a1 = [
+            "dispatchEvent",
+            "addEventListener",
+            "removeEventListener"
+        ];
+        window.EventTarget ? (S(window.EventTarget.prototype, a1), void 0 === window.__shady_native_addEventListener && S(Window.prototype, a1)) : (S(Node.prototype, a1), S(Window.prototype, a1), S(XMLHttpRequest.prototype, a1));
+        vd ? S(Node.prototype, "parentNode firstChild lastChild previousSibling nextSibling childNodes parentElement textContent".split(" ")) : zd(Node.prototype, {
+            parentNode: {
+                get: function() {
+                    Ad.currentNode = this;
+                    return Ad.parentNode();
+                }
+            },
+            firstChild: {
+                get: function() {
+                    Ad.currentNode = this;
+                    return Ad.firstChild();
+                }
+            },
+            lastChild: {
+                get: function() {
+                    Ad.currentNode = this;
+                    return Ad.lastChild();
+                }
+            },
+            previousSibling: {
+                get: function() {
+                    Ad.currentNode = this;
+                    return Ad.previousSibling();
+                }
+            },
+            nextSibling: {
+                get: function() {
+                    Ad.currentNode = this;
+                    return Ad.nextSibling();
+                }
+            },
+            childNodes: {
+                get: function() {
+                    var b = [];
+                    Ad.currentNode = this;
+                    for(var c = Ad.firstChild(); c;)b.push(c), c = Ad.nextSibling();
+                    return b;
+                }
+            },
+            parentElement: {
+                get: function() {
+                    Bd.currentNode = this;
+                    return Bd.parentNode();
+                }
+            },
+            textContent: {
+                get: function() {
+                    switch(this.nodeType){
+                        case Node.ELEMENT_NODE:
+                        case Node.DOCUMENT_FRAGMENT_NODE:
+                            for(var b = document.createTreeWalker(this, NodeFilter.SHOW_TEXT, null, !1), c = "", d; d = b.nextNode();)c += d.nodeValue;
+                            return c;
+                        default:
+                            return this.nodeValue;
+                    }
+                },
+                set: function(b) {
+                    if ("undefined" === typeof b || null === b) b = "";
+                    switch(this.nodeType){
+                        case Node.ELEMENT_NODE:
+                        case Node.DOCUMENT_FRAGMENT_NODE:
+                            Dd(this);
+                            (0 < b.length || this.nodeType === Node.ELEMENT_NODE) && this.__shady_native_insertBefore(document.createTextNode(b), void 0);
+                            break;
+                        default:
+                            this.nodeValue = b;
+                    }
+                }
+            }
+        });
+        S(Node.prototype, "appendChild insertBefore removeChild replaceChild cloneNode contains".split(" "));
+        S(HTMLElement.prototype, [
+            "parentElement",
+            "contains"
+        ]);
+        a1 = {
+            firstElementChild: {
+                get: function() {
+                    Bd.currentNode = this;
+                    return Bd.firstChild();
+                }
+            },
+            lastElementChild: {
+                get: function() {
+                    Bd.currentNode = this;
+                    return Bd.lastChild();
+                }
+            },
+            children: {
+                get: function() {
+                    var b = [];
+                    Bd.currentNode = this;
+                    for(var c = Bd.firstChild(); c;)b.push(c), c = Bd.nextSibling();
+                    return Wc(b);
+                }
+            },
+            childElementCount: {
+                get: function() {
+                    return this.children ? this.children.length : 0;
+                }
+            }
+        };
+        vd ? (S(Element.prototype, Ed), S(Element.prototype, [
+            "previousElementSibling",
+            "nextElementSibling",
+            "innerHTML",
+            "className"
+        ]), S(HTMLElement.prototype, [
+            "children",
+            "innerHTML",
+            "className"
+        ])) : (zd(Element.prototype, a1), zd(Element.prototype, {
+            previousElementSibling: {
+                get: function() {
+                    Bd.currentNode = this;
+                    return Bd.previousSibling();
+                }
+            },
+            nextElementSibling: {
+                get: function() {
+                    Bd.currentNode = this;
+                    return Bd.nextSibling();
+                }
+            },
+            innerHTML: {
+                get: function() {
+                    return ud(this, Xc);
+                },
+                set: function(b) {
+                    var c = "template" === this.localName ? this.content : this;
+                    Dd(c);
+                    var d = this.localName || "div";
+                    d = this.namespaceURI && this.namespaceURI !== Cd.namespaceURI ? Cd.createElementNS(this.namespaceURI, d) : Cd.createElement(d);
+                    d.innerHTML = b;
+                    for(b = "template" === this.localName ? d.content : d; d = b.__shady_native_firstChild;)c.__shady_native_insertBefore(d, void 0);
+                }
+            },
+            className: {
+                get: function() {
+                    return this.getAttribute("class") || "";
+                },
+                set: function(b) {
+                    this.setAttribute("class", b);
+                }
+            }
+        }));
+        S(Element.prototype, "setAttribute getAttribute hasAttribute removeAttribute toggleAttribute focus blur".split(" "));
+        S(Element.prototype, Fd);
+        S(HTMLElement.prototype, [
+            "focus",
+            "blur"
+        ]);
+        window.HTMLTemplateElement && S(window.HTMLTemplateElement.prototype, [
+            "innerHTML"
+        ]);
+        vd ? S(DocumentFragment.prototype, Ed) : zd(DocumentFragment.prototype, a1);
+        S(DocumentFragment.prototype, Fd);
+        vd ? (S(Document.prototype, Ed), S(Document.prototype, [
+            "activeElement"
+        ])) : zd(Document.prototype, a1);
+        S(Document.prototype, [
+            "importNode",
+            "getElementById",
+            "elementFromPoint",
+            Jc()
+        ]);
+        S(Document.prototype, Fd);
+    }
+    var Hd = Q({
+        get childNodes () {
+            return this.__shady_childNodes;
+        },
+        get firstChild () {
+            return this.__shady_firstChild;
+        },
+        get lastChild () {
+            return this.__shady_lastChild;
+        },
+        get childElementCount () {
+            return this.__shady_childElementCount;
+        },
+        get children () {
+            return this.__shady_children;
+        },
+        get firstElementChild () {
+            return this.__shady_firstElementChild;
+        },
+        get lastElementChild () {
+            return this.__shady_lastElementChild;
+        },
+        get shadowRoot () {
+            return this.__shady_shadowRoot;
+        }
+    }), Id = Q({
+        get textContent () {
+            return this.__shady_textContent;
+        },
+        set textContent (a){
+            this.__shady_textContent = a;
+        },
+        get innerHTML () {
+            return this.__shady_innerHTML;
+        },
+        set innerHTML (a){
+            this.__shady_innerHTML = a;
+        }
+    }), Jd = Q({
+        get parentElement () {
+            return this.__shady_parentElement;
+        },
+        get parentNode () {
+            return this.__shady_parentNode;
+        },
+        get nextSibling () {
+            return this.__shady_nextSibling;
+        },
+        get previousSibling () {
+            return this.__shady_previousSibling;
+        },
+        get nextElementSibling () {
+            return this.__shady_nextElementSibling;
+        },
+        get previousElementSibling () {
+            return this.__shady_previousElementSibling;
+        },
+        get className () {
+            return this.__shady_className;
+        },
+        set className (a){
+            this.__shady_className = a;
+        }
+    });
+    function Kd(a1) {
+        for(var b in a1){
+            var c = a1[b];
+            c && (c.enumerable = !1);
+        }
+    }
+    Kd(Hd);
+    Kd(Id);
+    Kd(Jd);
+    var Ld = M.D || !0 === M.J, Md = Ld ? function() {} : function(a1) {
+        var b = D(a1);
+        b.Ta || (b.Ta = !0, $c(a1, Jd));
+    }, Nd = Ld ? function() {} : function(a1) {
+        var b = D(a1);
+        b.Sa || (b.Sa = !0, $c(a1, Hd), window.customElements && window.customElements.polyfillWrapFlushCallback && !M.J || $c(a1, Id));
+    };
+    var Od = "__eventWrappers" + Date.now(), Pd = function() {
+        var a1 = Object.getOwnPropertyDescriptor(Event.prototype, "composed");
+        return a1 ? function(b) {
+            return a1.get.call(b);
+        } : null;
+    }(), Qd = function() {
+        function a1() {}
+        var b = !1, c = {
+            get capture () {
+                b = !0;
+                return !1;
+            }
+        };
+        window.addEventListener("test", a1, c);
+        window.removeEventListener("test", a1, c);
+        return b;
+    }();
+    function Rd(a1) {
+        if (null === a1 || "object" !== typeof a1 && "function" !== typeof a1) {
+            var b = !!a1;
+            var c = !1;
+        } else {
+            b = !!a1.capture;
+            c = !!a1.once;
+            var d = a1.U;
+        }
+        return {
+            Pa: d,
+            capture: b,
+            once: c,
+            Na: Qd ? a1 : b
+        };
+    }
+    var Sd = {
+        blur: !0,
+        focus: !0,
+        focusin: !0,
+        focusout: !0,
+        click: !0,
+        dblclick: !0,
+        mousedown: !0,
+        mouseenter: !0,
+        mouseleave: !0,
+        mousemove: !0,
+        mouseout: !0,
+        mouseover: !0,
+        mouseup: !0,
+        wheel: !0,
+        beforeinput: !0,
+        input: !0,
+        keydown: !0,
+        keyup: !0,
+        compositionstart: !0,
+        compositionupdate: !0,
+        compositionend: !0,
+        touchstart: !0,
+        touchend: !0,
+        touchmove: !0,
+        touchcancel: !0,
+        pointerover: !0,
+        pointerenter: !0,
+        pointerdown: !0,
+        pointermove: !0,
+        pointerup: !0,
+        pointercancel: !0,
+        pointerout: !0,
+        pointerleave: !0,
+        gotpointercapture: !0,
+        lostpointercapture: !0,
+        dragstart: !0,
+        drag: !0,
+        dragenter: !0,
+        dragleave: !0,
+        dragover: !0,
+        drop: !0,
+        dragend: !0,
+        DOMActivate: !0,
+        DOMFocusIn: !0,
+        DOMFocusOut: !0,
+        keypress: !0
+    }, Td = {
+        DOMAttrModified: !0,
+        DOMAttributeNameChanged: !0,
+        DOMCharacterDataModified: !0,
+        DOMElementNameChanged: !0,
+        DOMNodeInserted: !0,
+        DOMNodeInsertedIntoDocument: !0,
+        DOMNodeRemoved: !0,
+        DOMNodeRemovedFromDocument: !0,
+        DOMSubtreeModified: !0
+    };
+    function Ud(a1) {
+        return a1 instanceof Node ? a1.__shady_getRootNode() : a1;
+    }
+    function Vd(a1, b) {
+        var c = [], d = a1;
+        for(a1 = Ud(a1); d;)c.push(d), d = d.__shady_assignedSlot ? d.__shady_assignedSlot : d.nodeType === Node.DOCUMENT_FRAGMENT_NODE && d.host && (b || d !== a1) ? d.host : d.__shady_parentNode;
+        c[c.length - 1] === document && c.push(window);
+        return c;
+    }
+    function Wd(a1) {
+        a1.__composedPath || (a1.__composedPath = Vd(a1.target, !0));
+        return a1.__composedPath;
+    }
+    function Xd(a1, b) {
+        if (!O) return a1;
+        a1 = Vd(a1, !0);
+        for(var c = 0, d, e = void 0, f, g = void 0; c < b.length; c++)if (d = b[c], f = Ud(d), f !== e && (g = a1.indexOf(f), e = f), !O(f) || -1 < g) return d;
+    }
+    var Yd = {
+        get composed () {
+            void 0 === this.__composed && (Pd ? this.__composed = "focusin" === this.type || "focusout" === this.type || Pd(this) : !1 !== this.isTrusted && (this.__composed = Sd[this.type]));
+            return this.__composed || !1;
+        },
+        composedPath: function() {
+            this.__composedPath || (this.__composedPath = Vd(this.__target, this.composed));
+            return this.__composedPath;
+        },
+        get target () {
+            return Xd(this.currentTarget || this.__previousCurrentTarget, this.composedPath());
+        },
+        get relatedTarget () {
+            if (!this.__relatedTarget) return null;
+            this.__relatedTargetComposedPath || (this.__relatedTargetComposedPath = Vd(this.__relatedTarget, !0));
+            return Xd(this.currentTarget || this.__previousCurrentTarget, this.__relatedTargetComposedPath);
+        },
+        stopPropagation: function() {
+            Event.prototype.stopPropagation.call(this);
+            this.ua = !0;
+        },
+        stopImmediatePropagation: function() {
+            Event.prototype.stopImmediatePropagation.call(this);
+            this.ua = this.__immediatePropagationStopped = !0;
+        }
+    }, Zd = M.D && Object.getOwnPropertyDescriptor(Event.prototype, "eventPhase");
+    Zd && (Object.defineProperty(Yd, "eventPhase", {
+        get: function() {
+            return this.currentTarget === this.target ? Event.AT_TARGET : this.__shady_native_eventPhase;
+        },
+        enumerable: !0,
+        configurable: !0
+    }), Object.defineProperty(Yd, "__shady_native_eventPhase", Zd));
+    function $d(a1) {
+        function b(c, d) {
+            c = new a1(c, d);
+            c.__composed = d && !!d.composed;
+            return c;
+        }
+        b.__proto__ = a1;
+        b.prototype = a1.prototype;
+        return b;
+    }
+    var ae = {
+        focus: !0,
+        blur: !0
+    };
+    function be(a1) {
+        return a1.__target !== a1.target || a1.__relatedTarget !== a1.relatedTarget;
+    }
+    function ce(a1, b, c) {
+        if (c = b.__handlers && b.__handlers[a1.type] && b.__handlers[a1.type][c]) for(var d = 0, e; (e = c[d]) && (!be(a1) || a1.target !== a1.relatedTarget) && (e.call(b, a1), !a1.__immediatePropagationStopped); d++);
+    }
+    var de = new Event("e").hasOwnProperty("currentTarget");
+    function ee(a1) {
+        a1 = de ? Object.create(a1) : a1;
+        var b = a1.composedPath(), c = b.map(function(m) {
+            return Xd(m, b);
+        }), d = a1.bubbles, e = Object.getOwnPropertyDescriptor(a1, "currentTarget");
+        Object.defineProperty(a1, "currentTarget", {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return k;
+            }
+        });
+        var f = Event.CAPTURING_PHASE, g = Object.getOwnPropertyDescriptor(a1, "eventPhase");
+        Object.defineProperty(a1, "eventPhase", {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return f;
+            }
+        });
+        try {
+            for(var h = b.length - 1; 0 <= h; h--){
+                var k = b[h];
+                f = k === c[h] ? Event.AT_TARGET : Event.CAPTURING_PHASE;
+                ce(a1, k, "capture");
+                if (a1.ua) return;
+            }
+            for(h = 0; h < b.length; h++){
+                k = b[h];
+                var l = k === c[h];
+                if (l || d) {
+                    if (f = l ? Event.AT_TARGET : Event.BUBBLING_PHASE, ce(a1, k, "bubble"), a1.ua) break;
+                }
+            }
+        } finally{
+            de || (e ? Object.defineProperty(a1, "currentTarget", e) : delete a1.currentTarget, g ? Object.defineProperty(a1, "eventPhase", g) : delete a1.eventPhase);
+        }
+    }
+    function fe(a1, b, c, d) {
+        for(var e = 0; e < a1.length; e++){
+            var f = a1[e], g = f.type, h = f.capture;
+            if (b === f.node && c === g && d === h) return e;
+        }
+        return -1;
+    }
+    function ge(a1) {
+        id();
+        return !M.ha && this instanceof Node && !Uc(document, this) ? (a1.__target || he(a1, this), ee(a1)) : this.__shady_native_dispatchEvent(a1);
+    }
+    function ie(a1, b, c) {
+        var d = this, e = Rd(c), f = e.capture, g = e.once, h = e.Pa;
+        e = e.Na;
+        if (b) {
+            var k = typeof b;
+            if ("function" === k || "object" === k) {
+                if ("object" !== k || b.handleEvent && "function" === typeof b.handleEvent) {
+                    if (Td[a1]) return this.__shady_native_addEventListener(a1, b, e);
+                    var l = h || this;
+                    if (h = b[Od]) {
+                        if (-1 < fe(h, l, a1, f)) return;
+                    } else b[Od] = [];
+                    h = function(m) {
+                        g && d.__shady_removeEventListener(a1, b, c);
+                        m.__target || he(m);
+                        if (l !== d) {
+                            var q = Object.getOwnPropertyDescriptor(m, "currentTarget");
+                            Object.defineProperty(m, "currentTarget", {
+                                get: function() {
+                                    return l;
+                                },
+                                configurable: !0
+                            });
+                            var H = Object.getOwnPropertyDescriptor(m, "eventPhase");
+                            Object.defineProperty(m, "eventPhase", {
+                                configurable: !0,
+                                enumerable: !0,
+                                get: function() {
+                                    return f ? Event.CAPTURING_PHASE : Event.BUBBLING_PHASE;
+                                }
+                            });
+                        }
+                        m.__previousCurrentTarget = m.currentTarget;
+                        if (!O(l) && "slot" !== l.localName || -1 != m.composedPath().indexOf(l)) {
+                            if (m.composed || -1 < m.composedPath().indexOf(l)) {
+                                if (be(m) && m.target === m.relatedTarget) m.eventPhase === Event.BUBBLING_PHASE && m.stopImmediatePropagation();
+                                else if (m.eventPhase === Event.CAPTURING_PHASE || m.bubbles || m.target === l || l instanceof Window) {
+                                    var C = "function" === k ? b.call(l, m) : b.handleEvent && b.handleEvent(m);
+                                    l !== d && (q ? (Object.defineProperty(m, "currentTarget", q), q = null) : delete m.currentTarget, H ? (Object.defineProperty(m, "eventPhase", H), H = null) : delete m.eventPhase);
+                                    return C;
+                                }
+                            }
+                        }
+                    };
+                    b[Od].push({
+                        node: l,
+                        type: a1,
+                        capture: f,
+                        ub: h
+                    });
+                    this.__handlers = this.__handlers || {};
+                    this.__handlers[a1] = this.__handlers[a1] || {
+                        capture: [],
+                        bubble: []
+                    };
+                    this.__handlers[a1][f ? "capture" : "bubble"].push(h);
+                    ae[a1] || this.__shady_native_addEventListener(a1, h, e);
+                }
+            }
+        }
+    }
+    function je(a1, b, c) {
+        if (b) {
+            var d = Rd(c);
+            c = d.capture;
+            var e = d.Pa;
+            d = d.Na;
+            if (Td[a1]) return this.__shady_native_removeEventListener(a1, b, d);
+            var f = e || this;
+            e = void 0;
+            var g = null;
+            try {
+                g = b[Od];
+            } catch (h) {}
+            g && (f = fe(g, f, a1, c), -1 < f && (e = g.splice(f, 1)[0].ub, g.length || (b[Od] = void 0)));
+            this.__shady_native_removeEventListener(a1, e || b, d);
+            e && this.__handlers && this.__handlers[a1] && (a1 = this.__handlers[a1][c ? "capture" : "bubble"], b = a1.indexOf(e), -1 < b && a1.splice(b, 1));
+        }
+    }
+    function ke() {
+        for(var a1 in ae)window.__shady_native_addEventListener(a1, function(b) {
+            b.__target || (he(b), ee(b));
+        }, !0);
+    }
+    var le = Q(Yd);
+    function he(a1, b) {
+        b = void 0 === b ? a1.target : b;
+        a1.__target = b;
+        a1.__relatedTarget = a1.relatedTarget;
+        if (M.D) {
+            b = Object.getPrototypeOf(a1);
+            if (!b.hasOwnProperty("__shady_patchedProto")) {
+                var c = Object.create(b);
+                c.__shady_sourceProto = b;
+                P(c, le);
+                b.__shady_patchedProto = c;
+            }
+            a1.__proto__ = b.__shady_patchedProto;
+        } else P(a1, le);
+    }
+    var me = $d(Event), ne = $d(CustomEvent), oe = $d(MouseEvent);
+    function pe() {
+        if (!Pd && Object.getOwnPropertyDescriptor(Event.prototype, "isTrusted")) {
+            var a1 = function() {
+                var b = new MouseEvent("click", {
+                    bubbles: !0,
+                    cancelable: !0,
+                    composed: !0
+                });
+                this.__shady_dispatchEvent(b);
+            };
+            Element.prototype.click ? Element.prototype.click = a1 : HTMLElement.prototype.click && (HTMLElement.prototype.click = a1);
+        }
+    }
+    var qe = Object.getOwnPropertyNames(Element.prototype).filter(function(a1) {
+        return "on" === a1.substring(0, 2);
+    }), re = Object.getOwnPropertyNames(HTMLElement.prototype).filter(function(a1) {
+        return "on" === a1.substring(0, 2);
+    });
+    function se(a1) {
+        return {
+            set: function(b) {
+                var c = D(this), d = a1.substring(2);
+                c.T || (c.T = {});
+                c.T[a1] && this.removeEventListener(d, c.T[a1]);
+                this.__shady_addEventListener(d, b);
+                c.T[a1] = b;
+            },
+            get: function() {
+                var b = L(this);
+                return b && b.T && b.T[a1];
+            },
+            configurable: !0
+        };
+    }
+    function te(a1, b) {
+        return {
+            index: a1,
+            ia: [],
+            pa: b
+        };
+    }
+    function ue(a1, b, c, d) {
+        var e = 0, f = 0, g = 0, h = 0, k = Math.min(b - e, d - f);
+        if (0 == e && 0 == f) a: {
+            for(g = 0; g < k; g++)if (a1[g] !== c[g]) break a;
+            g = k;
+        }
+        if (b == a1.length && d == c.length) {
+            h = a1.length;
+            for(var l = c.length, m = 0; m < k - g && ve(a1[--h], c[--l]);)m++;
+            h = m;
+        }
+        e += g;
+        f += g;
+        b -= h;
+        d -= h;
+        if (0 == b - e && 0 == d - f) return [];
+        if (e == b) {
+            for(b = te(e, 0); f < d;)b.ia.push(c[f++]);
+            return [
+                b
+            ];
+        }
+        if (f == d) return [
+            te(e, b - e)
+        ];
+        k = e;
+        g = f;
+        d = d - g + 1;
+        h = b - k + 1;
+        b = Array(d);
+        for(l = 0; l < d; l++)b[l] = Array(h), b[l][0] = l;
+        for(l = 0; l < h; l++)b[0][l] = l;
+        for(l = 1; l < d; l++)for(m = 1; m < h; m++)if (a1[k + m - 1] === c[g + l - 1]) b[l][m] = b[l - 1][m - 1];
+        else {
+            var q = b[l - 1][m] + 1, H = b[l][m - 1] + 1;
+            b[l][m] = q < H ? q : H;
+        }
+        k = b.length - 1;
+        g = b[0].length - 1;
+        d = b[k][g];
+        for(a1 = []; 0 < k || 0 < g;)0 == k ? (a1.push(2), g--) : 0 == g ? (a1.push(3), k--) : (h = b[k - 1][g - 1], l = b[k - 1][g], m = b[k][g - 1], q = l < m ? l < h ? l : h : m < h ? m : h, q == h ? (h == d ? a1.push(0) : (a1.push(1), d = h), k--, g--) : q == l ? (a1.push(3), k--, d = l) : (a1.push(2), g--, d = m));
+        a1.reverse();
+        b = void 0;
+        k = [];
+        for(g = 0; g < a1.length; g++)switch(a1[g]){
+            case 0:
+                b && (k.push(b), b = void 0);
+                e++;
+                f++;
+                break;
+            case 1:
+                b || (b = te(e, 0));
+                b.pa++;
+                e++;
+                b.ia.push(c[f]);
+                f++;
+                break;
+            case 2:
+                b || (b = te(e, 0));
+                b.pa++;
+                e++;
+                break;
+            case 3:
+                b || (b = te(e, 0)), b.ia.push(c[f]), f++;
+        }
+        b && k.push(b);
+        return k;
+    }
+    function ve(a1, b) {
+        return a1 === b;
+    }
+    var we = Q({
+        dispatchEvent: ge,
+        addEventListener: ie,
+        removeEventListener: je
+    });
+    var xe = null;
+    function ye() {
+        xe || (xe = window.ShadyCSS && window.ShadyCSS.ScopingShim);
+        return xe || null;
+    }
+    function ze(a1, b, c) {
+        var d = ye();
+        return d && "class" === b ? (d.setElementClass(a1, c), !0) : !1;
+    }
+    function Ae(a1, b) {
+        var c = ye();
+        c && c.unscopeNode(a1, b);
+    }
+    function Be(a1, b) {
+        var c = ye();
+        if (!c) return !0;
+        if (a1.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+            c = !0;
+            for(a1 = a1.__shady_firstChild; a1; a1 = a1.__shady_nextSibling)c = c && Be(a1, b);
+            return c;
+        }
+        return a1.nodeType !== Node.ELEMENT_NODE ? !0 : c.currentScopeForNode(a1) === b;
+    }
+    function Ce(a1) {
+        if (a1.nodeType !== Node.ELEMENT_NODE) return "";
+        var b = ye();
+        return b ? b.currentScopeForNode(a1) : "";
+    }
+    function De(a1, b) {
+        if (a1) for(a1.nodeType === Node.ELEMENT_NODE && b(a1), a1 = a1.__shady_firstChild; a1; a1 = a1.__shady_nextSibling)a1.nodeType === Node.ELEMENT_NODE && De(a1, b);
+    }
+    var Ee = window.document, Fe = M.ha, Ge = Object.getOwnPropertyDescriptor(Node.prototype, "isConnected"), Ie = Ge && Ge.get;
+    function Je(a1) {
+        for(var b; b = a1.__shady_firstChild;)a1.__shady_removeChild(b);
+    }
+    function Ke(a1) {
+        var b = L(a1);
+        if (b && void 0 !== b.ta) for(b = a1.__shady_firstChild; b; b = b.__shady_nextSibling)Ke(b);
+        if (a1 = L(a1)) a1.ta = void 0;
+    }
+    function Le(a1) {
+        var b = a1;
+        if (a1 && "slot" === a1.localName) {
+            var c = L(a1);
+            (c = c && c.aa) && (b = c.length ? c[0] : Le(a1.__shady_nextSibling));
+        }
+        return b;
+    }
+    function Me(a1, b, c) {
+        if (a1 = (a1 = L(a1)) && a1.ga) {
+            if (b) {
+                if (b.nodeType === Node.DOCUMENT_FRAGMENT_NODE) for(var d = 0, e = b.childNodes.length; d < e; d++)a1.addedNodes.push(b.childNodes[d]);
+                else a1.addedNodes.push(b);
+            }
+            c && a1.removedNodes.push(c);
+            kd(a1);
+        }
+    }
+    var Te = Q({
+        get parentNode () {
+            var a1 = L(this);
+            a1 = a1 && a1.parentNode;
+            return void 0 !== a1 ? a1 : this.__shady_native_parentNode;
+        },
+        get firstChild () {
+            var a2 = L(this);
+            a2 = a2 && a2.firstChild;
+            return void 0 !== a2 ? a2 : this.__shady_native_firstChild;
+        },
+        get lastChild () {
+            var a3 = L(this);
+            a3 = a3 && a3.lastChild;
+            return void 0 !== a3 ? a3 : this.__shady_native_lastChild;
+        },
+        get nextSibling () {
+            var a4 = L(this);
+            a4 = a4 && a4.nextSibling;
+            return void 0 !== a4 ? a4 : this.__shady_native_nextSibling;
+        },
+        get previousSibling () {
+            var a5 = L(this);
+            a5 = a5 && a5.previousSibling;
+            return void 0 !== a5 ? a5 : this.__shady_native_previousSibling;
+        },
+        get childNodes () {
+            if (Lc(this)) {
+                var a6 = L(this);
+                if (!a6.childNodes) {
+                    a6.childNodes = [];
+                    for(var b = this.__shady_firstChild; b; b = b.__shady_nextSibling)a6.childNodes.push(b);
+                }
+                var c = a6.childNodes;
+            } else c = this.__shady_native_childNodes;
+            c.item = function(d) {
+                return c[d];
+            };
+            return c;
+        },
+        get parentElement () {
+            var a7 = L(this);
+            (a7 = a7 && a7.parentNode) && a7.nodeType !== Node.ELEMENT_NODE && (a7 = null);
+            return void 0 !== a7 ? a7 : this.__shady_native_parentElement;
+        },
+        get isConnected () {
+            if (Ie && Ie.call(this)) return !0;
+            if (this.nodeType == Node.DOCUMENT_FRAGMENT_NODE) return !1;
+            var a8 = this.ownerDocument;
+            if (null === a8 || Uc(a8, this)) return !0;
+            for(a8 = this; a8 && !(a8 instanceof Document);)a8 = a8.__shady_parentNode || (O(a8) ? a8.host : void 0);
+            return !!(a8 && a8 instanceof Document);
+        },
+        get textContent () {
+            if (Lc(this)) {
+                for(var a9 = [], b1 = this.__shady_firstChild; b1; b1 = b1.__shady_nextSibling)b1.nodeType !== Node.COMMENT_NODE && a9.push(b1.__shady_textContent);
+                return a9.join("");
+            }
+            return this.__shady_native_textContent;
+        },
+        set textContent (a){
+            if ("undefined" === typeof a || null === a) a = "";
+            switch(this.nodeType){
+                case Node.ELEMENT_NODE:
+                case Node.DOCUMENT_FRAGMENT_NODE:
+                    if (!Lc(this) && M.D) {
+                        var b2 = this.__shady_firstChild;
+                        (b2 != this.__shady_lastChild || b2 && b2.nodeType != Node.TEXT_NODE) && Je(this);
+                        this.__shady_native_textContent = a;
+                    } else Je(this), (0 < a.length || this.nodeType === Node.ELEMENT_NODE) && this.__shady_insertBefore(document.createTextNode(a));
+                    break;
+                default:
+                    this.nodeValue = a;
+            }
+        },
+        insertBefore: function(a1, b) {
+            if (this.ownerDocument !== Ee && a1.ownerDocument !== Ee) return this.__shady_native_insertBefore(a1, b), a1;
+            if (a1 === this) throw Error("Failed to execute 'appendChild' on 'Node': The new child element contains the parent.");
+            if (b) {
+                var c = L(b);
+                c = c && c.parentNode;
+                if (void 0 !== c && c !== this || void 0 === c && b.__shady_native_parentNode !== this) throw Error("Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.");
+            }
+            if (b === a1) return a1;
+            Me(this, a1);
+            var d = [], e = (c = Ne(this)) ? c.host.localName : Ce(this), f = a1.__shady_parentNode;
+            if (f) {
+                var g = Ce(a1);
+                var h = !!c || !Ne(a1) || Fe && void 0 !== this.__noInsertionPoint;
+                f.__shady_removeChild(a1, h);
+            }
+            f = !0;
+            var k = (!Fe || void 0 === a1.__noInsertionPoint && void 0 === this.__noInsertionPoint) && !Be(a1, e), l = c && !a1.__noInsertionPoint && (!Fe || a1.nodeType === Node.DOCUMENT_FRAGMENT_NODE);
+            if (l || k) k && (g = g || Ce(a1)), De(a1, function(m) {
+                l && "slot" === m.localName && d.push(m);
+                if (k) {
+                    var q = g;
+                    ye() && (q && Ae(m, q), (q = ye()) && q.scopeNode(m, e));
+                }
+            });
+            d.length && (Oe(c), c.i.push.apply(c.i, w(d)), Pe(c));
+            Lc(this) && (Qe(a1, this, b), h = L(this), h.root ? (f = !1, Mc(this) && Pe(h.root)) : c && "slot" === this.localName && (f = !1, Pe(c)));
+            f ? (c = O(this) ? this.host : this, b ? (b = Le(b), c.__shady_native_insertBefore(a1, b)) : c.__shady_native_appendChild(a1)) : a1.ownerDocument !== this.ownerDocument && this.ownerDocument.adoptNode(a1);
+            return a1;
+        },
+        appendChild: function(a1) {
+            if (this != a1 || !O(a1)) return this.__shady_insertBefore(a1);
+        },
+        removeChild: function(a1, b) {
+            b = void 0 === b ? !1 : b;
+            if (this.ownerDocument !== Ee) return this.__shady_native_removeChild(a1);
+            if (a1.__shady_parentNode !== this) throw Error("The node to be removed is not a child of this node: " + a1);
+            Me(this, null, a1);
+            var c = Ne(a1), d = c && Re(c, a1), e = L(this);
+            if (Lc(this) && (Se(a1, this), Mc(this))) {
+                Pe(e.root);
+                var f = !0;
+            }
+            if (ye() && !b && c && a1.nodeType !== Node.TEXT_NODE) {
+                var g = Ce(a1);
+                De(a1, function(h) {
+                    Ae(h, g);
+                });
+            }
+            Ke(a1);
+            c && ((b = "slot" === this.localName) && (f = !0), (d || b) && Pe(c));
+            f || (f = O(this) ? this.host : this, (!e.root && "slot" !== a1.localName || f === a1.__shady_native_parentNode) && f.__shady_native_removeChild(a1));
+            return a1;
+        },
+        replaceChild: function(a1, b) {
+            this.__shady_insertBefore(a1, b);
+            this.__shady_removeChild(b);
+            return a1;
+        },
+        cloneNode: function(a1) {
+            if ("template" == this.localName) return this.__shady_native_cloneNode(a1);
+            var b = this.__shady_native_cloneNode(!1);
+            if (a1 && b.nodeType !== Node.ATTRIBUTE_NODE) {
+                a1 = this.__shady_firstChild;
+                for(var c; a1; a1 = a1.__shady_nextSibling)c = a1.__shady_cloneNode(!0), b.__shady_appendChild(c);
+            }
+            return b;
+        },
+        getRootNode: function(a1) {
+            if (this && this.nodeType) {
+                var b = D(this), c = b.ta;
+                void 0 === c && (O(this) ? (c = this, b.ta = c) : (c = (c = this.__shady_parentNode) ? c.__shady_getRootNode(a1) : this, document.documentElement.__shady_native_contains(this) && (b.ta = c)));
+                return c;
+            }
+        },
+        contains: function(a1) {
+            return Vc(this, a1);
+        }
+    });
+    var Ve = Q({
+        get assignedSlot () {
+            var a10 = this.__shady_parentNode;
+            (a10 = a10 && a10.__shady_shadowRoot) && Ue(a10);
+            return (a10 = L(this)) && a10.assignedSlot || null;
+        }
+    }); /*
+
+ Copyright (c) 2022 The Polymer Project Authors
+ SPDX-License-Identifier: BSD-3-Clause
+*/ 
+    var We = new Map;
+    [
+        [
+            "(",
+            {
+                end: ")",
+                sa: !0
+            }
+        ],
+        [
+            "[",
+            {
+                end: "]",
+                sa: !0
+            }
+        ],
+        [
+            '"',
+            {
+                end: '"',
+                sa: !1
+            }
+        ],
+        [
+            "'",
+            {
+                end: "'",
+                sa: !1
+            }
+        ]
+    ].forEach(function(a1) {
+        var b = ka(a1);
+        a1 = b.next().value;
+        b = b.next().value;
+        We.set(a1, b);
+    });
+    function Xe(a1, b, c, d) {
+        for(d = void 0 === d ? !0 : d; b < a1.length; b++)if ("\\" === a1[b] && b < a1.length - 1 && "\n" !== a1[b + 1]) b++;
+        else {
+            if (-1 !== c.indexOf(a1[b])) return b;
+            if (d && We.has(a1[b])) {
+                var e = We.get(a1[b]);
+                b = Xe(a1, b + 1, [
+                    e.end
+                ], e.sa);
+            }
+        }
+        return a1.length;
+    }
+    function Ye(a1) {
+        function b() {
+            if (0 < d.length) {
+                for(; " " === d[d.length - 1];)d.pop();
+                c.push({
+                    La: d.filter(function(k, l) {
+                        return 0 === l % 2;
+                    }),
+                    Za: d.filter(function(k, l) {
+                        return 1 === l % 2;
+                    })
+                });
+                d.length = 0;
+            }
+        }
+        for(var c = [], d = [], e = 0; e < a1.length;){
+            var f = d[d.length - 1], g = Xe(a1, e, [
+                ",",
+                " ",
+                ">",
+                "+",
+                "~"
+            ]), h = g === e ? a1[e] : a1.substring(e, g);
+            if ("," === h) b();
+            else if (-1 === [
+                void 0,
+                " ",
+                ">",
+                "+",
+                "~"
+            ].indexOf(f) || " " !== h) " " === f && -1 !== [
+                ">",
+                "+",
+                "~"
+            ].indexOf(h) ? d[d.length - 1] = h : d.push(h);
+            e = g + (g === e ? 1 : 0);
+        }
+        b();
+        return c;
+    }
+    function Ze(a1, b, c) {
+        var d = [];
+        $e(a1, b, c, d);
+        return d;
+    }
+    function $e(a1, b, c, d) {
+        for(a1 = a1.__shady_firstChild; a1; a1 = a1.__shady_nextSibling){
+            var e;
+            if (e = a1.nodeType === Node.ELEMENT_NODE) {
+                e = a1;
+                var f = b, g = c, h = d, k = f(e);
+                k && h.push(e);
+                g && g(k) ? e = k : ($e(e, f, g, h), e = void 0);
+            }
+            if (e) break;
+        }
+    }
+    var af = {
+        get firstElementChild () {
+            var a11 = L(this);
+            if (a11 && void 0 !== a11.firstChild) {
+                for(a11 = this.__shady_firstChild; a11 && a11.nodeType !== Node.ELEMENT_NODE;)a11 = a11.__shady_nextSibling;
+                return a11;
+            }
+            return this.__shady_native_firstElementChild;
+        },
+        get lastElementChild () {
+            var a12 = L(this);
+            if (a12 && void 0 !== a12.lastChild) {
+                for(a12 = this.__shady_lastChild; a12 && a12.nodeType !== Node.ELEMENT_NODE;)a12 = a12.__shady_previousSibling;
+                return a12;
+            }
+            return this.__shady_native_lastElementChild;
+        },
+        get children () {
+            return Lc(this) ? Wc(Array.prototype.filter.call(Yc(this), function(a1) {
+                return a1.nodeType === Node.ELEMENT_NODE;
+            })) : this.__shady_native_children;
+        },
+        get childElementCount () {
+            var a13 = this.__shady_children;
+            return a13 ? a13.length : 0;
+        }
+    }, bf = Q((af.append = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        this.__shady_insertBefore(cd.apply(null, w(b)), null);
+    }, af.prepend = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        this.__shady_insertBefore(cd.apply(null, w(b)), this.__shady_firstChild);
+    }, af.replaceChildren = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        for(; null !== (c = this.__shady_firstChild);)this.__shady_removeChild(c);
+        this.__shady_insertBefore(cd.apply(null, w(b)), null);
+    }, af));
+    function cf(a1, b) {
+        function c(e, f) {
+            return (e === a1 || -1 === f.indexOf(":scope")) && Pc.call(e, f);
+        }
+        var d = Ye(b);
+        if (1 > d.length) return [];
+        for(b = dd(Ze(a1, function() {
+            return !0;
+        }).map(function(e) {
+            return dd(d.map(function(f) {
+                var g = f.La, h = g.length - 1;
+                return c(e, g[h]) ? {
+                    target: e,
+                    da: f,
+                    fa: e,
+                    index: h
+                } : [];
+            }));
+        })); b.some(function(e) {
+            return 0 < e.index;
+        });)b = dd(b.map(function(e) {
+            if (0 >= e.index) return e;
+            var f = e.target, g = e.fa, h = e.da;
+            e = e.index - 1;
+            var k = h.Za[e], l = h.La[e];
+            if (" " === k) {
+                k = [];
+                for(g = g.__shady_parentElement; g; g = g.__shady_parentElement)c(g, l) && k.push({
+                    target: f,
+                    da: h,
+                    fa: g,
+                    index: e
+                });
+                return k;
+            }
+            if (">" === k) return g = g.__shady_parentElement, c(g, l) ? {
+                target: f,
+                da: h,
+                fa: g,
+                index: e
+            } : [];
+            if ("+" === k) return (g = g.__shady_previousElementSibling) && c(g, l) ? {
+                target: f,
+                da: h,
+                fa: g,
+                index: e
+            } : [];
+            if ("~" === k) {
+                k = [];
+                for(g = g.__shady_previousElementSibling; g; g = g.__shady_previousElementSibling)c(g, l) && k.push({
+                    target: f,
+                    da: h,
+                    fa: g,
+                    index: e
+                });
+                return k;
+            }
+            throw Error("Unrecognized combinator: '" + k + "'.");
+        }));
+        return ed(b.map(function(e) {
+            return e.target;
+        }));
+    }
+    var df = M.querySelectorImplementation, ef = Q({
+        querySelector: function(a1) {
+            if ("native" === df) {
+                var b = Array.prototype.slice.call((this instanceof ShadowRoot ? this.host : this).__shady_native_querySelectorAll(a1)), c = this.__shady_getRootNode();
+                b = ka(b);
+                for(var d = b.next(); !d.done; d = b.next())if (d = d.value, d.__shady_getRootNode() == c) return d;
+                return null;
+            }
+            if ("selectorEngine" === df) return cf(this, a1)[0] || null;
+            if (void 0 === df) return Ze(this, function(e) {
+                return Pc.call(e, a1);
+            }, function(e) {
+                return !!e;
+            })[0] || null;
+            throw Error("Unrecognized value of ShadyDOM.querySelectorImplementation: '" + (df + "'"));
+        },
+        querySelectorAll: function(a1, b) {
+            if (b || "native" === df) {
+                b = Array.prototype.slice.call((this instanceof ShadowRoot ? this.host : this).__shady_native_querySelectorAll(a1));
+                var c = this.__shady_getRootNode();
+                return Wc(b.filter(function(d) {
+                    return d.__shady_getRootNode() == c;
+                }));
+            }
+            if ("selectorEngine" === df) return Wc(cf(this, a1));
+            if (void 0 === df) return Wc(Ze(this, function(d) {
+                return Pc.call(d, a1);
+            }));
+            throw Error("Unrecognized value of ShadyDOM.querySelectorImplementation: '" + (df + "'"));
+        }
+    }), ff = M.ha && !M.J ? ad({}, bf) : bf;
+    ad(bf, ef);
+    var gf = Q({
+        after: function(a1) {
+            for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+            c = this.__shady_parentNode;
+            if (null !== c) {
+                var d = this.__shady_nextSibling;
+                c.__shady_insertBefore(cd.apply(null, w(b)), d);
+            }
+        },
+        before: function(a1) {
+            for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+            c = this.__shady_parentNode;
+            null !== c && c.__shady_insertBefore(cd.apply(null, w(b)), this);
+        },
+        remove: function() {
+            var a1 = this.__shady_parentNode;
+            null !== a1 && a1.__shady_removeChild(this);
+        },
+        replaceWith: function(a1) {
+            for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+            c = this.__shady_parentNode;
+            if (null !== c) {
+                var d = this.__shady_nextSibling;
+                c.__shady_removeChild(this);
+                c.__shady_insertBefore(cd.apply(null, w(b)), d);
+            }
+        }
+    });
+    var hf = window.document;
+    function jf(a1, b) {
+        if ("slot" === b) a1 = a1.__shady_parentNode, Mc(a1) && Pe(L(a1).root);
+        else if ("slot" === a1.localName && "name" === b && (b = Ne(a1))) {
+            if (b.g) {
+                kf(b);
+                var c = a1.Ua, d = lf(a1);
+                if (d !== c) {
+                    c = b.h[c];
+                    var e = c.indexOf(a1);
+                    0 <= e && c.splice(e, 1);
+                    c = b.h[d] || (b.h[d] = []);
+                    c.push(a1);
+                    1 < c.length && (b.h[d] = mf(c));
+                }
+            }
+            Pe(b);
+        }
+    }
+    var nf = Q({
+        get previousElementSibling () {
+            var a14 = L(this);
+            if (a14 && void 0 !== a14.previousSibling) {
+                for(a14 = this.__shady_previousSibling; a14 && a14.nodeType !== Node.ELEMENT_NODE;)a14 = a14.__shady_previousSibling;
+                return a14;
+            }
+            return this.__shady_native_previousElementSibling;
+        },
+        get nextElementSibling () {
+            var a15 = L(this);
+            if (a15 && void 0 !== a15.nextSibling) {
+                for(a15 = this.__shady_nextSibling; a15 && a15.nodeType !== Node.ELEMENT_NODE;)a15 = a15.__shady_nextSibling;
+                return a15;
+            }
+            return this.__shady_native_nextElementSibling;
+        },
+        get slot () {
+            return this.getAttribute("slot");
+        },
+        set slot (a){
+            this.__shady_setAttribute("slot", a);
+        },
+        get className () {
+            return this.getAttribute("class") || "";
+        },
+        set className (a){
+            this.__shady_setAttribute("class", a);
+        },
+        setAttribute: function(a1, b) {
+            this.ownerDocument !== hf ? this.__shady_native_setAttribute(a1, b) : ze(this, a1, b) || (this.__shady_native_setAttribute(a1, b), jf(this, a1));
+        },
+        removeAttribute: function(a1) {
+            this.ownerDocument !== hf ? this.__shady_native_removeAttribute(a1) : ze(this, a1, "") ? "" === this.getAttribute(a1) && this.__shady_native_removeAttribute(a1) : (this.__shady_native_removeAttribute(a1), jf(this, a1));
+        },
+        toggleAttribute: function(a1, b) {
+            if (this.ownerDocument !== hf) return this.__shady_native_toggleAttribute(a1, b);
+            if (!ze(this, a1, "")) return b = this.__shady_native_toggleAttribute(a1, b), jf(this, a1), b;
+            if ("" === this.getAttribute(a1) && !b) return this.__shady_native_toggleAttribute(a1, b);
+        }
+    });
+    M.ha || qe.forEach(function(a1) {
+        nf[a1] = se(a1);
+    });
+    var sf = Q({
+        attachShadow: function(a1) {
+            if (!this) throw Error("Must provide a host.");
+            if (!a1) throw Error("Not enough arguments.");
+            if (a1.shadyUpgradeFragment && !M.Ra) {
+                var b = a1.shadyUpgradeFragment;
+                b.__proto__ = ShadowRoot.prototype;
+                of(b, this, a1);
+                pf(b, b);
+                a1 = b.__noInsertionPoint ? null : b.querySelectorAll("slot");
+                b.__noInsertionPoint = void 0;
+                if (a1 && a1.length) {
+                    var c = b;
+                    Oe(c);
+                    c.i.push.apply(c.i, w(a1));
+                    Pe(b);
+                }
+                b.host.__shady_native_appendChild(b);
+            } else b = new qf(rf, this, a1);
+            return this.__CE_shadowRoot = b;
+        },
+        get shadowRoot () {
+            var a16 = L(this);
+            return a16 && a16.lb || null;
+        }
+    });
+    ad(nf, sf);
+    var tf = document.implementation.createHTMLDocument("inert"), uf = Q({
+        get innerHTML () {
+            return Lc(this) ? ud("template" === this.localName ? this.content : this, Yc) : this.__shady_native_innerHTML;
+        },
+        set innerHTML (a){
+            if ("template" === this.localName) this.__shady_native_innerHTML = a;
+            else {
+                Je(this);
+                var b3 = this.localName || "div";
+                b3 = this.namespaceURI && this.namespaceURI !== tf.namespaceURI ? tf.createElementNS(this.namespaceURI, b3) : tf.createElement(b3);
+                for(M.D ? b3.__shady_native_innerHTML = a : b3.innerHTML = a; a = b3.__shady_firstChild;)this.__shady_insertBefore(a);
+            }
+        }
+    });
+    var vf = Q({
+        blur: function() {
+            var a1 = L(this);
+            (a1 = (a1 = a1 && a1.root) && a1.activeElement) ? a1.__shady_blur() : this.__shady_native_blur();
+        }
+    });
+    M.ha || re.forEach(function(a1) {
+        vf[a1] = se(a1);
+    });
+    var wf = Q({
+        assignedNodes: function(a1) {
+            if ("slot" === this.localName) {
+                var b = this.__shady_getRootNode();
+                b && O(b) && Ue(b);
+                return (b = L(this)) ? (a1 && a1.flatten ? b.aa : b.assignedNodes) || [] : [];
+            }
+        },
+        addEventListener: function(a1, b, c) {
+            if ("slot" !== this.localName || "slotchange" === a1) ie.call(this, a1, b, c);
+            else {
+                "object" !== typeof c && (c = {
+                    capture: !!c
+                });
+                var d = this.__shady_parentNode;
+                if (!d) throw Error("ShadyDOM cannot attach event to slot unless it has a `parentNode`");
+                c.U = this;
+                d.__shady_addEventListener(a1, b, c);
+            }
+        },
+        removeEventListener: function(a1, b, c) {
+            if ("slot" !== this.localName || "slotchange" === a1) je.call(this, a1, b, c);
+            else {
+                "object" !== typeof c && (c = {
+                    capture: !!c
+                });
+                var d = this.__shady_parentNode;
+                if (!d) throw Error("ShadyDOM cannot attach event to slot unless it has a `parentNode`");
+                c.U = this;
+                d.__shady_removeEventListener(a1, b, c);
+            }
+        }
+    });
+    var xf = Q({
+        getElementById: function(a1) {
+            return "" === a1 ? null : Ze(this, function(b) {
+                return b.id == a1;
+            }, function(b) {
+                return !!b;
+            })[0] || null;
+        }
+    });
+    function yf(a1, b) {
+        for(var c; b && !a1.has(c = b.__shady_getRootNode());)b = c.host;
+        return b;
+    }
+    function zf(a1) {
+        var b = new Set;
+        for(b.add(a1); O(a1) && a1.host;)a1 = a1.host.__shady_getRootNode(), b.add(a1);
+        return b;
+    }
+    var Af = "__shady_native_" + Jc(), Bf = Q({
+        get activeElement () {
+            var a17 = M.D ? document.__shady_native_activeElement : document.activeElement;
+            if (!a17 || !a17.nodeType) return null;
+            var b4 = !!O(this);
+            if (!(this === document || b4 && this.host !== a17 && this.host.__shady_native_contains(a17))) return null;
+            for(b4 = Ne(a17); b4 && b4 !== this;)a17 = b4.host, b4 = Ne(a17);
+            return this === document ? b4 ? null : a17 : b4 === this ? a17 : null;
+        },
+        elementsFromPoint: function(a1, b) {
+            a1 = document[Af](a1, b);
+            if (this === document && M.useNativeDocumentEFP) return a1;
+            a1 = [].slice.call(a1);
+            b = zf(this);
+            for(var c = new Set, d = 0; d < a1.length; d++)c.add(yf(b, a1[d]));
+            var e = [];
+            c.forEach(function(f) {
+                return e.push(f);
+            });
+            return e;
+        },
+        elementFromPoint: function(a1, b) {
+            return this === document && M.useNativeDocumentEFP ? this.__shady_native_elementFromPoint(a1, b) : this.__shady_elementsFromPoint(a1, b)[0] || null;
+        }
+    });
+    var Cf = window.document, Df = Q({
+        importNode: function(a1, b) {
+            if (a1.ownerDocument !== Cf || "template" === a1.localName) return this.__shady_native_importNode(a1, b);
+            var c = this.__shady_native_importNode(a1, !1);
+            if (b) for(a1 = a1.__shady_firstChild; a1; a1 = a1.__shady_nextSibling)b = this.__shady_importNode(a1, !0), c.__shady_appendChild(b);
+            return c;
+        }
+    });
+    var Ef = Q({
+        dispatchEvent: ge,
+        addEventListener: ie.bind(window),
+        removeEventListener: je.bind(window)
+    });
+    var Ff = {};
+    Object.getOwnPropertyDescriptor(HTMLElement.prototype, "parentElement") && (Ff.parentElement = Te.parentElement);
+    Object.getOwnPropertyDescriptor(HTMLElement.prototype, "contains") && (Ff.contains = Te.contains);
+    Object.getOwnPropertyDescriptor(HTMLElement.prototype, "children") && (Ff.children = bf.children);
+    Object.getOwnPropertyDescriptor(HTMLElement.prototype, "innerHTML") && (Ff.innerHTML = uf.innerHTML);
+    Object.getOwnPropertyDescriptor(HTMLElement.prototype, "className") && (Ff.className = nf.className);
+    var Gf = {
+        EventTarget: [
+            we
+        ],
+        Node: [
+            Te,
+            window.EventTarget ? null : we
+        ],
+        Text: [
+            Ve
+        ],
+        Comment: [
+            Ve
+        ],
+        CDATASection: [
+            Ve
+        ],
+        ProcessingInstruction: [
+            Ve
+        ],
+        Element: [
+            nf,
+            bf,
+            gf,
+            Ve,
+            !M.D || "innerHTML" in Element.prototype ? uf : null,
+            window.HTMLSlotElement ? null : wf
+        ],
+        HTMLElement: [
+            vf,
+            Ff
+        ],
+        HTMLSlotElement: [
+            wf
+        ],
+        DocumentFragment: [
+            ff,
+            xf
+        ],
+        Document: [
+            Df,
+            ff,
+            xf,
+            Bf
+        ],
+        Window: [
+            Ef
+        ],
+        CharacterData: [
+            gf
+        ],
+        XMLHttpRequest: [
+            window.EventTarget ? null : we
+        ]
+    }, Hf = M.D ? null : [
+        "innerHTML",
+        "textContent"
+    ];
+    function If(a1, b, c, d) {
+        b.forEach(function(e) {
+            return a1 && e && P(a1, e, c, d);
+        });
+    }
+    function Jf(a1) {
+        var b = a1 ? null : Hf, c;
+        for(c in Gf)If(window[c] && window[c].prototype, Gf[c], a1, b);
+    }
+    [
+        "Text",
+        "Comment",
+        "CDATASection",
+        "ProcessingInstruction"
+    ].forEach(function(a1) {
+        var b = window[a1], c = Object.create(b.prototype);
+        c.__shady_protoIsPatched = !0;
+        If(c, Gf.EventTarget);
+        If(c, Gf.Node);
+        Gf[a1] && If(c, Gf[a1]);
+        b.prototype.__shady_patchedProto = c;
+    });
+    function Kf(a1) {
+        a1.__shady_protoIsPatched = !0;
+        If(a1, Gf.EventTarget);
+        If(a1, Gf.Node);
+        If(a1, Gf.Element);
+        If(a1, Gf.HTMLElement);
+        If(a1, Gf.HTMLSlotElement);
+        return a1;
+    }
+    var Lf = M.Da, Mf = M.D;
+    function Nf(a1, b) {
+        if (Lf && !a1.__shady_protoIsPatched && !O(a1)) {
+            var c = Object.getPrototypeOf(a1), d = c.hasOwnProperty("__shady_patchedProto") && c.__shady_patchedProto;
+            d || (d = Object.create(c), Kf(d), c.__shady_patchedProto = d);
+            Object.setPrototypeOf(a1, d);
+        }
+        Mf || (1 === b ? Md(a1) : 2 === b && Nd(a1));
+    }
+    function Of(a1, b, c, d) {
+        Nf(a1, 1);
+        d = d || null;
+        var e = D(a1), f = d ? D(d) : null;
+        e.previousSibling = d ? f.previousSibling : b.__shady_lastChild;
+        if (f = L(e.previousSibling)) f.nextSibling = a1;
+        if (f = L(e.nextSibling = d)) f.previousSibling = a1;
+        e.parentNode = b;
+        d ? d === c.firstChild && (c.firstChild = a1) : (c.lastChild = a1, c.firstChild || (c.firstChild = a1));
+        c.childNodes = null;
+    }
+    function Qe(a1, b, c) {
+        Nf(b, 2);
+        var d = D(b);
+        void 0 !== d.firstChild && (d.childNodes = null);
+        if (a1.nodeType === Node.DOCUMENT_FRAGMENT_NODE) for(a1 = a1.__shady_native_firstChild; a1; a1 = a1.__shady_native_nextSibling)Of(a1, b, d, c);
+        else Of(a1, b, d, c);
+    }
+    function Se(a1, b) {
+        var c = D(a1);
+        b = D(b);
+        a1 === b.firstChild && (b.firstChild = c.nextSibling);
+        a1 === b.lastChild && (b.lastChild = c.previousSibling);
+        a1 = c.previousSibling;
+        var d = c.nextSibling;
+        a1 && (D(a1).nextSibling = d);
+        d && (D(d).previousSibling = a1);
+        c.parentNode = c.previousSibling = c.nextSibling = void 0;
+        void 0 !== b.childNodes && (b.childNodes = null);
+    }
+    function pf(a1, b) {
+        var c = D(a1);
+        if (b || void 0 === c.firstChild) {
+            c.childNodes = null;
+            var d = c.firstChild = a1.__shady_native_firstChild;
+            c.lastChild = a1.__shady_native_lastChild;
+            Nf(a1, 2);
+            c = d;
+            for(d = void 0; c; c = c.__shady_native_nextSibling){
+                var e = D(c);
+                e.parentNode = b || a1;
+                e.nextSibling = c.__shady_native_nextSibling;
+                e.previousSibling = d || null;
+                d = c;
+                Nf(c, 1);
+            }
+        }
+    }
+    var Pf = Q({
+        addEventListener: function(a1, b, c) {
+            "object" !== typeof c && (c = {
+                capture: !!c
+            });
+            c.U = c.U || this;
+            this.host.__shady_addEventListener(a1, b, c);
+        },
+        removeEventListener: function(a1, b, c) {
+            "object" !== typeof c && (c = {
+                capture: !!c
+            });
+            c.U = c.U || this;
+            this.host.__shady_removeEventListener(a1, b, c);
+        }
+    });
+    function Qf(a1, b) {
+        P(a1, Pf, b);
+        P(a1, Bf, b);
+        P(a1, uf, b);
+        P(a1, bf, b);
+        M.J && !b ? (P(a1, Te, b), P(a1, xf, b)) : M.D || (P(a1, Jd), P(a1, Hd), P(a1, Id));
+    }
+    var rf = {}, Rf = M.deferConnectionCallbacks && "loading" === document.readyState, Sf;
+    function Tf(a1) {
+        var b = [];
+        do b.unshift(a1);
+        while (a1 = a1.__shady_parentNode);
+        return b;
+    }
+    function qf(a1, b, c) {
+        if (a1 !== rf) throw new TypeError("Illegal constructor");
+        this.g = null;
+        of(this, b, c);
+    }
+    function of(a1, b, c) {
+        a1.host = b;
+        a1.mode = c && c.mode;
+        pf(a1.host);
+        b = D(a1.host);
+        b.root = a1;
+        b.lb = "closed" !== a1.mode ? a1 : null;
+        b = D(a1);
+        b.firstChild = b.lastChild = b.parentNode = b.nextSibling = b.previousSibling = null;
+        if (M.preferPerformance) for(; b = a1.host.__shady_native_firstChild;)a1.host.__shady_native_removeChild(b);
+        else Pe(a1);
+    }
+    function Pe(a1) {
+        a1.Y || (a1.Y = !0, hd(function() {
+            return Ue(a1);
+        }));
+    }
+    function Ue(a1) {
+        var b;
+        if (b = a1.Y) {
+            for(var c; a1;)a: {
+                a1.Y && (c = a1), b = a1;
+                a1 = b.host.__shady_getRootNode();
+                if (O(a1) && (b = L(b.host)) && 0 < b.ka) break a;
+                a1 = void 0;
+            }
+            b = c;
+        }
+        (c = b) && c._renderSelf();
+    }
+    qf.prototype._renderSelf = function() {
+        var a1 = Rf;
+        Rf = !0;
+        this.Y = !1;
+        if (this.g) {
+            kf(this);
+            for(var b = 0, c; b < this.g.length; b++){
+                c = this.g[b];
+                var d = L(c), e = d.assignedNodes;
+                d.assignedNodes = [];
+                d.aa = [];
+                if (d.Ja = e) for(d = 0; d < e.length; d++){
+                    var f = L(e[d]);
+                    f.xa = f.assignedSlot;
+                    f.assignedSlot === c && (f.assignedSlot = null);
+                }
+            }
+            for(b = this.host.__shady_firstChild; b; b = b.__shady_nextSibling)Uf(this, b);
+            for(b = 0; b < this.g.length; b++){
+                c = this.g[b];
+                e = L(c);
+                if (!e.assignedNodes.length) for(d = c.__shady_firstChild; d; d = d.__shady_nextSibling)Uf(this, d, c);
+                (d = (d = L(c.__shady_parentNode)) && d.root) && (Nc(d) || d.Y) && d._renderSelf();
+                Vf(this, e.aa, e.assignedNodes);
+                if (d = e.Ja) {
+                    for(f = 0; f < d.length; f++)L(d[f]).xa = null;
+                    e.Ja = null;
+                    d.length > e.assignedNodes.length && (e.Aa = !0);
+                }
+                e.Aa && (e.Aa = !1, Wf(this, c));
+            }
+            c = this.g;
+            b = [];
+            for(e = 0; e < c.length; e++)d = c[e].__shady_parentNode, (f = L(d)) && f.root || !(0 > b.indexOf(d)) || b.push(d);
+            for(c = 0; c < b.length; c++){
+                f = b[c];
+                e = f === this ? this.host : f;
+                d = [];
+                for(f = f.__shady_firstChild; f; f = f.__shady_nextSibling)if ("slot" == f.localName) for(var g = L(f).aa, h = 0; h < g.length; h++)d.push(g[h]);
+                else d.push(f);
+                f = Xc(e);
+                g = ue(d, d.length, f, f.length);
+                for(var k = h = 0, l = void 0; h < g.length && (l = g[h]); h++){
+                    for(var m = 0, q = void 0; m < l.ia.length && (q = l.ia[m]); m++)q.__shady_native_parentNode === e && e.__shady_native_removeChild(q), f.splice(l.index + k, 1);
+                    k -= l.pa;
+                }
+                k = 0;
+                for(l = void 0; k < g.length && (l = g[k]); k++)for(h = f[l.index], m = l.index; m < l.index + l.pa; m++)q = d[m], e.__shady_native_insertBefore(q, h), f.splice(m, 0, q);
+            }
+        }
+        if (!M.preferPerformance && !this.Ia) for(b = this.host.__shady_firstChild; b; b = b.__shady_nextSibling)c = L(b), b.__shady_native_parentNode !== this.host || "slot" !== b.localName && c.assignedSlot || this.host.__shady_native_removeChild(b);
+        this.Ia = !0;
+        Rf = a1;
+        Sf && Sf();
+    };
+    function Uf(a1, b, c) {
+        var d = D(b), e = d.xa;
+        d.xa = null;
+        c || (c = (a1 = a1.h[b.__shady_slot || "__catchall"]) && a1[0]);
+        c ? (D(c).assignedNodes.push(b), d.assignedSlot = c) : d.assignedSlot = void 0;
+        e !== d.assignedSlot && d.assignedSlot && (D(d.assignedSlot).Aa = !0);
+    }
+    function Vf(a1, b, c) {
+        for(var d = 0, e = void 0; d < c.length && (e = c[d]); d++)if ("slot" == e.localName) {
+            var f = L(e).assignedNodes;
+            f && f.length && Vf(a1, b, f);
+        } else b.push(c[d]);
+    }
+    function Wf(a1, b) {
+        b.__shady_native_dispatchEvent(new Event("slotchange"));
+        b = L(b);
+        b.assignedSlot && Wf(a1, b.assignedSlot);
+    }
+    function Oe(a1) {
+        a1.i = a1.i || [];
+        a1.g = a1.g || [];
+        a1.h = a1.h || {};
+    }
+    function kf(a1) {
+        if (a1.i && a1.i.length) {
+            for(var b = a1.i, c, d = 0; d < b.length; d++){
+                var e = b[d];
+                pf(e);
+                var f = e.__shady_parentNode;
+                pf(f);
+                f = L(f);
+                f.ka = (f.ka || 0) + 1;
+                f = lf(e);
+                a1.h[f] ? (c = c || {}, c[f] = !0, a1.h[f].push(e)) : a1.h[f] = [
+                    e
+                ];
+                a1.g.push(e);
+            }
+            if (c) for(var g in c)a1.h[g] = mf(a1.h[g]);
+            a1.i = [];
+        }
+    }
+    function lf(a1) {
+        var b = a1.name || a1.getAttribute("name") || "__catchall";
+        return a1.Ua = b;
+    }
+    function mf(a1) {
+        return a1.sort(function(b, c) {
+            b = Tf(b);
+            for(var d = Tf(c), e = 0; e < b.length; e++){
+                c = b[e];
+                var f = d[e];
+                if (c !== f) return b = Yc(c.__shady_parentNode), b.indexOf(c) - b.indexOf(f);
+            }
+        });
+    }
+    function Re(a1, b) {
+        if (a1.g) {
+            kf(a1);
+            var c = a1.h, d;
+            for(d in c)for(var e = c[d], f = 0; f < e.length; f++){
+                var g = e[f];
+                if (Vc(b, g)) {
+                    e.splice(f, 1);
+                    var h = a1.g.indexOf(g);
+                    0 <= h && (a1.g.splice(h, 1), (h = L(g.__shady_parentNode)) && h.ka && h.ka--);
+                    f--;
+                    g = L(g);
+                    if (h = g.aa) for(var k = 0; k < h.length; k++){
+                        var l = h[k], m = l.__shady_native_parentNode;
+                        m && m.__shady_native_removeChild(l);
+                    }
+                    g.aa = [];
+                    g.assignedNodes = [];
+                    h = !0;
+                }
+            }
+            return h;
+        }
+    }
+    function Nc(a1) {
+        kf(a1);
+        return !(!a1.g || !a1.g.length);
+    }
+    (function(a1) {
+        a1.__proto__ = DocumentFragment.prototype;
+        Qf(a1, "__shady_");
+        Qf(a1);
+        Object.defineProperties(a1, {
+            nodeType: {
+                value: Node.DOCUMENT_FRAGMENT_NODE,
+                configurable: !0
+            },
+            nodeName: {
+                value: "#document-fragment",
+                configurable: !0
+            },
+            nodeValue: {
+                value: null,
+                configurable: !0
+            }
+        });
+        [
+            "localName",
+            "namespaceURI",
+            "prefix"
+        ].forEach(function(b) {
+            Object.defineProperty(a1, b, {
+                value: void 0,
+                configurable: !0
+            });
+        });
+        [
+            "ownerDocument",
+            "baseURI",
+            "isConnected"
+        ].forEach(function(b) {
+            Object.defineProperty(a1, b, {
+                get: function() {
+                    return this.host[b];
+                },
+                configurable: !0
+            });
+        });
+    })(qf.prototype);
+    if (window.customElements && window.customElements.define && M.Ba && !M.preferPerformance) {
+        var Xf = new Map;
+        Sf = function() {
+            var a1 = [];
+            Xf.forEach(function(d, e) {
+                a1.push([
+                    e,
+                    d
+                ]);
+            });
+            Xf.clear();
+            for(var b = 0; b < a1.length; b++){
+                var c = a1[b][0];
+                a1[b][1] ? c.__shadydom_connectedCallback() : c.__shadydom_disconnectedCallback();
+            }
+        };
+        Rf && document.addEventListener("readystatechange", function() {
+            Rf = !1;
+            Sf();
+        }, {
+            once: !0
+        });
+        var Yf = function(a1, b, c) {
+            var d = 0, e = "__isConnected" + d++;
+            if (b || c) a1.prototype.connectedCallback = a1.prototype.__shadydom_connectedCallback = function() {
+                Rf ? Xf.set(this, !0) : this[e] || (this[e] = !0, b && b.call(this));
+            }, a1.prototype.disconnectedCallback = a1.prototype.__shadydom_disconnectedCallback = function() {
+                Rf ? this.isConnected || Xf.set(this, !1) : this[e] && (this[e] = !1, c && c.call(this));
+            };
+            return a1;
+        }, Zf = window.customElements.define, $f = function(a1, b) {
+            var c = b.prototype.connectedCallback, d = b.prototype.disconnectedCallback;
+            Zf.call(window.customElements, a1, Yf(b, c, d));
+            b.prototype.connectedCallback = c;
+            b.prototype.disconnectedCallback = d;
+        };
+        window.customElements.define = $f;
+        Object.defineProperty(window.CustomElementRegistry.prototype, "define", {
+            value: $f,
+            configurable: !0
+        });
+    }
+    function Ne(a1) {
+        a1 = a1.__shady_getRootNode();
+        if (O(a1)) return a1;
+    }
+    function ag(a1) {
+        this.node = a1;
+    }
+    v = ag.prototype;
+    v.addEventListener = function(a1, b, c) {
+        return this.node.__shady_addEventListener(a1, b, c);
+    };
+    v.removeEventListener = function(a1, b, c) {
+        return this.node.__shady_removeEventListener(a1, b, c);
+    };
+    v.appendChild = function(a1) {
+        return this.node.__shady_appendChild(a1);
+    };
+    v.insertBefore = function(a1, b) {
+        return this.node.__shady_insertBefore(a1, b);
+    };
+    v.removeChild = function(a1) {
+        return this.node.__shady_removeChild(a1);
+    };
+    v.replaceChild = function(a1, b) {
+        return this.node.__shady_replaceChild(a1, b);
+    };
+    v.cloneNode = function(a1) {
+        return this.node.__shady_cloneNode(a1);
+    };
+    v.getRootNode = function(a1) {
+        return this.node.__shady_getRootNode(a1);
+    };
+    v.contains = function(a1) {
+        return this.node.__shady_contains(a1);
+    };
+    v.dispatchEvent = function(a1) {
+        return this.node.__shady_dispatchEvent(a1);
+    };
+    v.setAttribute = function(a1, b) {
+        this.node.__shady_setAttribute(a1, b);
+    };
+    v.getAttribute = function(a1) {
+        return this.node.__shady_native_getAttribute(a1);
+    };
+    v.hasAttribute = function(a1) {
+        return this.node.__shady_native_hasAttribute(a1);
+    };
+    v.removeAttribute = function(a1) {
+        this.node.__shady_removeAttribute(a1);
+    };
+    v.toggleAttribute = function(a1, b) {
+        return this.node.__shady_toggleAttribute(a1, b);
+    };
+    v.attachShadow = function(a1) {
+        return this.node.__shady_attachShadow(a1);
+    };
+    v.focus = function() {
+        this.node.__shady_native_focus();
+    };
+    v.blur = function() {
+        this.node.__shady_blur();
+    };
+    v.importNode = function(a1, b) {
+        if (this.node.nodeType === Node.DOCUMENT_NODE) return this.node.__shady_importNode(a1, b);
+    };
+    v.getElementById = function(a1) {
+        if (this.node.nodeType === Node.DOCUMENT_NODE) return this.node.__shady_getElementById(a1);
+    };
+    v.elementsFromPoint = function(a1, b) {
+        return this.node.__shady_elementsFromPoint(a1, b);
+    };
+    v.elementFromPoint = function(a1, b) {
+        return this.node.__shady_elementFromPoint(a1, b);
+    };
+    v.querySelector = function(a1) {
+        return this.node.__shady_querySelector(a1);
+    };
+    v.querySelectorAll = function(a1, b) {
+        return this.node.__shady_querySelectorAll(a1, b);
+    };
+    v.assignedNodes = function(a1) {
+        if ("slot" === this.node.localName) return this.node.__shady_assignedNodes(a1);
+    };
+    v.append = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        return this.node.__shady_append.apply(this.node, w(b));
+    };
+    v.prepend = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        return this.node.__shady_prepend.apply(this.node, w(b));
+    };
+    v.after = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        return this.node.__shady_after.apply(this.node, w(b));
+    };
+    v.before = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        return this.node.__shady_before.apply(this.node, w(b));
+    };
+    v.remove = function() {
+        return this.node.__shady_remove();
+    };
+    v.replaceWith = function(a1) {
+        for(var b = [], c = 0; c < arguments.length; ++c)b[c] = arguments[c];
+        return this.node.__shady_replaceWith.apply(this.node, w(b));
+    };
+    ea.Object.defineProperties(ag.prototype, {
+        activeElement: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                if (O(this.node) || this.node.nodeType === Node.DOCUMENT_NODE) return this.node.__shady_activeElement;
+            }
+        },
+        _activeElement: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.activeElement;
+            }
+        },
+        host: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                if (O(this.node)) return this.node.host;
+            }
+        },
+        parentNode: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_parentNode;
+            }
+        },
+        firstChild: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_firstChild;
+            }
+        },
+        lastChild: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_lastChild;
+            }
+        },
+        nextSibling: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_nextSibling;
+            }
+        },
+        previousSibling: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_previousSibling;
+            }
+        },
+        childNodes: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_childNodes;
+            }
+        },
+        parentElement: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_parentElement;
+            }
+        },
+        firstElementChild: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_firstElementChild;
+            }
+        },
+        lastElementChild: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_lastElementChild;
+            }
+        },
+        nextElementSibling: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_nextElementSibling;
+            }
+        },
+        previousElementSibling: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_previousElementSibling;
+            }
+        },
+        children: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_children;
+            }
+        },
+        childElementCount: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_childElementCount;
+            }
+        },
+        shadowRoot: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_shadowRoot;
+            }
+        },
+        assignedSlot: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_assignedSlot;
+            }
+        },
+        isConnected: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_isConnected;
+            }
+        },
+        innerHTML: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_innerHTML;
+            },
+            set: function(a1) {
+                this.node.__shady_innerHTML = a1;
+            }
+        },
+        textContent: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_textContent;
+            },
+            set: function(a1) {
+                this.node.__shady_textContent = a1;
+            }
+        },
+        slot: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_slot;
+            },
+            set: function(a1) {
+                this.node.__shady_slot = a1;
+            }
+        },
+        className: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return this.node.__shady_className;
+            },
+            set: function(a1) {
+                this.node.__shady_className = a1;
+            }
+        }
+    });
+    function bg(a1) {
+        Object.defineProperty(ag.prototype, a1, {
+            get: function() {
+                return this.node["__shady_" + a1];
+            },
+            set: function(b) {
+                this.node["__shady_" + a1] = b;
+            },
+            configurable: !0
+        });
+    }
+    qe.forEach(function(a1) {
+        return bg(a1);
+    });
+    re.forEach(function(a1) {
+        return bg(a1);
+    });
+    var cg = new WeakMap;
+    function dg(a1) {
+        if (O(a1) || a1 instanceof ag) return a1;
+        var b = cg.get(a1);
+        b || (b = new ag(a1), cg.set(a1, b));
+        return b;
+    }
+    if (M.Ba) {
+        var eg = M.D ? function(a1) {
+            return a1;
+        } : function(a1) {
+            Nd(a1);
+            Md(a1);
+            return a1;
+        }, ShadyDOM = {
+            inUse: M.Ba,
+            patch: eg,
+            isShadyRoot: O,
+            enqueue: hd,
+            flush: id,
+            flushInitial: function(a1) {
+                !a1.Ia && a1.Y && Ue(a1);
+            },
+            settings: M,
+            filterMutations: nd,
+            observeChildren: ld,
+            unobserveChildren: md,
+            deferConnectionCallbacks: M.deferConnectionCallbacks,
+            preferPerformance: M.preferPerformance,
+            handlesDynamicScoping: !0,
+            wrap: M.J ? dg : eg,
+            wrapIfNeeded: !0 === M.J ? dg : function(a1) {
+                return a1;
+            },
+            Wrapper: ag,
+            composedPath: Wd,
+            noPatch: M.J,
+            patchOnDemand: M.Da,
+            nativeMethods: wd,
+            nativeTree: xd,
+            patchElementProto: Kf,
+            querySelectorImplementation: M.querySelectorImplementation
+        };
+        window.ShadyDOM = ShadyDOM;
+        Gd();
+        Jf("__shady_");
+        Object.defineProperty(document, "_activeElement", Bf.activeElement);
+        P(Window.prototype, Ef, "__shady_");
+        M.J ? M.Da && P(Element.prototype, sf) : (Jf(), pe());
+        ke();
+        window.Event = me;
+        window.CustomEvent = ne;
+        window.MouseEvent = oe;
+        window.ShadowRoot = qf;
+    }
+    var fg = window.Document.prototype.createElement, gg = window.Document.prototype.createElementNS, hg = window.Document.prototype.importNode, ig = window.Document.prototype.prepend, jg = window.Document.prototype.append, kg = window.DocumentFragment.prototype.prepend, lg = window.DocumentFragment.prototype.append, mg = window.Node.prototype.cloneNode, ng = window.Node.prototype.appendChild, og = window.Node.prototype.insertBefore, pg = window.Node.prototype.removeChild, qg = window.Node.prototype.replaceChild, rg = Object.getOwnPropertyDescriptor(window.Node.prototype, "textContent"), sg = window.Element.prototype.attachShadow, tg = Object.getOwnPropertyDescriptor(window.Element.prototype, "innerHTML"), ug = window.Element.prototype.getAttribute, vg = window.Element.prototype.setAttribute, wg = window.Element.prototype.removeAttribute, xg = window.Element.prototype.toggleAttribute, yg = window.Element.prototype.getAttributeNS, zg = window.Element.prototype.setAttributeNS, Ag = window.Element.prototype.removeAttributeNS, Bg = window.Element.prototype.insertAdjacentElement, Cg = window.Element.prototype.insertAdjacentHTML, Dg = window.Element.prototype.prepend, Eg = window.Element.prototype.append, Fg = window.Element.prototype.before, Gg = window.Element.prototype.after, Hg = window.Element.prototype.replaceWith, Ig = window.Element.prototype.remove, Jg = window.HTMLElement, Kg = Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, "innerHTML"), Lg = window.HTMLElement.prototype.insertAdjacentElement, Mg = window.HTMLElement.prototype.insertAdjacentHTML;
+    var Ng = new Set;
+    "annotation-xml color-profile font-face font-face-src font-face-uri font-face-format font-face-name missing-glyph".split(" ").forEach(function(a1) {
+        return Ng.add(a1);
+    });
+    function Og(a1) {
+        var b = Ng.has(a1);
+        a1 = /^[a-z][.0-9_a-z]*-[-.0-9_a-z]*$/.test(a1);
+        return !b && a1;
+    }
+    var Pg = document.contains ? document.contains.bind(document) : document.documentElement.contains.bind(document.documentElement);
+    function T(a1) {
+        var b = a1.isConnected;
+        if (void 0 !== b) return b;
+        if (Pg(a1)) return !0;
+        for(; a1 && !(a1.__CE_isImportDocument || a1 instanceof Document);)a1 = a1.parentNode || (window.ShadowRoot && a1 instanceof ShadowRoot ? a1.host : void 0);
+        return !(!a1 || !(a1.__CE_isImportDocument || a1 instanceof Document));
+    }
+    function Qg(a1) {
+        var b = a1.children;
+        if (b) return Array.prototype.slice.call(b);
+        b = [];
+        for(a1 = a1.firstChild; a1; a1 = a1.nextSibling)a1.nodeType === Node.ELEMENT_NODE && b.push(a1);
+        return b;
+    }
+    function Rg(a1, b) {
+        for(; b && b !== a1 && !b.nextSibling;)b = b.parentNode;
+        return b && b !== a1 ? b.nextSibling : null;
+    }
+    function Sg(a1, b, c) {
+        for(var d = a1; d;){
+            if (d.nodeType === Node.ELEMENT_NODE) {
+                var e = d;
+                b(e);
+                var f = e.localName;
+                if ("link" === f && "import" === e.getAttribute("rel")) {
+                    d = e.import;
+                    void 0 === c && (c = new Set);
+                    if (d instanceof Node && !c.has(d)) for(c.add(d), d = d.firstChild; d; d = d.nextSibling)Sg(d, b, c);
+                    d = Rg(a1, e);
+                    continue;
+                } else if ("template" === f) {
+                    d = Rg(a1, e);
+                    continue;
+                }
+                if (e = e.__CE_shadowRoot) for(e = e.firstChild; e; e = e.nextSibling)Sg(e, b, c);
+            }
+            d = d.firstChild ? d.firstChild : Rg(a1, d);
+        }
+    }
+    function Tg() {
+        var a1 = !(null === Ug || void 0 === Ug || !Ug.noDocumentConstructionObserver), b = !(null === Ug || void 0 === Ug || !Ug.shadyDomFastWalk);
+        this.ca = [];
+        this.g = [];
+        this.W = !1;
+        this.shadyDomFastWalk = b;
+        this.sb = !a1;
+    }
+    function Vg(a1, b, c, d) {
+        var e = window.ShadyDOM;
+        if (a1.shadyDomFastWalk && e && e.inUse) {
+            if (b.nodeType === Node.ELEMENT_NODE && c(b), b.querySelectorAll) for(a1 = e.nativeMethods.querySelectorAll.call(b, "*"), b = 0; b < a1.length; b++)c(a1[b]);
+        } else Sg(b, c, d);
+    }
+    function Wg(a1, b) {
+        a1.W = !0;
+        a1.ca.push(b);
+    }
+    function Xg(a1, b) {
+        a1.W = !0;
+        a1.g.push(b);
+    }
+    function Yg(a1, b) {
+        a1.W && Vg(a1, b, function(c) {
+            return Zg(a1, c);
+        });
+    }
+    function Zg(a1, b) {
+        if (a1.W && !b.__CE_patched) {
+            b.__CE_patched = !0;
+            for(var c = 0; c < a1.ca.length; c++)a1.ca[c](b);
+            for(c = 0; c < a1.g.length; c++)a1.g[c](b);
+        }
+    }
+    function $g(a1, b) {
+        var c = [];
+        Vg(a1, b, function(e) {
+            return c.push(e);
+        });
+        for(b = 0; b < c.length; b++){
+            var d = c[b];
+            1 === d.__CE_state ? a1.connectedCallback(d) : ah(a1, d);
+        }
+    }
+    function bh(a1, b) {
+        var c = [];
+        Vg(a1, b, function(e) {
+            return c.push(e);
+        });
+        for(b = 0; b < c.length; b++){
+            var d = c[b];
+            1 === d.__CE_state && a1.disconnectedCallback(d);
+        }
+    }
+    function ch(a1, b, c) {
+        c = void 0 === c ? {} : c;
+        var d = c.tb, e = c.upgrade || function(g) {
+            return ah(a1, g);
+        }, f = [];
+        Vg(a1, b, function(g) {
+            a1.W && Zg(a1, g);
+            if ("link" === g.localName && "import" === g.getAttribute("rel")) {
+                var h = g.import;
+                h instanceof Node && (h.__CE_isImportDocument = !0, h.__CE_registry = document.__CE_registry);
+                h && "complete" === h.readyState ? h.__CE_documentLoadHandled = !0 : g.addEventListener("load", function() {
+                    var k = g.import;
+                    if (!k.__CE_documentLoadHandled) {
+                        k.__CE_documentLoadHandled = !0;
+                        var l = new Set;
+                        d && (d.forEach(function(m) {
+                            return l.add(m);
+                        }), l.delete(k));
+                        ch(a1, k, {
+                            tb: l,
+                            upgrade: e
+                        });
+                    }
+                });
+            } else f.push(g);
+        }, d);
+        for(b = 0; b < f.length; b++)e(f[b]);
+    }
+    function ah(a1, b) {
+        try {
+            var c = b.ownerDocument, d = c.__CE_registry;
+            var e = d && (c.defaultView || c.__CE_isImportDocument) ? dh(d, b.localName) : void 0;
+            if (e && void 0 === b.__CE_state) {
+                e.constructionStack.push(b);
+                try {
+                    try {
+                        if (new e.constructorFunction !== b) throw Error("The custom element constructor did not produce the element being upgraded.");
+                    } finally{
+                        e.constructionStack.pop();
+                    }
+                } catch (k) {
+                    throw b.__CE_state = 2, k;
+                }
+                b.__CE_state = 1;
+                b.__CE_definition = e;
+                if (e.attributeChangedCallback && b.hasAttributes()) {
+                    var f = e.observedAttributes;
+                    for(e = 0; e < f.length; e++){
+                        var g = f[e], h = b.getAttribute(g);
+                        null !== h && a1.attributeChangedCallback(b, g, null, h, null);
+                    }
+                }
+                T(b) && a1.connectedCallback(b);
+            }
+        } catch (k) {
+            eh(k);
+        }
+    }
+    Tg.prototype.connectedCallback = function(a1) {
+        var b = a1.__CE_definition;
+        if (b.connectedCallback) try {
+            b.connectedCallback.call(a1);
+        } catch (c) {
+            eh(c);
+        }
+    };
+    Tg.prototype.disconnectedCallback = function(a1) {
+        var b = a1.__CE_definition;
+        if (b.disconnectedCallback) try {
+            b.disconnectedCallback.call(a1);
+        } catch (c) {
+            eh(c);
+        }
+    };
+    Tg.prototype.attributeChangedCallback = function(a1, b, c, d, e) {
+        var f = a1.__CE_definition;
+        if (f.attributeChangedCallback && -1 < f.observedAttributes.indexOf(b)) try {
+            f.attributeChangedCallback.call(a1, b, c, d, e);
+        } catch (g) {
+            eh(g);
+        }
+    };
+    function fh(a1, b, c, d) {
+        var e = b.__CE_registry;
+        if (e && (null === d || "http://www.w3.org/1999/xhtml" === d) && (e = dh(e, c))) try {
+            var f = new e.constructorFunction;
+            if (void 0 === f.__CE_state || void 0 === f.__CE_definition) throw Error("Failed to construct '" + c + "': The returned value was not constructed with the HTMLElement constructor.");
+            if ("http://www.w3.org/1999/xhtml" !== f.namespaceURI) throw Error("Failed to construct '" + c + "': The constructed element's namespace must be the HTML namespace.");
+            if (f.hasAttributes()) throw Error("Failed to construct '" + c + "': The constructed element must not have any attributes.");
+            if (null !== f.firstChild) throw Error("Failed to construct '" + c + "': The constructed element must not have any children.");
+            if (null !== f.parentNode) throw Error("Failed to construct '" + c + "': The constructed element must not have a parent node.");
+            if (f.ownerDocument !== b) throw Error("Failed to construct '" + c + "': The constructed element's owner document is incorrect.");
+            if (f.localName !== c) throw Error("Failed to construct '" + c + "': The constructed element's local name is incorrect.");
+            return f;
+        } catch (g) {
+            return eh(g), b = null === d ? fg.call(b, c) : gg.call(b, d, c), Object.setPrototypeOf(b, HTMLUnknownElement.prototype), b.__CE_state = 2, b.__CE_definition = void 0, Zg(a1, b), b;
+        }
+        b = null === d ? fg.call(b, c) : gg.call(b, d, c);
+        Zg(a1, b);
+        return b;
+    }
+    function eh(a1) {
+        var b = "", c = "", d = 0, e = 0;
+        a1 instanceof Error ? (b = a1.message, c = a1.sourceURL || a1.fileName || "", d = a1.line || a1.lineNumber || 0, e = a1.column || a1.columnNumber || 0) : b = "Uncaught " + String(a1);
+        var f = void 0;
+        void 0 === ErrorEvent.prototype.initErrorEvent ? f = new ErrorEvent("error", {
+            cancelable: !0,
+            message: b,
+            filename: c,
+            lineno: d,
+            colno: e,
+            error: a1
+        }) : (f = document.createEvent("ErrorEvent"), f.initErrorEvent("error", !1, !0, b, c, d), f.preventDefault = function() {
+            Object.defineProperty(this, "defaultPrevented", {
+                configurable: !0,
+                get: function() {
+                    return !0;
+                }
+            });
+        });
+        void 0 === f.error && Object.defineProperty(f, "error", {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return a1;
+            }
+        });
+        window.dispatchEvent(f);
+        f.defaultPrevented || console.error(a1);
+    }
+    function gh() {
+        var a1 = this;
+        this.I = void 0;
+        this.Ka = new Promise(function(b) {
+            a1.g = b;
+        });
+    }
+    gh.prototype.resolve = function(a1) {
+        if (this.I) throw Error("Already resolved.");
+        this.I = a1;
+        this.g(a1);
+    };
+    function hh(a1) {
+        var b = document;
+        this.X = void 0;
+        this.S = a1;
+        this.g = b;
+        ch(this.S, this.g);
+        "loading" === this.g.readyState && (this.X = new MutationObserver(this.h.bind(this)), this.X.observe(this.g, {
+            childList: !0,
+            subtree: !0
+        }));
+    }
+    function ih(a1) {
+        a1.X && a1.X.disconnect();
+    }
+    hh.prototype.h = function(a1) {
+        var b = this.g.readyState;
+        "interactive" !== b && "complete" !== b || ih(this);
+        for(b = 0; b < a1.length; b++)for(var c = a1[b].addedNodes, d = 0; d < c.length; d++)ch(this.S, c[d]);
+    };
+    function U(a1) {
+        this.ma = new Map;
+        this.na = new Map;
+        this.Fa = new Map;
+        this.wa = !1;
+        this.za = new Map;
+        this.la = function(b) {
+            return b();
+        };
+        this.V = !1;
+        this.oa = [];
+        this.S = a1;
+        this.Ga = a1.sb ? new hh(a1) : void 0;
+    }
+    v = U.prototype;
+    v.jb = function(a1, b) {
+        var c = this;
+        if (!(b instanceof Function)) throw new TypeError("Custom element constructor getters must be functions.");
+        jh(this, a1);
+        this.ma.set(a1, b);
+        this.oa.push(a1);
+        this.V || (this.V = !0, this.la(function() {
+            return kh(c);
+        }));
+    };
+    v.define = function(a1, b) {
+        var c = this;
+        if (!(b instanceof Function)) throw new TypeError("Custom element constructors must be functions.");
+        jh(this, a1);
+        lh(this, a1, b);
+        this.oa.push(a1);
+        this.V || (this.V = !0, this.la(function() {
+            return kh(c);
+        }));
+    };
+    function jh(a1, b) {
+        if (!Og(b)) throw new SyntaxError("The element name '" + b + "' is not valid.");
+        if (dh(a1, b)) throw Error("A custom element with name '" + (b + "' has already been defined."));
+        if (a1.wa) throw Error("A custom element is already being defined.");
+    }
+    function lh(a1, b, c) {
+        a1.wa = !0;
+        var d;
+        try {
+            var e = c.prototype;
+            if (!(e instanceof Object)) throw new TypeError("The custom element constructor's prototype is not an object.");
+            var f = function(m) {
+                var q = e[m];
+                if (void 0 !== q && !(q instanceof Function)) throw Error("The '" + m + "' callback must be a function.");
+                return q;
+            };
+            var g = f("connectedCallback");
+            var h = f("disconnectedCallback");
+            var k = f("adoptedCallback");
+            var l = (d = f("attributeChangedCallback")) && c.observedAttributes || [];
+        } catch (m) {
+            throw m;
+        } finally{
+            a1.wa = !1;
+        }
+        c = {
+            localName: b,
+            constructorFunction: c,
+            connectedCallback: g,
+            disconnectedCallback: h,
+            adoptedCallback: k,
+            attributeChangedCallback: d,
+            observedAttributes: l,
+            constructionStack: []
+        };
+        a1.na.set(b, c);
+        a1.Fa.set(c.constructorFunction, c);
+        return c;
+    }
+    v.upgrade = function(a1) {
+        ch(this.S, a1);
+    };
+    function kh(a1) {
+        if (!1 !== a1.V) {
+            a1.V = !1;
+            for(var b = [], c = a1.oa, d = new Map, e = 0; e < c.length; e++)d.set(c[e], []);
+            ch(a1.S, document, {
+                upgrade: function(k) {
+                    if (void 0 === k.__CE_state) {
+                        var l = k.localName, m = d.get(l);
+                        m ? m.push(k) : a1.na.has(l) && b.push(k);
+                    }
+                }
+            });
+            for(e = 0; e < b.length; e++)ah(a1.S, b[e]);
+            for(e = 0; e < c.length; e++){
+                for(var f = c[e], g = d.get(f), h = 0; h < g.length; h++)ah(a1.S, g[h]);
+                (f = a1.za.get(f)) && f.resolve(void 0);
+            }
+            c.length = 0;
+        }
+    }
+    v.get = function(a1) {
+        if (a1 = dh(this, a1)) return a1.constructorFunction;
+    };
+    v.whenDefined = function(a1) {
+        if (!Og(a1)) return Promise.reject(new SyntaxError("'" + a1 + "' is not a valid custom element name."));
+        var b = this.za.get(a1);
+        if (b) return b.Ka;
+        b = new gh;
+        this.za.set(a1, b);
+        var c = this.na.has(a1) || this.ma.has(a1);
+        a1 = -1 === this.oa.indexOf(a1);
+        c && a1 && b.resolve(void 0);
+        return b.Ka;
+    };
+    v.polyfillWrapFlushCallback = function(a1) {
+        this.Ga && ih(this.Ga);
+        var b = this.la;
+        this.la = function(c) {
+            return a1(function() {
+                return b(c);
+            });
+        };
+    };
+    function dh(a1, b) {
+        var c = a1.na.get(b);
+        if (c) return c;
+        if (c = a1.ma.get(b)) {
+            a1.ma.delete(b);
+            try {
+                return lh(a1, b, c());
+            } catch (d) {
+                eh(d);
+            }
+        }
+    }
+    U.prototype.define = U.prototype.define;
+    U.prototype.upgrade = U.prototype.upgrade;
+    U.prototype.get = U.prototype.get;
+    U.prototype.whenDefined = U.prototype.whenDefined;
+    U.prototype.polyfillDefineLazy = U.prototype.jb;
+    U.prototype.polyfillWrapFlushCallback = U.prototype.polyfillWrapFlushCallback;
+    function mh(a1, b, c) {
+        function d(e) {
+            return function(f) {
+                for(var g = [], h = 0; h < arguments.length; ++h)g[h] = arguments[h];
+                h = [];
+                for(var k = [], l = 0; l < g.length; l++){
+                    var m = g[l];
+                    m instanceof Element && T(m) && k.push(m);
+                    if (m instanceof DocumentFragment) for(m = m.firstChild; m; m = m.nextSibling)h.push(m);
+                    else h.push(m);
+                }
+                e.apply(this, g);
+                for(g = 0; g < k.length; g++)bh(a1, k[g]);
+                if (T(this)) for(g = 0; g < h.length; g++)k = h[g], k instanceof Element && $g(a1, k);
+            };
+        }
+        void 0 !== c.prepend && (b.prepend = d(c.prepend));
+        void 0 !== c.append && (b.append = d(c.append));
+    }
+    function nh(a1) {
+        Document.prototype.createElement = function(b) {
+            return fh(a1, this, b, null);
+        };
+        Document.prototype.importNode = function(b, c) {
+            b = hg.call(this, b, !!c);
+            this.__CE_registry ? ch(a1, b) : Yg(a1, b);
+            return b;
+        };
+        Document.prototype.createElementNS = function(b, c) {
+            return fh(a1, this, c, b);
+        };
+        mh(a1, Document.prototype, {
+            prepend: ig,
+            append: jg
+        });
+    }
+    function oh(a1) {
+        function b(d) {
+            return function(e) {
+                for(var f = [], g = 0; g < arguments.length; ++g)f[g] = arguments[g];
+                g = [];
+                for(var h = [], k = 0; k < f.length; k++){
+                    var l = f[k];
+                    l instanceof Element && T(l) && h.push(l);
+                    if (l instanceof DocumentFragment) for(l = l.firstChild; l; l = l.nextSibling)g.push(l);
+                    else g.push(l);
+                }
+                d.apply(this, f);
+                for(f = 0; f < h.length; f++)bh(a1, h[f]);
+                if (T(this)) for(f = 0; f < g.length; f++)h = g[f], h instanceof Element && $g(a1, h);
+            };
+        }
+        var c = Element.prototype;
+        void 0 !== Fg && (c.before = b(Fg));
+        void 0 !== Gg && (c.after = b(Gg));
+        void 0 !== Hg && (c.replaceWith = function(d) {
+            for(var e = [], f = 0; f < arguments.length; ++f)e[f] = arguments[f];
+            f = [];
+            for(var g = [], h = 0; h < e.length; h++){
+                var k = e[h];
+                k instanceof Element && T(k) && g.push(k);
+                if (k instanceof DocumentFragment) for(k = k.firstChild; k; k = k.nextSibling)f.push(k);
+                else f.push(k);
+            }
+            h = T(this);
+            Hg.apply(this, e);
+            for(e = 0; e < g.length; e++)bh(a1, g[e]);
+            if (h) for(bh(a1, this), e = 0; e < f.length; e++)g = f[e], g instanceof Element && $g(a1, g);
+        });
+        void 0 !== Ig && (c.remove = function() {
+            var d = T(this);
+            Ig.call(this);
+            d && bh(a1, this);
+        });
+    }
+    function ph(a1) {
+        function b(e, f) {
+            Object.defineProperty(e, "innerHTML", {
+                enumerable: f.enumerable,
+                configurable: !0,
+                get: f.get,
+                set: function(g) {
+                    var h = this, k = void 0;
+                    T(this) && (k = [], Vg(a1, this, function(q) {
+                        q !== h && k.push(q);
+                    }));
+                    f.set.call(this, g);
+                    if (k) for(var l = 0; l < k.length; l++){
+                        var m = k[l];
+                        1 === m.__CE_state && a1.disconnectedCallback(m);
+                    }
+                    this.ownerDocument.__CE_registry ? ch(a1, this) : Yg(a1, this);
+                    return g;
+                }
+            });
+        }
+        function c(e, f) {
+            e.insertAdjacentElement = function(g, h) {
+                var k = T(h);
+                g = f.call(this, g, h);
+                k && bh(a1, h);
+                T(g) && $g(a1, h);
+                return g;
+            };
+        }
+        function d(e, f) {
+            function g(h, k) {
+                for(var l = []; h !== k; h = h.nextSibling)l.push(h);
+                for(k = 0; k < l.length; k++)ch(a1, l[k]);
+            }
+            e.insertAdjacentHTML = function(h, k) {
+                h = h.toLowerCase();
+                if ("beforebegin" === h) {
+                    var l = this.previousSibling;
+                    f.call(this, h, k);
+                    g(l || this.parentNode.firstChild, this);
+                } else if ("afterbegin" === h) l = this.firstChild, f.call(this, h, k), g(this.firstChild, l);
+                else if ("beforeend" === h) l = this.lastChild, f.call(this, h, k), g(l || this.firstChild, null);
+                else if ("afterend" === h) l = this.nextSibling, f.call(this, h, k), g(this.nextSibling, l);
+                else throw new SyntaxError("The value provided (" + String(h) + ") is not one of 'beforebegin', 'afterbegin', 'beforeend', or 'afterend'.");
+            };
+        }
+        sg && (Element.prototype.attachShadow = function(e) {
+            e = sg.call(this, e);
+            if (a1.W && !e.__CE_patched) {
+                e.__CE_patched = !0;
+                for(var f = 0; f < a1.ca.length; f++)a1.ca[f](e);
+            }
+            return this.__CE_shadowRoot = e;
+        });
+        tg && tg.get ? b(Element.prototype, tg) : Kg && Kg.get ? b(HTMLElement.prototype, Kg) : Xg(a1, function(e) {
+            b(e, {
+                enumerable: !0,
+                configurable: !0,
+                get: function() {
+                    return mg.call(this, !0).innerHTML;
+                },
+                set: function(f) {
+                    var g = "template" === this.localName, h = g ? this.content : this, k = gg.call(document, this.namespaceURI, this.localName);
+                    for(k.innerHTML = f; 0 < h.childNodes.length;)pg.call(h, h.childNodes[0]);
+                    for(f = g ? k.content : k; 0 < f.childNodes.length;)ng.call(h, f.childNodes[0]);
+                }
+            });
+        });
+        Element.prototype.setAttribute = function(e, f) {
+            if (1 !== this.__CE_state) return vg.call(this, e, f);
+            var g = ug.call(this, e);
+            vg.call(this, e, f);
+            f = ug.call(this, e);
+            a1.attributeChangedCallback(this, e, g, f, null);
+        };
+        Element.prototype.setAttributeNS = function(e, f, g) {
+            if (1 !== this.__CE_state) return zg.call(this, e, f, g);
+            var h = yg.call(this, e, f);
+            zg.call(this, e, f, g);
+            g = yg.call(this, e, f);
+            a1.attributeChangedCallback(this, f, h, g, e);
+        };
+        Element.prototype.removeAttribute = function(e) {
+            if (1 !== this.__CE_state) return wg.call(this, e);
+            var f = ug.call(this, e);
+            wg.call(this, e);
+            null !== f && a1.attributeChangedCallback(this, e, f, null, null);
+        };
+        xg && (Element.prototype.toggleAttribute = function(e, f) {
+            if (1 !== this.__CE_state) return xg.call(this, e, f);
+            var g = ug.call(this, e), h = null !== g;
+            f = xg.call(this, e, f);
+            h !== f && a1.attributeChangedCallback(this, e, g, f ? "" : null, null);
+            return f;
+        });
+        Element.prototype.removeAttributeNS = function(e, f) {
+            if (1 !== this.__CE_state) return Ag.call(this, e, f);
+            var g = yg.call(this, e, f);
+            Ag.call(this, e, f);
+            var h = yg.call(this, e, f);
+            g !== h && a1.attributeChangedCallback(this, f, g, h, e);
+        };
+        Lg ? c(HTMLElement.prototype, Lg) : Bg && c(Element.prototype, Bg);
+        Mg ? d(HTMLElement.prototype, Mg) : Cg && d(Element.prototype, Cg);
+        mh(a1, Element.prototype, {
+            prepend: Dg,
+            append: Eg
+        });
+        oh(a1);
+    }
+    var qh = {};
+    function rh(a1) {
+        function b() {
+            var c = this.constructor;
+            var d = document.__CE_registry.Fa.get(c);
+            if (!d) throw Error("Failed to construct a custom element: The constructor was not registered with `customElements`.");
+            var e = d.constructionStack;
+            if (0 === e.length) return e = fg.call(document, d.localName), Object.setPrototypeOf(e, c.prototype), e.__CE_state = 1, e.__CE_definition = d, Zg(a1, e), e;
+            var f = e.length - 1, g = e[f];
+            if (g === qh) throw Error("Failed to construct '" + d.localName + "': This element was already constructed.");
+            e[f] = qh;
+            Object.setPrototypeOf(g, c.prototype);
+            Zg(a1, g);
+            return g;
+        }
+        b.prototype = Jg.prototype;
+        Object.defineProperty(HTMLElement.prototype, "constructor", {
+            writable: !0,
+            configurable: !0,
+            enumerable: !1,
+            value: b
+        });
+        window.HTMLElement = b;
+    }
+    function sh(a1) {
+        function b(c, d) {
+            Object.defineProperty(c, "textContent", {
+                enumerable: d.enumerable,
+                configurable: !0,
+                get: d.get,
+                set: function(e) {
+                    if (this.nodeType === Node.TEXT_NODE) d.set.call(this, e);
+                    else {
+                        var f = void 0;
+                        if (this.firstChild) {
+                            var g = this.childNodes, h = g.length;
+                            if (0 < h && T(this)) {
+                                f = Array(h);
+                                for(var k = 0; k < h; k++)f[k] = g[k];
+                            }
+                        }
+                        d.set.call(this, e);
+                        if (f) for(e = 0; e < f.length; e++)bh(a1, f[e]);
+                    }
+                }
+            });
+        }
+        Node.prototype.insertBefore = function(c, d) {
+            if (c instanceof DocumentFragment) {
+                var e = Qg(c);
+                c = og.call(this, c, d);
+                if (T(this)) for(d = 0; d < e.length; d++)$g(a1, e[d]);
+                return c;
+            }
+            e = c instanceof Element && T(c);
+            d = og.call(this, c, d);
+            e && bh(a1, c);
+            T(this) && $g(a1, c);
+            return d;
+        };
+        Node.prototype.appendChild = function(c) {
+            if (c instanceof DocumentFragment) {
+                var d = Qg(c);
+                c = ng.call(this, c);
+                if (T(this)) for(var e = 0; e < d.length; e++)$g(a1, d[e]);
+                return c;
+            }
+            d = c instanceof Element && T(c);
+            e = ng.call(this, c);
+            d && bh(a1, c);
+            T(this) && $g(a1, c);
+            return e;
+        };
+        Node.prototype.cloneNode = function(c) {
+            c = mg.call(this, !!c);
+            this.ownerDocument.__CE_registry ? ch(a1, c) : Yg(a1, c);
+            return c;
+        };
+        Node.prototype.removeChild = function(c) {
+            var d = c instanceof Element && T(c), e = pg.call(this, c);
+            d && bh(a1, c);
+            return e;
+        };
+        Node.prototype.replaceChild = function(c, d) {
+            if (c instanceof DocumentFragment) {
+                var e = Qg(c);
+                c = qg.call(this, c, d);
+                if (T(this)) for(bh(a1, d), d = 0; d < e.length; d++)$g(a1, e[d]);
+                return c;
+            }
+            e = c instanceof Element && T(c);
+            var f = qg.call(this, c, d), g = T(this);
+            g && bh(a1, d);
+            e && bh(a1, c);
+            g && $g(a1, c);
+            return f;
+        };
+        rg && rg.get ? b(Node.prototype, rg) : Wg(a1, function(c) {
+            b(c, {
+                enumerable: !0,
+                configurable: !0,
+                get: function() {
+                    for(var d = [], e = this.firstChild; e; e = e.nextSibling)e.nodeType !== Node.COMMENT_NODE && d.push(e.textContent);
+                    return d.join("");
+                },
+                set: function(d) {
+                    for(; this.firstChild;)pg.call(this, this.firstChild);
+                    null != d && "" !== d && ng.call(this, document.createTextNode(d));
+                }
+            });
+        });
+    }
+    var Ug = window.customElements;
+    function th() {
+        var a1 = new Tg;
+        rh(a1);
+        nh(a1);
+        mh(a1, DocumentFragment.prototype, {
+            prepend: kg,
+            append: lg
+        });
+        sh(a1);
+        ph(a1);
+        window.CustomElementRegistry = U;
+        a1 = new U(a1);
+        document.__CE_registry = a1;
+        Object.defineProperty(window, "customElements", {
+            configurable: !0,
+            enumerable: !0,
+            value: a1
+        });
+    }
+    Ug && !Ug.forcePolyfill && "function" == typeof Ug.define && "function" == typeof Ug.get || th();
+    window.__CE_installPolyfill = th; /*
+
+Copyright (c) 2017 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/ 
+    function uh() {
+        this.end = this.start = 0;
+        this.rules = this.parent = this.previous = null;
+        this.cssText = this.parsedCssText = "";
+        this.atRule = !1;
+        this.type = 0;
+        this.parsedSelector = this.selector = this.keyframesName = "";
+    }
+    function vh(a1) {
+        var b = a1 = a1.replace(wh, "").replace(xh, ""), c = new uh;
+        c.start = 0;
+        c.end = b.length;
+        for(var d = c, e = 0, f = b.length; e < f; e++)if ("{" === b[e]) {
+            d.rules || (d.rules = []);
+            var g = d, h = g.rules[g.rules.length - 1] || null;
+            d = new uh;
+            d.start = e + 1;
+            d.parent = g;
+            d.previous = h;
+            g.rules.push(d);
+        } else "}" === b[e] && (d.end = e + 1, d = d.parent || c);
+        return yh(c, a1);
+    }
+    function yh(a1, b) {
+        var c = b.substring(a1.start, a1.end - 1);
+        a1.parsedCssText = a1.cssText = c.trim();
+        a1.parent && (c = b.substring(a1.previous ? a1.previous.end : a1.parent.start, a1.start - 1), c = zh(c), c = c.replace(Ah, " "), c = c.substring(c.lastIndexOf(";") + 1), c = a1.parsedSelector = a1.selector = c.trim(), a1.atRule = 0 === c.indexOf("@"), a1.atRule ? 0 === c.indexOf("@media") ? a1.type = Bh : c.match(Ch) && (a1.type = Dh, a1.keyframesName = a1.selector.split(Ah).pop()) : a1.type = 0 === c.indexOf("--") ? Eh : Fh);
+        if (c = a1.rules) for(var d = 0, e = c.length, f = void 0; d < e && (f = c[d]); d++)yh(f, b);
+        return a1;
+    }
+    function zh(a1) {
+        return a1.replace(/\\([0-9a-f]{1,6})\s/gi, function(b, c) {
+            b = c;
+            for(c = 6 - b.length; c--;)b = "0" + b;
+            return "\\" + b;
+        });
+    }
+    function Gh(a1, b, c) {
+        c = void 0 === c ? "" : c;
+        var d = "";
+        if (a1.cssText || a1.rules) {
+            var e = a1.rules, f;
+            if (f = e) f = e[0], f = !(f && f.selector && 0 === f.selector.indexOf("--"));
+            if (f) {
+                f = 0;
+                for(var g = e.length, h = void 0; f < g && (h = e[f]); f++)d = Gh(h, b, d);
+            } else b ? b = a1.cssText : (b = a1.cssText, b = b.replace(Hh, "").replace(Ih, ""), b = b.replace(Jh, "").replace(Kh, "")), (d = b.trim()) && (d = "  " + d + "\n");
+        }
+        d && (a1.selector && (c += a1.selector + " {\n"), c += d, a1.selector && (c += "}\n\n"));
+        return c;
+    }
+    var Fh = 1, Dh = 7, Bh = 4, Eh = 1E3, wh = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//gim, xh = /@import[^;]*;/gim, Hh = /(?:^[^;\-\s}]+)?--[^;{}]*?:[^{};]*?(?:[;\n]|$)/gim, Ih = /(?:^[^;\-\s}]+)?--[^;{}]*?:[^{};]*?{[^}]*?}(?:[;\n]|$)?/gim, Jh = /@apply\s*\(?[^);]*\)?\s*(?:[;\n]|$)?/gim, Kh = /[^;:]*?:[^;]*?var\([^;]*\)(?:[;\n]|$)?/gim, Ch = /^@[^\s]*keyframes/, Ah = /\s+/g;
+    var V = !(window.ShadyDOM && window.ShadyDOM.inUse), Lh;
+    function Mh(a1) {
+        Lh = a1 && a1.shimcssproperties ? !1 : V || !(navigator.userAgent.match(/AppleWebKit\/601|Edge\/15/) || !window.CSS || !CSS.supports || !CSS.supports("box-shadow", "0 0 0 var(--foo)"));
+    }
+    var Nh;
+    window.ShadyCSS && void 0 !== window.ShadyCSS.cssBuild && (Nh = window.ShadyCSS.cssBuild);
+    var Oh = !(!window.ShadyCSS || !window.ShadyCSS.disableRuntime);
+    window.ShadyCSS && void 0 !== window.ShadyCSS.nativeCss ? Lh = window.ShadyCSS.nativeCss : window.ShadyCSS ? (Mh(window.ShadyCSS), window.ShadyCSS = void 0) : Mh(window.WebComponents && window.WebComponents.flags);
+    var W = Lh;
+    var Ph = /(?:^|[;\s{]\s*)(--[\w-]*?)\s*:\s*(?:((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^)]*?\)|[^};{])+)|\{([^}]*)\}(?:(?=[;\s}])|$))/gi, Qh = /(?:^|\W+)@apply\s*\(?([^);\n]*)\)?/gi, Rh = /(--[\w-]+)\s*([:,;)]|$)/gi, Sh = /(animation\s*:)|(animation-name\s*:)/, Th = /@media\s(.*)/, Uh = /\{[^}]*\}/g;
+    var Vh = new Set;
+    function Wh(a1, b) {
+        if (!a1) return "";
+        "string" === typeof a1 && (a1 = vh(a1));
+        b && Xh(a1, b);
+        return Gh(a1, W);
+    }
+    function Yh(a1) {
+        !a1.__cssRules && a1.textContent && (a1.__cssRules = vh(a1.textContent));
+        return a1.__cssRules || null;
+    }
+    function $h(a1) {
+        return !!a1.parent && a1.parent.type === Dh;
+    }
+    function Xh(a1, b, c, d) {
+        if (a1) {
+            var e = !1, f = a1.type;
+            if (d && f === Bh) {
+                var g = a1.selector.match(Th);
+                g && (window.matchMedia(g[1]).matches || (e = !0));
+            }
+            f === Fh ? b(a1) : c && f === Dh ? c(a1) : f === Eh && (e = !0);
+            if ((a1 = a1.rules) && !e) for(e = 0, f = a1.length, g = void 0; e < f && (g = a1[e]); e++)Xh(g, b, c, d);
+        }
+    }
+    function ai(a1, b, c, d) {
+        var e = document.createElement("style");
+        b && e.setAttribute("scope", b);
+        e.textContent = a1;
+        bi(e, c, d);
+        return e;
+    }
+    var ci = null;
+    function di(a1) {
+        a1 = document.createComment(" Shady DOM styles for " + a1 + " ");
+        var b = document.head;
+        b.insertBefore(a1, (ci ? ci.nextSibling : null) || b.firstChild);
+        return ci = a1;
+    }
+    function bi(a1, b, c) {
+        b = b || document.head;
+        b.insertBefore(a1, c && c.nextSibling || b.firstChild);
+        ci ? a1.compareDocumentPosition(ci) === Node.DOCUMENT_POSITION_PRECEDING && (ci = a1) : ci = a1;
+    }
+    function ei(a1, b) {
+        for(var c = 0, d = a1.length; b < d; b++)if ("(" === a1[b]) c++;
+        else if (")" === a1[b] && 0 === --c) return b;
+        return -1;
+    }
+    function fi(a1, b) {
+        var c = a1.indexOf("var(");
+        if (-1 === c) return b(a1, "", "", "");
+        var d = ei(a1, c + 3), e = a1.substring(c + 4, d);
+        c = a1.substring(0, c);
+        a1 = fi(a1.substring(d + 1), b);
+        d = e.indexOf(",");
+        return -1 === d ? b(c, e.trim(), "", a1) : b(c, e.substring(0, d).trim(), e.substring(d + 1).trim(), a1);
+    }
+    function gi(a1, b) {
+        V ? a1.setAttribute("class", b) : window.ShadyDOM.nativeMethods.setAttribute.call(a1, "class", b);
+    }
+    var hi = window.ShadyDOM && window.ShadyDOM.wrap || function(a1) {
+        return a1;
+    };
+    function ii(a1) {
+        var b = a1.localName, c = "";
+        b ? -1 < b.indexOf("-") || (c = b, b = a1.getAttribute && a1.getAttribute("is") || "") : (b = a1.is, c = a1.extends);
+        return {
+            is: b,
+            ja: c
+        };
+    }
+    function ji(a1) {
+        for(var b = [], c = "", d = 0; 0 <= d && d < a1.length; d++)if ("(" === a1[d]) {
+            var e = ei(a1, d);
+            c += a1.slice(d, e + 1);
+            d = e;
+        } else "," === a1[d] ? (b.push(c), c = "") : c += a1[d];
+        c && b.push(c);
+        return b;
+    }
+    function ki(a1) {
+        if (void 0 !== Nh) return Nh;
+        if (void 0 === a1.__cssBuild) {
+            var b = a1.getAttribute("css-build");
+            if (b) a1.__cssBuild = b;
+            else {
+                a: {
+                    b = "template" === a1.localName ? a1.content.firstChild : a1.firstChild;
+                    if (b instanceof Comment && (b = b.textContent.trim().split(":"), "css-build" === b[0])) {
+                        b = b[1];
+                        break a;
+                    }
+                    b = "";
+                }
+                if ("" !== b) {
+                    var c = "template" === a1.localName ? a1.content.firstChild : a1.firstChild;
+                    c.parentNode.removeChild(c);
+                }
+                a1.__cssBuild = b;
+            }
+        }
+        return a1.__cssBuild || "";
+    }
+    function li(a1) {
+        a1 = void 0 === a1 ? "" : a1;
+        return "" !== a1 && W ? V ? "shadow" === a1 : "shady" === a1 : !1;
+    }
+    function mi() {}
+    function ni(a1, b) {
+        oi(pi, a1, function(c) {
+            qi(c, b || "");
+        });
+    }
+    function oi(a1, b, c) {
+        b.nodeType === Node.ELEMENT_NODE && c(b);
+        var d;
+        "template" === b.localName ? d = (b.content || b._content || b).childNodes : d = b.children || b.childNodes;
+        if (d) for(b = 0; b < d.length; b++)oi(a1, d[b], c);
+    }
+    function qi(a1, b, c) {
+        if (b) {
+            if (a1.classList) c ? (a1.classList.remove("style-scope"), a1.classList.remove(b)) : (a1.classList.add("style-scope"), a1.classList.add(b));
+            else if (a1.getAttribute) {
+                var d = a1.getAttribute("class");
+                c ? d && (b = d.replace("style-scope", "").replace(b, ""), gi(a1, b)) : gi(a1, (d ? d + " " : "") + "style-scope " + b);
+            }
+        }
+    }
+    function ri(a1, b, c) {
+        oi(pi, a1, function(d) {
+            qi(d, b, !0);
+            qi(d, c);
+        });
+    }
+    function si(a1, b) {
+        oi(pi, a1, function(c) {
+            qi(c, b || "", !0);
+        });
+    }
+    function ti(a1, b, c, d, e) {
+        var f = pi;
+        e = void 0 === e ? "" : e;
+        "" === e && (V || "shady" === (void 0 === d ? "" : d) ? e = Wh(b, c) : (a1 = ii(a1), e = ui(f, b, a1.is, a1.ja, c) + "\n\n"));
+        return e.trim();
+    }
+    function ui(a1, b, c, d, e) {
+        var f = vi(c, d);
+        c = c ? "." + c : "";
+        return Wh(b, function(g) {
+            g.i || (g.selector = g.G = wi(a1, g, a1.h, c, f), g.i = !0);
+            e && e(g, c, f);
+        });
+    }
+    function vi(a1, b) {
+        return b ? "[is=" + a1 + "]" : a1;
+    }
+    function wi(a1, b, c, d, e) {
+        var f = ji(b.selector);
+        if (!$h(b)) {
+            b = 0;
+            for(var g = f.length, h = void 0; b < g && (h = f[b]); b++)f[b] = c.call(a1, h, d, e);
+        }
+        return f.filter(function(k) {
+            return !!k;
+        }).join(",");
+    }
+    function xi(a1) {
+        return a1.replace(yi, function(b, c, d) {
+            -1 < d.indexOf("+") ? d = d.replace(/\+/g, "___") : -1 < d.indexOf("___") && (d = d.replace(/___/g, "+"));
+            return ":" + c + "(" + d + ")";
+        });
+    }
+    function zi(a1) {
+        for(var b = [], c; c = a1.match(Ai);){
+            var d = c.index, e = ei(a1, d);
+            if (-1 === e) throw Error(c.input + " selector missing ')'");
+            c = a1.slice(d, e + 1);
+            a1 = a1.replace(c, "\uE000");
+            b.push(c);
+        }
+        return {
+            Ea: a1,
+            matches: b
+        };
+    }
+    function Bi(a1, b) {
+        var c = a1.split("\uE000");
+        return b.reduce(function(d, e, f) {
+            return d + e + c[f + 1];
+        }, c[0]);
+    }
+    mi.prototype.h = function(a1, b, c) {
+        var d = !1;
+        a1 = a1.trim();
+        var e = yi.test(a1);
+        e && (a1 = a1.replace(yi, function(h, k, l) {
+            return ":" + k + "(" + l.replace(/\s/g, "") + ")";
+        }), a1 = xi(a1));
+        var f = Ai.test(a1);
+        if (f) {
+            var g = zi(a1);
+            a1 = g.Ea;
+            g = g.matches;
+        }
+        a1 = a1.replace(Ci, ":host $1");
+        a1 = a1.replace(Di, function(h, k, l) {
+            d || (h = Ei(l, k, b, c), d = d || h.stop, k = h.Ya, l = h.value);
+            return k + l;
+        });
+        f && (a1 = Bi(a1, g));
+        e && (a1 = xi(a1));
+        return a1 = a1.replace(Fi, function(h, k, l, m) {
+            return '[dir="' + l + '"] ' + k + m + ", " + k + '[dir="' + l + '"]' + m;
+        });
+    };
+    function Ei(a1, b, c, d) {
+        var e = a1.indexOf("::slotted");
+        0 <= a1.indexOf(":host") ? a1 = Gi(a1, d) : 0 !== e && (a1 = c ? Hi(a1, c) : a1);
+        c = !1;
+        0 <= e && (b = "", c = !0);
+        if (c) {
+            var f = !0;
+            c && (a1 = a1.replace(Ii, function(g, h) {
+                return " > " + h;
+            }));
+        }
+        return {
+            value: a1,
+            Ya: b,
+            stop: f
+        };
+    }
+    function Hi(a1, b) {
+        a1 = a1.split(/(\[.+?\])/);
+        for(var c = [], d = 0; d < a1.length; d++)if (1 === d % 2) c.push(a1[d]);
+        else {
+            var e = a1[d];
+            if ("" !== e || d !== a1.length - 1) e = e.split(":"), e[0] += b, c.push(e.join(":"));
+        }
+        return c.join("");
+    }
+    function Gi(a1, b) {
+        var c = a1.match(Ji);
+        return (c = c && c[2].trim() || "") ? c[0].match(Ki) ? a1.replace(Ji, function(d, e, f) {
+            return b + f;
+        }) : c.split(Ki)[0] === b ? c : "should_not_match" : a1.replace(":host", b);
+    }
+    function Li(a1) {
+        ":root" === a1.selector && (a1.selector = "html");
+    }
+    mi.prototype.i = function(a1) {
+        return a1.match(":host") ? "" : a1.match("::slotted") ? this.h(a1, ":not(.style-scope)") : Hi(a1.trim(), ":not(.style-scope)");
+    };
+    ea.Object.defineProperties(mi.prototype, {
+        g: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return "style-scope";
+            }
+        }
+    });
+    var yi = /:(nth[-\w]+)\(([^)]+)\)/, Di = /(^|[\s>+~]+)((?:\[.+?\]|[^\s>+~=[])+)/g, Ki = /[[.:#*]/, Ci = /^(::slotted)/, Ji = /(:host)(?:\(((?:\([^)(]*\)|[^)(]*)+?)\))/, Ii = /(?:::slotted)(?:\(((?:\([^)(]*\)|[^)(]*)+?)\))/, Fi = /(.*):dir\((?:(ltr|rtl))\)(.*)/, Ai = /:(?:matches|any|-(?:webkit|moz)-any)/, pi = new mi;
+    function Mi(a1, b, c, d, e) {
+        this.M = a1 || null;
+        this.h = b || null;
+        this.Ca = c || [];
+        this.K = null;
+        this.cssBuild = e || "";
+        this.ja = d || "";
+        this.g = this.L = this.R = null;
+    }
+    function Ni(a1) {
+        return a1 ? a1.__styleInfo : null;
+    }
+    function Oi(a1, b) {
+        return a1.__styleInfo = b;
+    }
+    Mi.prototype.i = function() {
+        return this.M;
+    };
+    Mi.prototype._getStyleRules = Mi.prototype.i;
+    function Pi(a1) {
+        var b = this.matches || this.matchesSelector || this.mozMatchesSelector || this.msMatchesSelector || this.oMatchesSelector || this.webkitMatchesSelector;
+        return b && b.call(this, a1);
+    }
+    var Qi = /:host\s*>\s*/, Ri = navigator.userAgent.match("Trident");
+    function Si() {}
+    function Ti(a1) {
+        var b = {}, c = [], d = 0;
+        Xh(a1, function(f) {
+            Ui(f);
+            f.index = d++;
+            f = f.F.cssText;
+            for(var g; g = Rh.exec(f);){
+                var h = g[1];
+                ":" !== g[2] && (b[h] = !0);
+            }
+        }, function(f) {
+            c.push(f);
+        });
+        a1.h = c;
+        a1 = [];
+        for(var e in b)a1.push(e);
+        return a1;
+    }
+    function Ui(a1) {
+        if (!a1.F) {
+            var b = {}, c = {};
+            Vi(a1, c) && (b.P = c, a1.rules = null);
+            b.cssText = a1.parsedCssText.replace(Uh, "").replace(Ph, "");
+            a1.F = b;
+        }
+    }
+    function Vi(a1, b) {
+        var c = a1.F;
+        if (c) {
+            if (c.P) return Object.assign(b, c.P), !0;
+        } else {
+            c = a1.parsedCssText;
+            for(var d; a1 = Ph.exec(c);){
+                d = (a1[2] || a1[3]).trim();
+                if ("inherit" !== d || "unset" !== d) b[a1[1].trim()] = d;
+                d = !0;
+            }
+            return d;
+        }
+    }
+    function Wi(a1, b, c) {
+        b && (b = 0 <= b.indexOf(";") ? Xi(a1, b, c) : fi(b, function(d, e, f, g) {
+            if (!e) return d + g;
+            (e = Wi(a1, c[e], c)) && "initial" !== e ? "apply-shim-inherit" === e && (e = "inherit") : e = Wi(a1, c[f] || f, c) || f;
+            return d + (e || "") + g;
+        }));
+        return b && b.trim() || "";
+    }
+    function Xi(a1, b, c) {
+        b = b.split(";");
+        for(var d = 0, e, f; d < b.length; d++)if (e = b[d]) {
+            Qh.lastIndex = 0;
+            if (f = Qh.exec(e)) e = Wi(a1, c[f[1]], c);
+            else if (f = e.indexOf(":"), -1 !== f) {
+                var g = e.substring(f);
+                g = g.trim();
+                g = Wi(a1, g, c) || g;
+                e = e.substring(0, f) + g;
+            }
+            b[d] = e && e.lastIndexOf(";") === e.length - 1 ? e.slice(0, -1) : e || "";
+        }
+        return b.join(";");
+    }
+    function Yi(a1, b) {
+        var c = {}, d = [];
+        Xh(a1, function(e) {
+            e.F || Ui(e);
+            var f = e.G || e.parsedSelector;
+            b && e.F.P && f && Pi.call(b, f) && (Vi(e, c), e = e.index, f = parseInt(e / 32, 10), d[f] = (d[f] || 0) | 1 << e % 32);
+        }, null, !0);
+        return {
+            P: c,
+            key: d
+        };
+    }
+    function Zi(a1, b, c, d) {
+        b.F || Ui(b);
+        if (b.F.P) {
+            var e = ii(a1);
+            a1 = e.is;
+            e = e.ja;
+            e = a1 ? vi(a1, e) : "html";
+            var f = b.parsedSelector;
+            var g = !!f.match(Qi) || "html" === e && -1 < f.indexOf("html");
+            var h = 0 === f.indexOf(":host") && !g;
+            "shady" === c && (g = f === e + " > *." + e || -1 !== f.indexOf("html"), h = !g && 0 === f.indexOf(e));
+            if (g || h) c = e, h && (b.G || (b.G = wi(pi, b, pi.h, a1 ? "." + a1 : "", e)), c = b.G || e), g && "html" === e && (c = b.G || b.O), d({
+                Ea: c,
+                gb: h,
+                vb: g
+            });
+        }
+    }
+    function $i(a1, b, c) {
+        var d = {}, e = {};
+        Xh(b, function(f) {
+            Zi(a1, f, c, function(g) {
+                Pi.call(a1._element || a1, g.Ea) && (g.gb ? Vi(f, d) : Vi(f, e));
+            });
+        }, null, !0);
+        return {
+            mb: e,
+            eb: d
+        };
+    }
+    function aj(a1, b, c, d) {
+        var e = ii(b), f = vi(e.is, e.ja), g = new RegExp("(?:^|[^.#[:])" + (b.extends ? "\\" + f.slice(0, -1) + "\\]" : f) + "($|[.:[\\s>+~])"), h = Ni(b);
+        e = h.M;
+        h = h.cssBuild;
+        var k = bj(e, d);
+        return ti(b, e, function(l) {
+            var m = "";
+            l.F || Ui(l);
+            l.F.cssText && (m = Xi(a1, l.F.cssText, c));
+            l.cssText = m;
+            if (!V && !$h(l) && l.cssText) {
+                var q = m = l.cssText;
+                null == l.Ma && (l.Ma = Sh.test(m));
+                if (l.Ma) {
+                    if (null == l.ra) {
+                        l.ra = [];
+                        for(var H in k)q = k[H], q = q(m), m !== q && (m = q, l.ra.push(H));
+                    } else {
+                        for(H = 0; H < l.ra.length; ++H)q = k[l.ra[H]], m = q(m);
+                        q = m;
+                    }
+                }
+                l.cssText = q;
+                l.G = l.G || l.selector;
+                m = "." + d;
+                H = ji(l.G);
+                q = 0;
+                for(var C = H.length, t1 = void 0; q < C && (t1 = H[q]); q++)H[q] = t1.match(g) ? t1.replace(f, m) : m + " " + t1;
+                l.selector = H.join(",");
+            }
+        }, h);
+    }
+    function bj(a1, b) {
+        a1 = a1.h;
+        var c = {};
+        if (!V && a1) for(var d = 0, e = a1[d]; d < a1.length; e = a1[++d]){
+            var f = e, g = b;
+            f.u = new RegExp("\\b" + f.keyframesName + "(?!\\B|-)", "g");
+            f.g = f.keyframesName + "-" + g;
+            f.G = f.G || f.selector;
+            f.selector = f.G.replace(f.keyframesName, f.g);
+            c[e.keyframesName] = cj(e);
+        }
+        return c;
+    }
+    function cj(a1) {
+        return function(b) {
+            return b.replace(a1.u, a1.g);
+        };
+    }
+    function dj(a1, b) {
+        var c = ej, d = Yh(a1);
+        a1.textContent = Wh(d, function(e) {
+            var f = e.cssText = e.parsedCssText;
+            e.F && e.F.cssText && (f = f.replace(Hh, "").replace(Ih, ""), e.cssText = Xi(c, f, b));
+        });
+    }
+    ea.Object.defineProperties(Si.prototype, {
+        g: {
+            configurable: !0,
+            enumerable: !0,
+            get: function() {
+                return "x-scope";
+            }
+        }
+    });
+    var ej = new Si;
+    var fj = {}, gj = window.customElements;
+    if (gj && !V && !Oh) {
+        var hj = gj.define;
+        gj.define = function(a1, b, c) {
+            fj[a1] || (fj[a1] = di(a1));
+            hj.call(gj, a1, b, c);
+        };
+    }
+    function ij() {
+        this.cache = {};
+    }
+    ij.prototype.store = function(a1, b, c, d) {
+        var e = this.cache[a1] || [];
+        e.push({
+            P: b,
+            styleElement: c,
+            L: d
+        });
+        100 < e.length && e.shift();
+        this.cache[a1] = e;
+    };
+    function jj() {}
+    var kj = new RegExp(pi.g + "\\s*([^\\s]*)");
+    function lj(a1) {
+        return (a1 = (a1.classList && a1.classList.value ? a1.classList.value : a1.getAttribute("class") || "").match(kj)) ? a1[1] : "";
+    }
+    function mj(a1) {
+        var b = hi(a1).getRootNode();
+        return b === a1 || b === a1.ownerDocument ? "" : (a1 = b.host) ? ii(a1).is : "";
+    }
+    function nj(a1) {
+        for(var b = 0; b < a1.length; b++){
+            var c = a1[b];
+            if (c.target !== document.documentElement && c.target !== document.head) for(var d = 0; d < c.addedNodes.length; d++){
+                var e = c.addedNodes[d];
+                if (e.nodeType === Node.ELEMENT_NODE) {
+                    var f = e.getRootNode(), g = lj(e);
+                    if (g && f === e.ownerDocument && ("style" !== e.localName && "template" !== e.localName || "" === ki(e))) si(e, g);
+                    else if (f instanceof ShadowRoot) for(f = mj(e), f !== g && ri(e, g, f), e = window.ShadyDOM.nativeMethods.querySelectorAll.call(e, ":not(." + pi.g + ")"), g = 0; g < e.length; g++){
+                        f = e[g];
+                        var h = mj(f);
+                        h && qi(f, h);
+                    }
+                }
+            }
+        }
+    }
+    if (!(V || window.ShadyDOM && window.ShadyDOM.handlesDynamicScoping)) {
+        var oj = new MutationObserver(nj), pj = function(a1) {
+            oj.observe(a1, {
+                childList: !0,
+                subtree: !0
+            });
+        };
+        if (window.customElements && !window.customElements.polyfillWrapFlushCallback) pj(document);
+        else {
+            var qj = function() {
+                pj(document.body);
+            };
+            window.HTMLImports ? window.HTMLImports.whenReady(qj) : requestAnimationFrame(function() {
+                if ("loading" === document.readyState) {
+                    var a1 = function() {
+                        qj();
+                        document.removeEventListener("readystatechange", a1);
+                    };
+                    document.addEventListener("readystatechange", a1);
+                } else qj();
+            });
+        }
+        jj = function() {
+            nj(oj.takeRecords());
+        };
+    }
+    var rj = {};
+    var sj = Promise.resolve();
+    function tj(a1) {
+        if (a1 = rj[a1]) a1._applyShimCurrentVersion = a1._applyShimCurrentVersion || 0, a1._applyShimValidatingVersion = a1._applyShimValidatingVersion || 0, a1._applyShimNextVersion = (a1._applyShimNextVersion || 0) + 1;
+    }
+    function uj(a1) {
+        return a1._applyShimCurrentVersion === a1._applyShimNextVersion;
+    }
+    function vj(a1) {
+        a1._applyShimValidatingVersion = a1._applyShimNextVersion;
+        a1._validating || (a1._validating = !0, sj.then(function() {
+            a1._applyShimCurrentVersion = a1._applyShimNextVersion;
+            a1._validating = !1;
+        }));
+    }
+    var wj = {}, xj = new ij;
+    function Y() {
+        this.ea = {};
+        this.i = document.documentElement;
+        var a1 = new uh;
+        a1.rules = [];
+        this.u = Oi(this.i, new Mi(a1));
+        this.O = !1;
+        this.g = this.h = null;
+    }
+    v = Y.prototype;
+    v.flush = function() {
+        jj();
+    };
+    v.bb = function(a1) {
+        return Yh(a1);
+    };
+    v.qb = function(a1) {
+        return Wh(a1);
+    };
+    v.prepareTemplate = function(a1, b, c) {
+        this.prepareTemplateDom(a1, b);
+        this.prepareTemplateStyles(a1, b, c);
+    };
+    v.prepareTemplateStyles = function(a1, b, c) {
+        if (!a1._prepared && !Oh) {
+            V || fj[b] || (fj[b] = di(b));
+            a1._prepared = !0;
+            a1.name = b;
+            a1.extends = c;
+            rj[b] = a1;
+            var d = ki(a1), e = li(d);
+            c = {
+                is: b,
+                extends: c
+            };
+            for(var f = [], g = a1.content.querySelectorAll("style"), h = 0; h < g.length; h++){
+                var k = g[h];
+                if (k.hasAttribute("shady-unscoped")) {
+                    if (!V) {
+                        var l = k.textContent;
+                        if (!Vh.has(l)) {
+                            Vh.add(l);
+                            var m = document.createElement("style");
+                            m.setAttribute("shady-unscoped", "");
+                            m.textContent = l;
+                            document.head.appendChild(m);
+                        }
+                        k.parentNode.removeChild(k);
+                    }
+                } else f.push(k.textContent), k.parentNode.removeChild(k);
+            }
+            f = f.join("").trim() + (wj[b] || "");
+            yj(this);
+            if (!e) {
+                if (g = !d) g = Qh.test(f) || Ph.test(f), Qh.lastIndex = 0, Ph.lastIndex = 0;
+                h = vh(f);
+                g && W && this.h && this.h.transformRules(h, b);
+                a1._styleAst = h;
+            }
+            g = [];
+            W || (g = Ti(a1._styleAst));
+            if (!g.length || W) h = V ? a1.content : null, b = fj[b] || null, d = ti(c, a1._styleAst, null, d, e ? f : ""), d = d.length ? ai(d, c.is, h, b) : null, a1._style = d;
+            a1.g = g;
+        }
+    };
+    v.kb = function(a1, b) {
+        wj[b] = a1.join(" ");
+    };
+    v.prepareTemplateDom = function(a1, b) {
+        if (!Oh) {
+            var c = ki(a1);
+            V || "shady" === c || a1._domPrepared || (a1._domPrepared = !0, ni(a1.content, b));
+        }
+    };
+    function zj(a1) {
+        var b = ii(a1), c = b.is;
+        b = b.ja;
+        var d = fj[c] || null, e = rj[c];
+        if (e) {
+            c = e._styleAst;
+            var f = e.g;
+            e = ki(e);
+            b = new Mi(c, d, f, b, e);
+            Oi(a1, b);
+            return b;
+        }
+    }
+    function Aj(a1) {
+        !a1.g && window.ShadyCSS && window.ShadyCSS.CustomStyleInterface && (a1.g = window.ShadyCSS.CustomStyleInterface, a1.g.transformCallback = function(b) {
+            a1.Qa(b);
+        }, a1.g.validateCallback = function() {
+            requestAnimationFrame(function() {
+                (a1.g.enqueued || a1.O) && a1.flushCustomStyles();
+            });
+        });
+    }
+    function yj(a1) {
+        if (!a1.h && window.ShadyCSS && window.ShadyCSS.ApplyShim) {
+            a1.h = window.ShadyCSS.ApplyShim;
+            a1.h.invalidCallback = tj;
+            var b = !0;
+        } else b = !1;
+        Aj(a1);
+        return b;
+    }
+    v.flushCustomStyles = function() {
+        if (!Oh) {
+            var a1 = yj(this);
+            if (this.g) {
+                var b = this.g.processStyles();
+                if ((a1 || this.g.enqueued) && !li(this.u.cssBuild)) {
+                    if (W) {
+                        if (!this.u.cssBuild) for(a1 = 0; a1 < b.length; a1++){
+                            var c = this.g.getStyleForCustomStyle(b[a1]);
+                            if (c && W && this.h) {
+                                var d = Yh(c);
+                                yj(this);
+                                this.h.transformRules(d);
+                                c.textContent = Wh(d);
+                            }
+                        }
+                    } else {
+                        Bj(this, b);
+                        Cj(this, this.i, this.u);
+                        for(a1 = 0; a1 < b.length; a1++)(c = this.g.getStyleForCustomStyle(b[a1])) && dj(c, this.u.R);
+                        this.O && this.styleDocument();
+                    }
+                    this.g.enqueued = !1;
+                }
+            }
+        }
+    };
+    function Bj(a1, b) {
+        b = b.map(function(c) {
+            return a1.g.getStyleForCustomStyle(c);
+        }).filter(function(c) {
+            return !!c;
+        });
+        b.sort(function(c, d) {
+            c = d.compareDocumentPosition(c);
+            return c & Node.DOCUMENT_POSITION_FOLLOWING ? 1 : c & Node.DOCUMENT_POSITION_PRECEDING ? -1 : 0;
+        });
+        a1.u.M.rules = b.map(function(c) {
+            return Yh(c);
+        });
+    }
+    v.styleElement = function(a1, b) {
+        if (Oh) {
+            if (b) {
+                Ni(a1) || Oi(a1, new Mi(null));
+                var c = Ni(a1);
+                c.K = c.K || {};
+                Object.assign(c.K, b);
+                Dj(this, a1, c);
+            }
+        } else if (c = Ni(a1) || zj(a1)) {
+            if (a1 !== this.i && (this.O = !0), b && (c.K = c.K || {}, Object.assign(c.K, b)), W) Dj(this, a1, c);
+            else if (this.flush(), Cj(this, a1, c), c.Ca && c.Ca.length) {
+                b = ii(a1).is;
+                var d;
+                a: {
+                    if (d = xj.cache[b]) for(var e = d.length - 1; 0 <= e; e--){
+                        var f = d[e];
+                        b: {
+                            var g = c.Ca;
+                            for(var h = 0; h < g.length; h++){
+                                var k = g[h];
+                                if (f.P[k] !== c.R[k]) {
+                                    g = !1;
+                                    break b;
+                                }
+                            }
+                            g = !0;
+                        }
+                        if (g) {
+                            d = f;
+                            break a;
+                        }
+                    }
+                    d = void 0;
+                }
+                g = d ? d.styleElement : null;
+                e = c.L;
+                (f = d && d.L) || (f = this.ea[b] = (this.ea[b] || 0) + 1, f = b + "-" + f);
+                c.L = f;
+                f = c.L;
+                h = ej;
+                h = g ? g.textContent || "" : aj(h, a1, c.R, f);
+                k = Ni(a1);
+                var l = k.g;
+                l && !V && l !== g && (l._useCount--, 0 >= l._useCount && l.parentNode && l.parentNode.removeChild(l));
+                V ? k.g ? (k.g.textContent = h, g = k.g) : h && (g = ai(h, f, a1.shadowRoot, k.h)) : g ? g.parentNode || (Ri && -1 < h.indexOf("@media") && (g.textContent = h), bi(g, null, k.h)) : h && (g = ai(h, f, null, k.h));
+                g && (g._useCount = g._useCount || 0, k.g != g && g._useCount++, k.g = g);
+                f = g;
+                V || (g = c.L, k = h = a1.getAttribute("class") || "", e && (k = h.replace(new RegExp("\\s*x-scope\\s*" + e + "\\s*", "g"), " ")), k += (k ? " " : "") + "x-scope " + g, h !== k && gi(a1, k));
+                d || xj.store(b, c.R, f, c.L);
+            }
+        }
+    };
+    function Dj(a1, b, c) {
+        var d = ii(b).is;
+        if (c.K) {
+            var e = c.K, f;
+            for(f in e)null === f ? b.style.removeProperty(f) : b.style.setProperty(f, e[f]);
+        }
+        e = rj[d];
+        if (!(!e && b !== a1.i || e && "" !== ki(e)) && e && e._style && !uj(e)) {
+            if (uj(e) || e._applyShimValidatingVersion !== e._applyShimNextVersion) yj(a1), a1.h && a1.h.transformRules(e._styleAst, d), e._style.textContent = ti(b, c.M), vj(e);
+            V && (a1 = b.shadowRoot) && (a1 = a1.querySelector("style")) && (a1.textContent = ti(b, c.M));
+            c.M = e._styleAst;
+        }
+    }
+    function Ej(a1, b) {
+        return (b = hi(b).getRootNode().host) ? Ni(b) || zj(b) ? b : Ej(a1, b) : a1.i;
+    }
+    function Cj(a1, b, c) {
+        var d = Ej(a1, b), e = Ni(d), f = e.R;
+        d === a1.i || f || (Cj(a1, d, e), f = e.R);
+        a1 = Object.create(f || null);
+        d = $i(b, c.M, c.cssBuild);
+        b = Yi(e.M, b).P;
+        Object.assign(a1, d.eb, b, d.mb);
+        b = c.K;
+        for(var g in b)if ((e = b[g]) || 0 === e) a1[g] = e;
+        g = ej;
+        b = Object.getOwnPropertyNames(a1);
+        for(e = 0; e < b.length; e++)d = b[e], a1[d] = Wi(g, a1[d], a1);
+        c.R = a1;
+    }
+    v.styleDocument = function(a1) {
+        this.styleSubtree(this.i, a1);
+    };
+    v.styleSubtree = function(a1, b) {
+        var c = hi(a1), d = c.shadowRoot, e = a1 === this.i;
+        (d || e) && this.styleElement(a1, b);
+        if (a1 = e ? c : d) for(a1 = Array.from(a1.querySelectorAll("*")).filter(function(f) {
+            return hi(f).shadowRoot;
+        }), b = 0; b < a1.length; b++)this.styleSubtree(a1[b]);
+    };
+    v.Qa = function(a1) {
+        var b = this, c = ki(a1);
+        c !== this.u.cssBuild && (this.u.cssBuild = c);
+        if (!li(c)) {
+            var d = Yh(a1);
+            Xh(d, function(e) {
+                if (V) Li(e);
+                else {
+                    var f = pi;
+                    e.selector = e.parsedSelector;
+                    Li(e);
+                    e.selector = e.G = wi(f, e, f.i, void 0, void 0);
+                }
+                W && "" === c && (yj(b), b.h && b.h.transformRule(e));
+            });
+            W ? a1.textContent = Wh(d) : this.u.M.rules.push(d);
+        }
+    };
+    v.getComputedStyleValue = function(a1, b) {
+        var c;
+        W || (c = (Ni(a1) || Ni(Ej(this, a1))).R[b]);
+        return (c = c || window.getComputedStyle(a1).getPropertyValue(b)) ? c.trim() : "";
+    };
+    v.pb = function(a1, b) {
+        var c = hi(a1).getRootNode();
+        b = b ? ("string" === typeof b ? b : String(b)).split(/\s/) : [];
+        c = c.host && c.host.localName;
+        if (!c) {
+            var d = a1.getAttribute("class");
+            if (d) {
+                d = d.split(/\s/);
+                for(var e = 0; e < d.length; e++)if (d[e] === pi.g) {
+                    c = d[e + 1];
+                    break;
+                }
+            }
+        }
+        c && b.push(pi.g, c);
+        W || (c = Ni(a1)) && c.L && b.push(ej.g, c.L);
+        gi(a1, b.join(" "));
+    };
+    v.Xa = function(a1) {
+        return Ni(a1);
+    };
+    v.ob = function(a1, b) {
+        qi(a1, b);
+    };
+    v.rb = function(a1, b) {
+        qi(a1, b, !0);
+    };
+    v.nb = function(a1) {
+        return mj(a1);
+    };
+    v.$a = function(a1) {
+        return lj(a1);
+    };
+    Y.prototype.flush = Y.prototype.flush;
+    Y.prototype.prepareTemplate = Y.prototype.prepareTemplate;
+    Y.prototype.styleElement = Y.prototype.styleElement;
+    Y.prototype.styleDocument = Y.prototype.styleDocument;
+    Y.prototype.styleSubtree = Y.prototype.styleSubtree;
+    Y.prototype.getComputedStyleValue = Y.prototype.getComputedStyleValue;
+    Y.prototype.setElementClass = Y.prototype.pb;
+    Y.prototype._styleInfoForNode = Y.prototype.Xa;
+    Y.prototype.transformCustomStyleForDocument = Y.prototype.Qa;
+    Y.prototype.getStyleAst = Y.prototype.bb;
+    Y.prototype.styleAstToString = Y.prototype.qb;
+    Y.prototype.flushCustomStyles = Y.prototype.flushCustomStyles;
+    Y.prototype.scopeNode = Y.prototype.ob;
+    Y.prototype.unscopeNode = Y.prototype.rb;
+    Y.prototype.scopeForNode = Y.prototype.nb;
+    Y.prototype.currentScopeForNode = Y.prototype.$a;
+    Y.prototype.prepareAdoptedCssText = Y.prototype.kb;
+    Object.defineProperties(Y.prototype, {
+        nativeShadow: {
+            get: function() {
+                return V;
+            }
+        },
+        nativeCss: {
+            get: function() {
+                return W;
+            }
+        }
+    });
+    var Z = new Y, Fj, Gj;
+    window.ShadyCSS && (Fj = window.ShadyCSS.ApplyShim, Gj = window.ShadyCSS.CustomStyleInterface);
+    window.ShadyCSS = {
+        ScopingShim: Z,
+        prepareTemplate: function(a1, b, c) {
+            Z.flushCustomStyles();
+            Z.prepareTemplate(a1, b, c);
+        },
+        prepareTemplateDom: function(a1, b) {
+            Z.prepareTemplateDom(a1, b);
+        },
+        prepareTemplateStyles: function(a1, b, c) {
+            Z.flushCustomStyles();
+            Z.prepareTemplateStyles(a1, b, c);
+        },
+        styleSubtree: function(a1, b) {
+            Z.flushCustomStyles();
+            Z.styleSubtree(a1, b);
+        },
+        styleElement: function(a1) {
+            Z.flushCustomStyles();
+            Z.styleElement(a1);
+        },
+        styleDocument: function(a1) {
+            Z.flushCustomStyles();
+            Z.styleDocument(a1);
+        },
+        flushCustomStyles: function() {
+            Z.flushCustomStyles();
+        },
+        getComputedStyleValue: function(a1, b) {
+            return Z.getComputedStyleValue(a1, b);
+        },
+        nativeCss: W,
+        nativeShadow: V,
+        cssBuild: Nh,
+        disableRuntime: Oh
+    };
+    Fj && (window.ShadyCSS.ApplyShim = Fj);
+    Gj && (window.ShadyCSS.CustomStyleInterface = Gj);
+    (function(a1) {
+        function b(t1) {
+            "" == t1 && (f.call(this), this.m = !0);
+            return t1.toLowerCase();
+        }
+        function c(t1) {
+            var F = t1.charCodeAt(0);
+            return 32 < F && 127 > F && -1 == [
+                34,
+                35,
+                60,
+                62,
+                63,
+                96
+            ].indexOf(F) ? t1 : encodeURIComponent(t1);
+        }
+        function d(t1) {
+            var F = t1.charCodeAt(0);
+            return 32 < F && 127 > F && -1 == [
+                34,
+                35,
+                60,
+                62,
+                96
+            ].indexOf(F) ? t1 : encodeURIComponent(t1);
+        }
+        function e(t1, F, E) {
+            function N(ha) {
+                sa.push(ha);
+            }
+            var y = F || "scheme start", X = 0, x = "", ta = !1, ia = !1, sa = [];
+            a: for(; (void 0 != t1[X - 1] || 0 == X) && !this.m;){
+                var n = t1[X];
+                switch(y){
+                    case "scheme start":
+                        if (n && q.test(n)) x += n.toLowerCase(), y = "scheme";
+                        else if (F) {
+                            N("Invalid scheme.");
+                            break a;
+                        } else {
+                            x = "";
+                            y = "no scheme";
+                            continue;
+                        }
+                        break;
+                    case "scheme":
+                        if (n && H.test(n)) x += n.toLowerCase();
+                        else if (":" == n) {
+                            this.l = x;
+                            x = "";
+                            if (F) break a;
+                            void 0 !== l[this.l] && (this.H = !0);
+                            y = "file" == this.l ? "relative" : this.H && E && E.l == this.l ? "relative or authority" : this.H ? "authority first slash" : "scheme data";
+                        } else if (F) {
+                            void 0 != n && N("Code point not allowed in scheme: " + n);
+                            break a;
+                        } else {
+                            x = "";
+                            X = 0;
+                            y = "no scheme";
+                            continue;
+                        }
+                        break;
+                    case "scheme data":
+                        "?" == n ? (this.A = "?", y = "query") : "#" == n ? (this.C = "#", y = "fragment") : void 0 != n && "	" != n && "\n" != n && "\r" != n && (this.ya += c(n));
+                        break;
+                    case "no scheme":
+                        if (E && void 0 !== l[E.l]) {
+                            y = "relative";
+                            continue;
+                        } else N("Missing scheme."), f.call(this), this.m = !0;
+                        break;
+                    case "relative or authority":
+                        if ("/" == n && "/" == t1[X + 1]) y = "authority ignore slashes";
+                        else {
+                            N("Expected /, got: " + n);
+                            y = "relative";
+                            continue;
+                        }
+                        break;
+                    case "relative":
+                        this.H = !0;
+                        "file" != this.l && (this.l = E.l);
+                        if (void 0 == n) {
+                            this.o = E.o;
+                            this.v = E.v;
+                            this.s = E.s.slice();
+                            this.A = E.A;
+                            this.B = E.B;
+                            this.j = E.j;
+                            break a;
+                        } else if ("/" == n || "\\" == n) "\\" == n && N("\\ is an invalid code point."), y = "relative slash";
+                        else if ("?" == n) this.o = E.o, this.v = E.v, this.s = E.s.slice(), this.A = "?", this.B = E.B, this.j = E.j, y = "query";
+                        else if ("#" == n) this.o = E.o, this.v = E.v, this.s = E.s.slice(), this.A = E.A, this.C = "#", this.B = E.B, this.j = E.j, y = "fragment";
+                        else {
+                            y = t1[X + 1];
+                            var J = t1[X + 2];
+                            if ("file" != this.l || !q.test(n) || ":" != y && "|" != y || void 0 != J && "/" != J && "\\" != J && "?" != J && "#" != J) this.o = E.o, this.v = E.v, this.B = E.B, this.j = E.j, this.s = E.s.slice(), this.s.pop();
+                            y = "relative path";
+                            continue;
+                        }
+                        break;
+                    case "relative slash":
+                        if ("/" == n || "\\" == n) "\\" == n && N("\\ is an invalid code point."), y = "file" == this.l ? "file host" : "authority ignore slashes";
+                        else {
+                            "file" != this.l && (this.o = E.o, this.v = E.v, this.B = E.B, this.j = E.j);
+                            y = "relative path";
+                            continue;
+                        }
+                        break;
+                    case "authority first slash":
+                        if ("/" == n) y = "authority second slash";
+                        else {
+                            N("Expected '/', got: " + n);
+                            y = "authority ignore slashes";
+                            continue;
+                        }
+                        break;
+                    case "authority second slash":
+                        y = "authority ignore slashes";
+                        if ("/" != n) {
+                            N("Expected '/', got: " + n);
+                            continue;
+                        }
+                        break;
+                    case "authority ignore slashes":
+                        if ("/" != n && "\\" != n) {
+                            y = "authority";
+                            continue;
+                        } else N("Expected authority, got: " + n);
+                        break;
+                    case "authority":
+                        if ("@" == n) {
+                            ta && (N("@ already seen."), x += "%40");
+                            ta = !0;
+                            for(n = 0; n < x.length; n++)J = x[n], "	" == J || "\n" == J || "\r" == J ? N("Invalid whitespace in authority.") : ":" == J && null === this.j ? this.j = "" : (J = c(J), null !== this.j ? this.j += J : this.B += J);
+                            x = "";
+                        } else if (void 0 == n || "/" == n || "\\" == n || "?" == n || "#" == n) {
+                            X -= x.length;
+                            x = "";
+                            y = "host";
+                            continue;
+                        } else x += n;
+                        break;
+                    case "file host":
+                        if (void 0 == n || "/" == n || "\\" == n || "?" == n || "#" == n) {
+                            2 != x.length || !q.test(x[0]) || ":" != x[1] && "|" != x[1] ? (0 != x.length && (this.o = b.call(this, x), x = ""), y = "relative path start") : y = "relative path";
+                            continue;
+                        } else "	" == n || "\n" == n || "\r" == n ? N("Invalid whitespace in file host.") : x += n;
+                        break;
+                    case "host":
+                    case "hostname":
+                        if (":" != n || ia) {
+                            if (void 0 == n || "/" == n || "\\" == n || "?" == n || "#" == n) {
+                                this.o = b.call(this, x);
+                                x = "";
+                                y = "relative path start";
+                                if (F) break a;
+                                continue;
+                            } else "	" != n && "\n" != n && "\r" != n ? ("[" == n ? ia = !0 : "]" == n && (ia = !1), x += n) : N("Invalid code point in host/hostname: " + n);
+                        } else if (this.o = b.call(this, x), x = "", y = "port", "hostname" == F) break a;
+                        break;
+                    case "port":
+                        if (/[0-9]/.test(n)) x += n;
+                        else if (void 0 == n || "/" == n || "\\" == n || "?" == n || "#" == n || F) {
+                            "" != x && (x = parseInt(x, 10), x != l[this.l] && (this.v = x + ""), x = "");
+                            if (F) break a;
+                            y = "relative path start";
+                            continue;
+                        } else "	" == n || "\n" == n || "\r" == n ? N("Invalid code point in port: " + n) : (f.call(this), this.m = !0);
+                        break;
+                    case "relative path start":
+                        "\\" == n && N("'\\' not allowed in path.");
+                        y = "relative path";
+                        if ("/" != n && "\\" != n) continue;
+                        break;
+                    case "relative path":
+                        if (void 0 != n && "/" != n && "\\" != n && (F || "?" != n && "#" != n)) "	" != n && "\n" != n && "\r" != n && (x += c(n));
+                        else {
+                            "\\" == n && N("\\ not allowed in relative path.");
+                            if (J = m[x.toLowerCase()]) x = J;
+                            ".." == x ? (this.s.pop(), "/" != n && "\\" != n && this.s.push("")) : "." == x && "/" != n && "\\" != n ? this.s.push("") : "." != x && ("file" == this.l && 0 == this.s.length && 2 == x.length && q.test(x[0]) && "|" == x[1] && (x = x[0] + ":"), this.s.push(x));
+                            x = "";
+                            "?" == n ? (this.A = "?", y = "query") : "#" == n && (this.C = "#", y = "fragment");
+                        }
+                        break;
+                    case "query":
+                        F || "#" != n ? void 0 != n && "	" != n && "\n" != n && "\r" != n && (this.A += d(n)) : (this.C = "#", y = "fragment");
+                        break;
+                    case "fragment":
+                        void 0 != n && "	" != n && "\n" != n && "\r" != n && (this.C += n);
+                }
+                X++;
+            }
+        }
+        function f() {
+            this.B = this.ya = this.l = "";
+            this.j = null;
+            this.v = this.o = "";
+            this.s = [];
+            this.C = this.A = "";
+            this.H = this.m = !1;
+        }
+        function g(t1, F) {
+            void 0 === F || F instanceof g || (F = new g(String(F)));
+            this.g = t1;
+            f.call(this);
+            e.call(this, this.g.replace(/^[ \t\r\n\f]+|[ \t\r\n\f]+$/g, ""), null, F);
+        }
+        var h = !1;
+        try {
+            var k = new URL("b", "http://a");
+            k.pathname = "c%20d";
+            h = "http://a/c%20d" === k.href;
+        } catch (t1) {}
+        if (!h) {
+            var l = Object.create(null);
+            l.ftp = 21;
+            l.file = 0;
+            l.gopher = 70;
+            l.http = 80;
+            l.https = 443;
+            l.ws = 80;
+            l.wss = 443;
+            var m = Object.create(null);
+            m["%2e"] = ".";
+            m[".%2e"] = "..";
+            m["%2e."] = "..";
+            m["%2e%2e"] = "..";
+            var q = /[a-zA-Z]/, H = /[a-zA-Z0-9+\-.]/;
+            g.prototype = {
+                toString: function() {
+                    return this.href;
+                },
+                get href () {
+                    if (this.m) return this.g;
+                    var t1 = "";
+                    if ("" != this.B || null != this.j) t1 = this.B + (null != this.j ? ":" + this.j : "") + "@";
+                    return this.protocol + (this.H ? "//" + t1 + this.host : "") + this.pathname + this.A + this.C;
+                },
+                set href (t){
+                    f.call(this);
+                    e.call(this, t);
+                },
+                get protocol () {
+                    return this.l + ":";
+                },
+                set protocol (t){
+                    this.m || e.call(this, t + ":", "scheme start");
+                },
+                get host () {
+                    return this.m ? "" : this.v ? this.o + ":" + this.v : this.o;
+                },
+                set host (t){
+                    !this.m && this.H && e.call(this, t, "host");
+                },
+                get hostname () {
+                    return this.o;
+                },
+                set hostname (t){
+                    !this.m && this.H && e.call(this, t, "hostname");
+                },
+                get port () {
+                    return this.v;
+                },
+                set port (t){
+                    !this.m && this.H && e.call(this, t, "port");
+                },
+                get pathname () {
+                    return this.m ? "" : this.H ? "/" + this.s.join("/") : this.ya;
+                },
+                set pathname (t){
+                    !this.m && this.H && (this.s = [], e.call(this, t, "relative path start"));
+                },
+                get search () {
+                    return this.m || !this.A || "?" == this.A ? "" : this.A;
+                },
+                set search (t){
+                    !this.m && this.H && (this.A = "?", "?" == t[0] && (t = t.slice(1)), e.call(this, t, "query"));
+                },
+                get hash () {
+                    return this.m || !this.C || "#" == this.C ? "" : this.C;
+                },
+                set hash (t){
+                    this.m || (t ? (this.C = "#", "#" == t[0] && (t = t.slice(1)), e.call(this, t, "fragment")) : this.C = "");
+                },
+                get origin () {
+                    var t2;
+                    if (this.m || !this.l) return "";
+                    switch(this.l){
+                        case "data":
+                        case "file":
+                        case "javascript":
+                        case "mailto":
+                            return "null";
+                    }
+                    return (t2 = this.host) ? this.l + "://" + t2 : "";
+                }
+            };
+            var C = a1.URL;
+            C && (g.createObjectURL = function(t1) {
+                return C.createObjectURL.apply(C, arguments);
+            }, g.revokeObjectURL = function(t1) {
+                C.revokeObjectURL(t1);
+            });
+            a1.URL = g;
+        }
+    })(window); /*
+
+Copyright (c) 2018 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+*/ 
+    var Hj = window.customElements, Ij = !1, Jj = null;
+    Hj.polyfillWrapFlushCallback && Hj.polyfillWrapFlushCallback(function(a1) {
+        Jj = a1;
+        Ij && a1();
+    });
+    function Kj() {
+        window.HTMLTemplateElement.bootstrap && window.HTMLTemplateElement.bootstrap(window.document);
+        Jj && Jj();
+        Ij = !0;
+        window.WebComponents.ready = !0;
+        document.dispatchEvent(new CustomEvent("WebComponentsReady", {
+            bubbles: !0
+        }));
+    }
+    "complete" !== document.readyState ? (window.addEventListener("load", Kj), window.addEventListener("DOMContentLoaded", function() {
+        window.removeEventListener("load", Kj);
+        Kj();
+    })) : Kj();
+}).call($4d57b36fc7cd1cbc$exports);
+
+
 var $df7901cd40deed0d$exports = {};
-var $8a6fdbbade2d55a3$exports = {};
-var $8a6fdbbade2d55a3$var$version = "6.0.2";
+/**!
+Copyright (c) 2009-2023 Paul Rosen and Gregory Dyke
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+ **This text is from: http://opensource.org/licenses/MIT**
+!**/ var $8a6fdbbade2d55a3$exports = {};
+var $8a6fdbbade2d55a3$var$version = "6.3.0";
 $8a6fdbbade2d55a3$exports = $8a6fdbbade2d55a3$var$version;
 
 
 var $cc4b990068ad1b9d$exports = {};
+//    abc_animation.js: handles animating the music in real time.
 
 var $3OWKM = parcelRequire("3OWKM");
 var $cc4b990068ad1b9d$var$animation = {};
@@ -50566,6 +57250,466 @@ $cc4b990068ad1b9d$exports = $cc4b990068ad1b9d$var$animation;
 var $fyRj8 = parcelRequire("fyRj8");
 
 var $bg5L4 = parcelRequire("bg5L4");
+var $b2b5c11d014978af$exports = {};
+
+var $6CMgS = parcelRequire("6CMgS");
+
+var $gdibq = parcelRequire("gdibq");
+var $b2b5c11d014978af$require$relativeMajor = $gdibq.relativeMajor;
+var $b2b5c11d014978af$require$transposeKey = $gdibq.transposeKey;
+var $b2b5c11d014978af$require$relativeMode = $gdibq.relativeMode;
+
+var $7M3Qp = parcelRequire("7M3Qp");
+var $b2b5c11d014978af$var$strTranspose;
+(function() {
+    "use strict";
+    $b2b5c11d014978af$var$strTranspose = function(abc, abcTune, steps) {
+        if (abcTune === "TEST") return {
+            keyAccidentals: $6CMgS,
+            relativeMajor: $b2b5c11d014978af$require$relativeMajor,
+            transposeKey: $b2b5c11d014978af$require$transposeKey,
+            relativeMode: $b2b5c11d014978af$require$relativeMode,
+            transposeChordName: $7M3Qp
+        };
+        steps = parseInt(steps, 10);
+        var changes = [];
+        var i;
+        for(i = 0; i < abcTune.length; i++)changes = changes.concat(transposeOneTune(abc, abcTune[i], steps));
+        // Reverse sort so that we are replacing strings from the end to the beginning so that the indexes aren't invalidated as we go.
+        // (Because voices can be written in different ways we can't count on the notes being encountered in the order they appear in the string.)
+        changes = changes.sort(function(a, b) {
+            return b.start - a.start;
+        });
+        var output = abc.split("");
+        for(i = 0; i < changes.length; i++){
+            var ch = changes[i];
+            output.splice(ch.start, ch.end - ch.start, ch.note);
+        }
+        return output.join("");
+    };
+    function transposeOneTune(abc, abcTune, steps) {
+        var changes = [];
+        // Don't transpose bagpipe music - that is a special case and is always a particular key
+        var key = abcTune.getKeySignature();
+        if (key.root === "Hp" || key.root === "HP") return changes;
+        changes = changes.concat(changeAllKeySigs(abc, steps));
+        for(var i = 0; i < abcTune.lines.length; i++){
+            var staves = abcTune.lines[i].staff;
+            if (staves) for(var j = 0; j < staves.length; j++){
+                var staff = staves[j];
+                if (staff.clef.type !== "perc") changes = changes.concat(transposeVoices(abc, staff.voices, staff.key, steps));
+            }
+        }
+        return changes;
+    }
+    function changeAllKeySigs(abc, steps) {
+        var changes = [];
+        var arr = abc.split("K:");
+        // now each line except the first one will start with whatever is right after "K:"
+        var count = arr[0].length;
+        for(var i = 1; i < arr.length; i++){
+            var segment = arr[i];
+            var match = segment.match(/^( *)([A-G])([#b]?)(\w*)/);
+            if (match) {
+                var start = count + 2 + match[1].length // move past the 'K:' and optional white space
+                ;
+                var key = match[2] + match[3] + match[4] // key name, accidental, and mode
+                ;
+                var destinationKey = newKey({
+                    root: match[2],
+                    acc: match[3],
+                    mode: match[4]
+                }, steps);
+                var dest = destinationKey.root + destinationKey.acc + destinationKey.mode;
+                changes.push({
+                    start: start,
+                    end: start + key.length,
+                    note: dest
+                });
+            }
+            count += segment.length + 2;
+        }
+        return changes;
+    }
+    function transposeVoices(abc, voices, key, steps) {
+        var changes = [];
+        var destinationKey = newKey(key, steps);
+        for(var i = 0; i < voices.length; i++)changes = changes.concat(transposeVoice(abc, voices[i], key.root, createKeyAccidentals(key), destinationKey, steps));
+        return changes;
+    }
+    function createKeyAccidentals(key) {
+        var ret = {};
+        for(var i = 0; i < key.accidentals.length; i++){
+            var acc = key.accidentals[i];
+            if (acc.acc === "flat") ret[acc.note.toUpperCase()] = "_";
+            else if (acc.acc === "sharp") ret[acc.note.toUpperCase()] = "^";
+        }
+        return ret;
+    }
+    function setLetterDistance(destinationKey, keyRoot, steps) {
+        var letterDistance = letters.indexOf(destinationKey.root) - letters.indexOf(keyRoot);
+        if (keyRoot === "none") letterDistance = letters.indexOf(destinationKey.root);
+        if (letterDistance === 0) {
+            // This could either be a half step (like Eb => E) or almost an octave (like E => Eb)
+            if (steps > 2) letterDistance += 7;
+            else if (steps === -12) letterDistance -= 7;
+        } else if (steps > 0 && letterDistance < 0) letterDistance += 7;
+        else if (steps < 0 && letterDistance > 0) letterDistance -= 7;
+        if (steps > 12) letterDistance += 7;
+        else if (steps < -12) letterDistance -= 7;
+        return letterDistance;
+    }
+    function transposeVoice(abc, voice, keyRoot, keyAccidentals, destinationKey, steps) {
+        var changes = [];
+        var letterDistance = setLetterDistance(destinationKey, keyRoot, steps);
+        var measureAccidentals = {};
+        var transposedMeasureAccidentals = {};
+        for(var i = 0; i < voice.length; i++){
+            var el = voice[i];
+            if (el.chord) for(var c = 0; c < el.chord.length; c++){
+                var ch = el.chord[c];
+                if (ch.position === "default") {
+                    var prefersFlats = destinationKey.accidentals.length && destinationKey.accidentals[0].acc === "flat";
+                    var newChord = $7M3Qp(ch.name, steps, prefersFlats, true);
+                    newChord = newChord.replace(/♭/g, "b").replace(/♯/g, "#");
+                    if (newChord !== ch.name) changes.push(replaceChord(abc, el.startChar, el.endChar, newChord));
+                }
+            }
+            if (el.el_type === "note" && el.pitches) {
+                for(var j = 0; j < el.pitches.length; j++){
+                    var note = parseNote(el.pitches[j].name, keyRoot, keyAccidentals, measureAccidentals);
+                    if (note.acc) measureAccidentals[note.name.toUpperCase()] = note.acc;
+                    var newPitch = transposePitch(note, destinationKey, letterDistance, transposedMeasureAccidentals);
+                    if (newPitch.acc) transposedMeasureAccidentals[newPitch.upper] = newPitch.acc;
+                    changes.push(replaceNote(abc, el.startChar, el.endChar, newPitch.acc + newPitch.name, j));
+                }
+                if (el.gracenotes) for(var g = 0; g < el.gracenotes.length; g++){
+                    var grace = parseNote(el.gracenotes[g].name, keyRoot, keyAccidentals, measureAccidentals);
+                    if (grace.acc) measureAccidentals[grace.name.toUpperCase()] = grace.acc;
+                    var newGrace = transposePitch(grace, destinationKey, letterDistance, measureAccidentals);
+                    if (newGrace.acc) transposedMeasureAccidentals[newGrace.upper] = newGrace.acc;
+                    changes.push(replaceGrace(abc, el.startChar, el.endChar, newGrace.acc + newGrace.name, g));
+                }
+            } else if (el.el_type === "bar") {
+                measureAccidentals = {};
+                transposedMeasureAccidentals = {};
+            } else if (el.el_type === "keySignature") {
+                keyRoot = el.root;
+                keyAccidentals = createKeyAccidentals(el);
+                destinationKey = newKey(el, steps);
+                letterDistance = setLetterDistance(destinationKey, keyRoot, steps);
+            }
+        }
+        return changes;
+    }
+    var letters = "CDEFGAB";
+    var octaves = [
+        ",,,,",
+        ",,,",
+        ",,",
+        ",",
+        "",
+        "'",
+        "''",
+        "'''",
+        "''''"
+    ];
+    function newKey(key, steps) {
+        if (key.root === "none") return {
+            root: $b2b5c11d014978af$require$transposeKey("C", steps),
+            mode: "",
+            acc: "",
+            accidentals: []
+        };
+        var major = $b2b5c11d014978af$require$relativeMajor(key.root + key.acc + key.mode);
+        var newMajor = $b2b5c11d014978af$require$transposeKey(major, steps);
+        var newMode = $b2b5c11d014978af$require$relativeMode(newMajor, key.mode);
+        var acc = $6CMgS(newMajor);
+        return {
+            root: newMode[0],
+            mode: key.mode,
+            acc: newMode.length > 1 ? newMode[1] : "",
+            accidentals: acc
+        };
+    }
+    function transposePitch(note, key, letterDistance, measureAccidentals) {
+        // Depending on what the current note and new note are, the octave might have changed
+        // The letterDistance is how far the change is to see if we passed "C" when transposing.
+        var pitch = note.pitch;
+        var origDistFromC = letters.indexOf(note.name);
+        var root = letters.indexOf(key.root);
+        var index = (root + pitch) % 7;
+        // if the note crosses "c" then the octave changes, so that is true of "B" when going up one step, "A" and "B" when going up two steps, etc., and reverse when going down.
+        var newDistFromC = origDistFromC + letterDistance;
+        var oct = note.oct;
+        while(newDistFromC > 6){
+            oct++;
+            newDistFromC -= 7;
+        }
+        while(newDistFromC < 0){
+            oct--;
+            newDistFromC += 7;
+        }
+        var name = letters[index];
+        var acc = "";
+        var adj = note.adj;
+        // the amount of adjustment depends on the key - if there is a sharp in the key sig, then -1 is a natural, if there isn't, then -1 is a flat.
+        var keyAcc = "=";
+        for(var i = 0; i < key.accidentals.length; i++)if (key.accidentals[i].note.toLowerCase() === name.toLowerCase()) {
+            adj = adj + (key.accidentals[i].acc === "flat" ? -1 : 1);
+            keyAcc = key.accidentals[i].acc === "flat" ? "_" : "^";
+            break;
+        }
+        switch(adj){
+            case -2:
+                acc = "__";
+                break;
+            case -1:
+                acc = "_";
+                break;
+            case 0:
+                acc = "=";
+                break;
+            case 1:
+                acc = "^";
+                break;
+            case 2:
+                acc = "^^";
+                break;
+            case -3:
+                // This requires a triple flat, so bump down the pitch and try again
+                var newNote = {};
+                newNote.pitch = note.pitch - 1;
+                newNote.oct = note.oct;
+                newNote.name = letters[letters.indexOf(note.name) - 1];
+                if (!newNote.name) {
+                    newNote.name = "B";
+                    newNote.oct--;
+                }
+                if (newNote.name === "B" || newNote.name === "E") newNote.adj = note.adj + 1;
+                else newNote.adj = note.adj + 2;
+                return transposePitch(newNote, key, letterDistance + 1, measureAccidentals);
+            case 3:
+                // This requires a triple sharp, so bump up the pitch and try again
+                var newNote = {};
+                newNote.pitch = note.pitch + 1;
+                newNote.oct = note.oct;
+                newNote.name = letters[letters.indexOf(note.name) + 1];
+                if (!newNote.name) {
+                    newNote.name = "C";
+                    newNote.oct++;
+                }
+                if (newNote.name === "C" || newNote.name === "F") newNote.adj = note.adj - 1;
+                else newNote.adj = note.adj - 2;
+                return transposePitch(newNote, key, letterDistance + 1, measureAccidentals);
+        }
+        if ((measureAccidentals[name] === acc || !measureAccidentals[name] && acc === keyAcc) && !note.courtesy) acc = "";
+        switch(oct){
+            case 0:
+                name = name + ",,,";
+                break;
+            case 1:
+                name = name + ",,";
+                break;
+            case 2:
+                name = name + ",";
+                break;
+            // case 3: it is already correct
+            case 4:
+                name = name.toLowerCase();
+                break;
+            case 5:
+                name = name.toLowerCase() + "'";
+                break;
+            case 6:
+                name = name.toLowerCase() + "''";
+                break;
+            case 7:
+                name = name.toLowerCase() + "'''";
+                break;
+            case 8:
+                name = name.toLowerCase() + "''''";
+                break;
+        }
+        if (oct > 4) name = name.toLowerCase();
+        return {
+            acc: acc,
+            name: name,
+            upper: name.toUpperCase()
+        };
+    }
+    var regPitch = /([_^=]*)([A-Ga-g])([,']*)/;
+    var regNote = /([_^=]*[A-Ga-g][,']*)(\d*\/*\d*)([\>\<\-\)\.\s\\]*)/;
+    var regOptionalNote = /([_^=]*[A-Ga-g][,']*)?(\d*\/*\d*)?([\>\<\-\)]*)?/;
+    var regSpace = /(\s*)$/;
+    // This the relationship of the note to the tonic and an octave. So what is returned is a distance in steps from the tonic and the amount of adjustment from
+    // a normal scale. That is - in the key of D an F# is two steps from the tonic and no adjustment. A G# is three steps from the tonic and one half-step higher.
+    // I don't think there is any adjustment needed for minor keys since the adjustment is based on the key signature and the accidentals.
+    function parseNote(note, keyRoot, keyAccidentals, measureAccidentals) {
+        var root = keyRoot === "none" ? 0 : letters.indexOf(keyRoot);
+        var reg = note.match(regPitch);
+        // reg[1] : "__", "_", "", "=", "^", or "^^"
+        // reg[2] : A-G a-g
+        // reg[3] : commas or apostrophes
+        var name = reg[2].toUpperCase();
+        var pos = letters.indexOf(name) - root;
+        if (pos < 0) pos += 7;
+        var oct = octaves.indexOf(reg[3]);
+        if (name === reg[2]) oct--;
+        var currentAcc = measureAccidentals[name] || keyAccidentals[name] || "=" //  use the key accidentals if they exist, but override with the measure accidentals, and if neither of them exist, use a natural.
+        ;
+        return {
+            acc: reg[1],
+            name: name,
+            pitch: pos,
+            oct: oct,
+            adj: calcAdjustment(reg[1], keyAccidentals[name], measureAccidentals[name]),
+            courtesy: reg[1] === currentAcc
+        };
+    }
+    function replaceNote(abc, start, end, newPitch, index) {
+        // There may be more than just the note between the start and end - there could be spaces, there could be a chord symbol, there could be a decoration.
+        // This could also be a part of a chord. If so, then the particular note needs to be teased out.
+        var note = abc.substring(start, end);
+        var match = note.match(new RegExp(regNote.source + regSpace.source), "");
+        if (match) {
+            // This will match a single note
+            var noteLen = match[1].length;
+            var trailingLen = match[2].length + match[3].length + match[4].length;
+            var leadingLen = end - start - noteLen - trailingLen;
+            start += leadingLen;
+            end -= trailingLen;
+        } else {
+            // I don't know how to capture more than one note, so I'm separating them. There is a limit of the number of notes in a chord depending on the repeats I have here, but it is unlikely to happen in real music.
+            var regPreBracket = /([^\[]*)/;
+            var regOpenBracket = /\[/;
+            var regCloseBracket = /\-?](\d*\/*\d*)?([\>\<\-\)]*)/;
+            match = note.match(new RegExp(regPreBracket.source + regOpenBracket.source + regOptionalNote.source + regOptionalNote.source + regOptionalNote.source + regOptionalNote.source + regOptionalNote.source + regOptionalNote.source + regOptionalNote.source + regOptionalNote.source + regCloseBracket.source + regSpace.source));
+            if (match) {
+                // This will match a chord
+                // Get the number of chars used by the previous notes in this chord
+                var count = 1 + match[1].length // one character for the open bracket
+                ;
+                for(var i = 0; i < index; i++){
+                    if (match[i * 3 + 2]) count += match[i * 3 + 2].length;
+                    if (match[i * 3 + 3]) count += match[i * 3 + 3].length;
+                    if (match[i * 3 + 4]) count += match[i * 3 + 4].length;
+                }
+                start += count;
+                var endLen = match[index * 3 + 2] ? match[index * 3 + 2].length : 0;
+                // endLen += match[index * 3 + 3] ? match[index * 3 + 3].length : 0
+                // endLen += match[index * 3 + 4] ? match[index * 3 + 4].length : 0
+                end = start + endLen;
+            }
+        }
+        return {
+            start: start,
+            end: end,
+            note: newPitch
+        };
+    }
+    function replaceGrace(abc, start, end, newGrace, index) {
+        var note = abc.substring(start, end);
+        // I don't know how to capture more than one note, so I'm separating them. There is a limit of the number of notes in a chord depending on the repeats I have here, but it is unlikely to happen in real music.
+        var regOpenBrace = /\{/;
+        var regCloseBrace = /\}/;
+        var regPreBrace = /([^\{]*)/;
+        var regPreNote = /(\/*)/;
+        var match = note.match(new RegExp(regPreBrace.source + regOpenBrace.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regPreNote.source + regOptionalNote.source + regCloseBrace.source));
+        if (match) {
+            // This will match all notes inside a grace symbol
+            // Get the number of chars used by the previous graces
+            var count = 1 + match[1].length // one character for the open brace, and whatever comes before the brace
+            ;
+            for(var i = 0; i < index; i++){
+                if (match[i * 3 + 2]) count += match[i * 3 + 2].length;
+                if (match[i * 3 + 3]) count += match[i * 3 + 3].length;
+                if (match[i * 3 + 4]) count += match[i * 3 + 4].length;
+                if (match[i * 3 + 5]) count += match[i * 3 + 5].length;
+            }
+            if (match[index * 3 + 2]) count += match[i * 3 + 2].length;
+            start += count;
+            var endLen = match[index * 3 + 3] ? match[index * 3 + 3].length : 0;
+            endLen += match[index * 3 + 4] ? match[index * 3 + 4].length : 0;
+            endLen += match[index * 3 + 5] ? match[index * 3 + 5].length : 0;
+            end = start + endLen;
+        }
+        return {
+            start: start,
+            end: end,
+            note: newGrace
+        };
+    }
+    function replaceChord(abc, start, end, newChord) {
+        // Isolate the chord and just replace that
+        var match = abc.substring(start, end).match(/([^"]+)?(".+")+/);
+        if (match[1]) start += match[1].length;
+        end = start + match[2].length;
+        // leave the quote in, so skip one more
+        return {
+            start: start + 1,
+            end: end - 1,
+            note: newChord
+        };
+    }
+    function calcAdjustment(thisAccidental, keyAccidental, measureAccidental) {
+        if (!thisAccidental && measureAccidental) // There was no accidental on this note, but there was earlier in the measure, so we'll use that
+        thisAccidental = measureAccidental;
+        if (!thisAccidental) return 0; // there is no deviation from the key.
+        switch(keyAccidental){
+            case undefined:
+                switch(thisAccidental){
+                    case "__":
+                        return -2;
+                    case "_":
+                        return -1;
+                    case "=":
+                        return 0;
+                    case "^":
+                        return 1;
+                    case "^^":
+                        return 2;
+                    default:
+                        return 0; // this should never happen
+                }
+            case "_":
+                switch(thisAccidental){
+                    case "__":
+                        return -1;
+                    case "_":
+                        return 0;
+                    case "=":
+                        return 1;
+                    case "^":
+                        return 2;
+                    case "^^":
+                        return 3;
+                    default:
+                        return 0; // this should never happen
+                }
+            case "^":
+                switch(thisAccidental){
+                    case "__":
+                        return -3;
+                    case "_":
+                        return -2;
+                    case "=":
+                        return -1;
+                    case "^":
+                        return 0;
+                    case "^^":
+                        return 1;
+                    default:
+                        return 0; // this should never happen
+                }
+        }
+        return 0 // this should never happen
+        ;
+    }
+})();
+$b2b5c11d014978af$exports = $b2b5c11d014978af$var$strTranspose;
+
+
 var $df7901cd40deed0d$var$abcjs = {};
 $df7901cd40deed0d$var$abcjs.signature = "abcjs-basic v" + $8a6fdbbade2d55a3$exports;
 Object.keys($cc4b990068ad1b9d$exports).forEach(function(key) {
@@ -50579,8 +57723,9 @@ $df7901cd40deed0d$var$abcjs.renderAbc = (parcelRequire("iOvTz"));
 
 $df7901cd40deed0d$var$abcjs.TimingCallbacks = (parcelRequire("3OWKM"));
 
-var $qv6HX = parcelRequire("qv6HX");
-$df7901cd40deed0d$var$abcjs.setGlyph = $qv6HX.setSymbol;
+var $fJFPv = parcelRequire("fJFPv");
+$df7901cd40deed0d$var$abcjs.setGlyph = $fJFPv.setSymbol;
+$df7901cd40deed0d$var$abcjs.strTranspose = $b2b5c11d014978af$exports;
 
 var $6dENQ = parcelRequire("6dENQ");
 
@@ -50641,7 +57786,7 @@ var $9a6618633fdbc359$exports = {};
 var $6dENQ = parcelRequire("6dENQ");
 
 var $as8qu = parcelRequire("as8qu");
-function $9a6618633fdbc359$var$playEvent(midiPitches, midiGracePitches, millisecondsPerMeasure) {
+function $9a6618633fdbc359$var$playEvent(midiPitches, midiGracePitches, millisecondsPerMeasure, soundFontUrl, debugCallback) {
     var sequence = new $3d0cffe96f7b453a$exports();
     for(var i = 0; i < midiPitches.length; i++){
         var note = midiPitches[i];
@@ -50655,15 +57800,19 @@ function $9a6618633fdbc359$var$playEvent(midiPitches, midiGracePitches, millisec
     }
     var ac = $as8qu();
     if (ac.state === "suspended") return ac.resume().then(function() {
-        return $9a6618633fdbc359$var$doPlay(sequence, millisecondsPerMeasure);
+        return $9a6618633fdbc359$var$doPlay(sequence, millisecondsPerMeasure, soundFontUrl, debugCallback);
     });
-    else return $9a6618633fdbc359$var$doPlay(sequence, millisecondsPerMeasure);
+    else return $9a6618633fdbc359$var$doPlay(sequence, millisecondsPerMeasure, soundFontUrl, debugCallback);
 }
-function $9a6618633fdbc359$var$doPlay(sequence, millisecondsPerMeasure) {
+function $9a6618633fdbc359$var$doPlay(sequence, millisecondsPerMeasure, soundFontUrl, debugCallback) {
     var buffer = new $6dENQ();
     return buffer.init({
         sequence: sequence,
-        millisecondsPerMeasure: millisecondsPerMeasure
+        millisecondsPerMeasure: millisecondsPerMeasure,
+        options: {
+            soundFontUrl: soundFontUrl
+        },
+        debugCallback: debugCallback
     }).then(function() {
         return buffer.prime();
     }).then(function() {
@@ -50680,7 +57829,9 @@ var $983d38da2ca59ead$exports = {};
 
 var $fyRj8 = parcelRequire("fyRj8");
 var $dd6d8b725f38c138$exports = {};
+//    abc_midi_create.js: Turn a linear series of events into a midi file.
 var $af41775f1eed2cd3$exports = {};
+//    abc_midi_renderer.js: Create the actual format for the midi.
 
 var $78bI8 = parcelRequire("78bI8");
 var $af41775f1eed2cd3$var$rendererFactory;
@@ -50727,7 +57878,8 @@ var $af41775f1eed2cd3$var$rendererFactory;
     Midi.prototype.endTrack = function() {
         this.track = this.trackName + this.trackInstrument + this.track;
         var tracklength = toHex(this.track.length / 3 + 4, 8);
-        this.track = "MTrk" + tracklength + this.track + "%00%FF%2F%00"; // track end
+        this.track = "MTrk" + tracklength + // track header
+        this.track + "%00%FF%2F%00"; // track end
         this.trackstrings += this.track;
     };
     Midi.prototype.setText = function(type, text) {
@@ -50797,7 +57949,8 @@ var $af41775f1eed2cd3$var$rendererFactory;
         if (this.silencelength < 0) this.silencelength = 0;
     };
     Midi.prototype.getData = function() {
-        return "data:audio/midi,MThd%00%00%00%06%00%01" + toHex(this.trackcount, 4) + "%01%e0" + this.trackstrings;
+        return "data:audio/midi,MThd%00%00%00%06%00%01" + toHex(this.trackcount, 4) + "%01%e0" + // header
+        this.trackstrings;
     };
     Midi.prototype.embed = function(parent, noplayer) {
         var data = this.getData();
@@ -50932,7 +58085,7 @@ $af41775f1eed2cd3$exports = $af41775f1eed2cd3$var$rendererFactory;
 var $dd6d8b725f38c138$var$create;
 (function() {
     "use strict";
-    var baseDuration1 = 1920; // nice and divisible, equals 1 whole note
+    var baseDuration = 1920; // nice and divisible, equals 1 whole note
     $dd6d8b725f38c138$var$create = function(abcTune, options) {
         if (options === undefined) options = {};
         var commands = abcTune.setUpAudio(options);
@@ -50956,8 +58109,14 @@ var $dd6d8b725f38c138$var$create;
                     case "program":
                         var pan = 0;
                         if (options.pan && options.pan.length > i) pan = options.pan[i];
-                        midi.setChannel(event.channel, pan);
-                        midi.setInstrument(event.instrument);
+                        if (event.instrument === 128) {
+                            // If we're using the percussion voice, change to Channel 10
+                            midi.setChannel(9, pan);
+                            midi.setInstrument(0);
+                        } else {
+                            midi.setChannel(event.channel, pan);
+                            midi.setInstrument(event.instrument);
+                        }
                         break;
                     case "note":
                         var gapLengthInBeats = event.gap * beatsPerSecond;
@@ -50981,7 +58140,7 @@ var $dd6d8b725f38c138$var$create;
                         console.log("MIDI create Unknown: " + event.cmd);
                 }
             }
-            addNotes(midi, notePlacement, baseDuration1);
+            addNotes(midi, notePlacement, baseDuration);
             midi.endTrack();
         }
         return midi.getData();
@@ -51068,6 +58227,7 @@ var $983d38da2ca59ead$var$generateMidiDownloadLink = function(tune, midiParams, 
 $983d38da2ca59ead$exports = $983d38da2ca59ead$var$getMidiFile;
 
 
+
 $df7901cd40deed0d$var$abcjs.synth = {
     CreateSynth: $6dENQ,
     instrumentIndexToName: $huFdi,
@@ -51080,7 +58240,8 @@ $df7901cd40deed0d$var$abcjs.synth = {
     supportsAudio: $fm2OZ,
     playEvent: $9a6618633fdbc359$exports,
     getMidiFile: $983d38da2ca59ead$exports,
-    sequence: $bg5L4
+    sequence: $bg5L4,
+    midiRenderer: $af41775f1eed2cd3$exports
 };
 
 $df7901cd40deed0d$var$abcjs["Editor"] = (parcelRequire("2DpCT"));
@@ -51089,6 +58250,7 @@ $df7901cd40deed0d$var$abcjs["EditArea"] = (parcelRequire("OBR2R"));
 $df7901cd40deed0d$exports = $df7901cd40deed0d$var$abcjs;
 
 
+//import ABCjs from 'abcjs'
 const $882b6d93070905b3$var$PAPER_ID = "paper";
 const $882b6d93070905b3$var$AUDIO_ID = "audio";
 const $882b6d93070905b3$var$WARNING = "warning";
@@ -51104,6 +58266,7 @@ const $882b6d93070905b3$var$TABLATURE = "tablature";
 const $882b6d93070905b3$var$VOICES_OFF = "voicesOff";
 const $882b6d93070905b3$var$CHORDS_OFF = "chordsOff";
 const $882b6d93070905b3$var$STEREO = "stereo";
+const $882b6d93070905b3$var$STAFFWIDTH = "staffwidth";
 const $882b6d93070905b3$var$TEMPLATE = `<style>
 .abcjs-inline-audio {
 	height: 26px;
@@ -51318,15 +58481,6 @@ function $882b6d93070905b3$var$clickListener(abcElem, tuneNumber, classes, analy
     });
 }
 customElements.define("lia-abcjs", class extends HTMLElement {
-    audio_ = true;
-    autoplay_ = false;
-    debug_ = false;
-    notes_ = true;
-    responsive_ = true;
-    voicesOff_ = false;
-    chordsOff_ = false;
-    stereo_ = false;
-    warning_ = false;
     static get observedAttributes() {
         return [
             $882b6d93070905b3$var$ABC,
@@ -51341,11 +58495,21 @@ customElements.define("lia-abcjs", class extends HTMLElement {
             $882b6d93070905b3$var$VOICES_OFF,
             $882b6d93070905b3$var$CHORDS_OFF,
             $882b6d93070905b3$var$STEREO,
-            $882b6d93070905b3$var$WARNING, 
+            $882b6d93070905b3$var$WARNING,
+            $882b6d93070905b3$var$STAFFWIDTH
         ];
     }
     constructor(){
         super();
+        this.audio_ = true;
+        this.autoplay_ = false;
+        this.debug_ = false;
+        this.notes_ = true;
+        this.responsive_ = true;
+        this.voicesOff_ = false;
+        this.chordsOff_ = false;
+        this.stereo_ = false;
+        this.warning_ = false;
     }
     connectedCallback() {
         const template = document.createElement("template");
@@ -51358,6 +58522,7 @@ customElements.define("lia-abcjs", class extends HTMLElement {
         this.audio_ = this.getAttributeBoolean($882b6d93070905b3$var$AUDIO, true);
         this.autoplay_ = this.getAttributeBoolean($882b6d93070905b3$var$AUTOPLAY, false);
         this.channel_ = this.getAttributeNumber($882b6d93070905b3$var$CHANNEL) || undefined;
+        this.staffwidth_ = this.getAttributeNumber($882b6d93070905b3$var$STAFFWIDTH) || undefined;
         this.debug_ = this.getAttributeBoolean($882b6d93070905b3$var$DEBUG, false);
         this.notes_ = this.getAttributeBoolean($882b6d93070905b3$var$NOTES, true);
         this.program_ = this.getAttributeNumber($882b6d93070905b3$var$PROGRAM) || undefined;
@@ -51405,95 +58570,102 @@ customElements.define("lia-abcjs", class extends HTMLElement {
                 try {
                     this.audio_ = JSON.parse(newValue);
                 } catch (e) {
-                    console.warn("lia-abcjs: audio requires boolean you gave this ->");
+                    console.warn("lia-abcjs: audio requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$AUTOPLAY:
                 try {
                     this.autoplay_ = JSON.parse(newValue);
-                } catch (e1) {
-                    console.warn("lia-abcjs: autoplay requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: autoplay requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$CHANNEL:
                 try {
                     this.channel_ = JSON.parse(newValue);
-                } catch (e2) {
-                    console.warn("lia-abcjs: channel requires integer you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: channel requires integer you gave this ->", newValue);
                 }
                 this.update();
+                break;
+            case $882b6d93070905b3$var$STAFFWIDTH:
+                try {
+                    this.staffwidth_ = JSON.parse(newValue);
+                } catch (e) {
+                    console.warn("lia-abcjs: staffwidth requires integer you gave this ->", newValue);
+                }
                 break;
             case $882b6d93070905b3$var$DEBUG:
                 try {
                     this.debug_ = JSON.parse(newValue);
-                } catch (e3) {
-                    console.warn("lia-abcjs: debug requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: debug requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$NOTES:
                 try {
                     this.notes_ = JSON.parse(newValue);
-                } catch (e4) {
-                    console.warn("lia-abcjs: notes requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: notes requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$PROGRAM:
                 try {
                     this.program_ = JSON.parse(newValue);
-                } catch (e5) {
-                    console.warn("lia-abcjs: program requires integer you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: program requires integer you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$RESPONSIVE:
                 try {
                     this.responsive_ = JSON.parse(newValue);
-                } catch (e6) {
-                    console.warn("lia-abcjs: responsive requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: responsive requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$TABLATURE:
                 try {
                     this.tablature_ = JSON.parse(newValue);
-                } catch (e7) {
-                    console.warn("lia-abcjs: tablature requires json you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: tablature requires json you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$VOICES_OFF:
                 try {
                     this.voicesOff_ = JSON.parse(newValue);
-                } catch (e8) {
-                    console.warn("lia-abcjs: voicesOff requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: voicesOff requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$CHORDS_OFF:
                 try {
                     this.chordsOff_ = JSON.parse(newValue);
-                } catch (e9) {
-                    console.warn("lia-abcjs: chordsOff requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: chordsOff requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$STEREO:
                 try {
                     this.stereo_ = JSON.parse(newValue);
-                } catch (e10) {
-                    console.warn("lia-abcjs: stereo requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: stereo requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
             case $882b6d93070905b3$var$WARNING:
                 try {
                     this.warning_ = JSON.parse(newValue);
-                } catch (e11) {
-                    console.warn("lia-abcjs: warning requires boolean you gave this ->");
+                } catch (e) {
+                    console.warn("lia-abcjs: warning requires boolean you gave this ->", newValue);
                 }
                 this.update();
                 break;
@@ -51506,6 +58678,7 @@ customElements.define("lia-abcjs", class extends HTMLElement {
             const audio__ = this.match($882b6d93070905b3$var$AUDIO, "(true|false)", this.audio_);
             const autoplay__ = this.match($882b6d93070905b3$var$AUTOPLAY, "(true|false)", this.autoplay_);
             const channel__ = this.match($882b6d93070905b3$var$CHANNEL, "\\d+", this.channel_);
+            const staffwidth__ = this.match($882b6d93070905b3$var$STAFFWIDTH, "\\d+", this.staffwidth_);
             const debug__ = this.match($882b6d93070905b3$var$DEBUG, "(true|false)", this.debug_);
             const notes__ = this.match($882b6d93070905b3$var$NOTES, "(true|false)", this.notes_);
             const program__ = this.match($882b6d93070905b3$var$PROGRAM, "\\d+", this.program_);
@@ -51523,7 +58696,8 @@ customElements.define("lia-abcjs", class extends HTMLElement {
                     "box"
                 ] : [],
                 clickListener: $882b6d93070905b3$var$clickListener,
-                tablature: tablature__
+                tablature: tablature__,
+                staffwidth: staffwidth__
             });
             try {
                 if (warning__ && $882b6d93070905b3$var$visualObj[0].warnings.length > 0) {

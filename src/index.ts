@@ -1,4 +1,6 @@
+import '../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js'
 import ABCjs from '../node_modules/abcjs/index.js'
+//import ABCjs from 'abcjs'
 
 const PAPER_ID = 'paper'
 const AUDIO_ID = 'audio'
