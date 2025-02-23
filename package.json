@@ -4,7 +4,8 @@
   "description": "Web component for abcjs",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx parcel build src/index.ts",
+    "inject-polyfill": "(echo \"if (typeof globalThis === 'undefined') { (function () { if (typeof self !== 'undefined') { self.globalThis = self; } else if (typeof window !== 'undefined') { window.globalThis = window; } else if (typeof global !== 'undefined') { global.globalThis = global; } else { this.globalThis = this; } })(); }\" && cat dist/index.js) > dist/index.tmp && mv dist/index.tmp dist/index.js",
+    "build": "npx parcel build src/index.ts && npm run inject-polyfill",
     "watch": "npx parcel serve src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -25,6 +26,7 @@
     "parcel": "^2.12.0"
   },
   "browserlist": [
-    "95%"
+    "95%",
+    "Firefox >= 48"
   ]
 }
