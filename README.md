@@ -15,7 +15,7 @@ comment:  This document provides a collection of LiaScript macros that can be
           to write beautiful music notes with the ABC notation and also to
           play this music aloud.
 
-script:   https://cdn.jsdelivr.net/gh/liatemplates/abcjs@feat/nokia/dist/index.js
+script:   ./dist/index.js
 
 @ABCJS.render: @ABCJS.renderWith( ,```@0```)
 
